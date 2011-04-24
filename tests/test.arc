@@ -1,13 +1,14 @@
 ; todo not sure about these names
 
-(assign test-verbose* t)
+(assign test-verbose* nil)
 
 (def test-iso3 (desc result expected)
   (if (equal-wrt-testing expected result)
        (when test-verbose*
-         (do (pr "ok " desc " => ")
-             (write result)
-             (prn)))
+           (pr "ok " desc " => ")
+           (write result)
+           (prn))
+
        (do (pr "FAIL " desc " => ")
            (write result)
            (pr ", not the expected result ")
@@ -46,9 +47,11 @@
 
 (mac testt (expr)
   `(if ,expr
-        (do (pr "ok ")
+        (when test-verbose*
+            (pr "ok ")
             (write ',expr)
             (pr " is true\n"))
+
         (do (pr "FAIL ")
             (write ',expr)
             (pr " is nil\n")
@@ -56,9 +59,11 @@
 
 (mac testnil (expr)
   `(if (no ,expr)
-        (do (pr "ok ")
+        (when test-verbose*
+            (pr "ok ")
             (write ',expr)
             (pr " is nil\n"))
+
         (do (pr "FAIL ")
             (write ',expr)
             (pr " is not nil\n")

@@ -1,8 +1,8 @@
 #lang scheme
 
-(require (only-in "ar.ss"
+(require (only-in "../ar.ss"
            arc-car arc-list deep-fromarc hash no? toarc true? write-to-string))
-(require (only-in "ac.ss"
+(require (only-in "../ac.ss"
            arc-eval new-arc ac-build-steps get g globals-implementation))
 
 (define (test-expect-error-impl source thunk expected-error-message)
@@ -98,7 +98,7 @@
   (unless (no? (thunk))
      (error "not nil")))
 
-(define-syntax test-t 
+(define-syntax test-t
   (syntax-rules ()
     ((test-t body ...)
      (test-t-impl (lambda () body ...)))))

@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e -v
-racket ar-test.ss
-racket ac-test.ss
-racket arc-test.ss
-racket strings-test.ss
+mzscheme "tests/ar-test.ss"
+mzscheme "tests/ac-test.ss"
+mzscheme "tests/arc-test.ss"
+mzscheme "tests/strings-test.ss"
