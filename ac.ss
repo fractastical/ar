@@ -160,7 +160,7 @@
 ;; variables
 
 (define (mem v lst)
-  (tnil (and (mpair? lst) 
+  (tnil (and (mpair? lst)
              (or (eqv? v (mcar lst))
                  (true? (mem v (mcdr lst)))))))
 
@@ -186,7 +186,7 @@
                        (arc-list 'quote v)
                        (global-ref-err arc v)))
     ((namespace) (ac-global-name v))))
-     
+
 (ac-def ac-var-ref (s env)
   (if (true? ((g ac-lex?) s env))
        s
@@ -374,7 +374,7 @@
   (let ((result (gensym)))
     (arc-list 'let
               (arc-list (arc-list result ((g ac) b1 env)))
-              (if (true? ((g ac-lex?) a env))                  
+              (if (true? ((g ac-lex?) a env))
                    (arc-list 'set! a result)
                    ((g ac-global-assign) a result))
               result)))
