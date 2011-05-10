@@ -6,7 +6,7 @@
          ar-funcall3 ar-funcall4 ar-rep arc-apply arc-cadr
          arc-car arc-cddr arc-cdr arc-isa arc-join arc-list arc-map1
          ar-tag arc-type deep-fromarc err hash new-ar no? noprint
-         run-ar-tests tagged? tnil toarc true? write-to-string)
+         run-ar-tests tagged? tnil toarc toscheme true? write-to-string)
 
 (define ar-tests* '())
 
@@ -105,6 +105,16 @@
                 (toarc (cdr x))))
         ((null? x)
          'nil)
+        ((string? x)
+         (string-copy x))
+        (else x)))
+
+(define (toscheme x)
+  (cond ((mpair? x)
+         (cons (toscheme (mcar x))
+               (toscheme (mcdr x))))
+        ((eq? x 'nil)
+         '())
         ((string? x)
          (string-copy x))
         (else x)))

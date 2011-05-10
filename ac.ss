@@ -59,8 +59,8 @@
 (define (make-arc-racket-namespace)
   (let ((ns (make-base-empty-namespace)))
     (parameterize ((current-namespace ns))
-      (namespace-require '(only racket/base #%app #%datum #%top))
-      (namespace-require '(prefix racket- racket/base)))
+      (namespace-require '(only scheme/base #%app #%datum #%top))
+      (namespace-require '(prefix racket- scheme/base)))
     ns))
 
 (define (new-arc (options (hash)))
@@ -89,9 +89,21 @@
        (with-syntax ((arc (datum->syntax #'v 'arc)))
          #'(get arc 'v))))))
 
-(define (ac-def-fn arc name signature fn)
-  (hash-set! (get arc 'sig) name (toarc signature))
-  (set arc name fn))
+
+(define (new-ac-fn f)
+  (lambda (arc name signature fn)
+    (hash-set! (get arc 'sig) name (toarc signature))
+    (set arc name (f fn))))
+
+(define ac-def-fn (new-ac-fn (lambda (x) x)))
+(define ac-mac-fn (new-ac-fn (lambda (x) (ar-tag 'mac x))))
+
+
+(add-ac-build-step
+  (lambda (arc)
+    (ac-mac-fn arc 'racket '(x)
+      (lambda (x)
+        (toarc `',(eval (toscheme x) arc))))))
 
 (add-ac-build-step
  (lambda (arc)
@@ -381,7 +393,7 @@
   (let ((result (gensym)))
     (arc-list 'racket-let
               (arc-list (arc-list result ((g ac) b1 env)))
-              (if (true? ((g ac-lex?) a env))                  
+              (if (true? ((g ac-lex?) a env))
                    (arc-list 'racket-set! a result)
                    ((g ac-global-assign) a result))
               result)))
