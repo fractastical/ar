@@ -103,7 +103,7 @@
   (lambda (arc)
     (ac-mac-fn arc 'racket '(x)
       (lambda (x)
-        (toarc `',(eval (toscheme x) arc))))))
+        (toarc `',(eval (toscheme x) (hash-ref arc 'racket-namespace*)))))))
 
 (add-ac-build-step
  (lambda (arc)
