@@ -5,6 +5,7 @@
 
 (let ((arc (new-arc)))
   (aload arc
+    "core.arc"
     "arc.arc"
     "arc3.1/strings.arc"
     "repl.arc")

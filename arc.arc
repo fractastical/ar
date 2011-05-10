@@ -1,39 +1,4 @@
-(assign do (annotate 'mac
-             (fn args `((fn () ,@args)))))
-
-(assign safeset
-  (annotate 'mac
-    (fn (var val)
-      `(do (if (bound ',var)
-               (do (racket-disp "*** redefining " (racket-stderr))
-                   (racket-disp ',var (racket-stderr))
-                   (racket-disp #\newline (racket-stderr))))
-           (assign ,var ,val)))))
-
-(assign assign-fn
-  (annotate 'mac
-    (fn (name signature func)
-      `(do (sref sig ',signature ',name)
-           (safeset ,name ,func)))))
-
-(assign def
-  (annotate 'mac
-    (fn (name parms . body)
-      `(assign-fn ,name ,parms (fn ,parms ,@body)))))
-
-(def caar (xs) (car (car xs)))
-(def cadr (xs) (car (cdr xs)))
-(def cddr (xs) (cdr (cdr xs)))
-
 (def no (x) (is x nil))
-
-(def acons (x) (is (type x) 'cons))
-
-(def atom (x) (no (acons x)))
-
-(def idfn (x) x)
-
-(def isa (x y) (is (type x) y))
 
 (assign-fn pair (xs (o f list))
   (fn args
@@ -47,10 +12,17 @@
      (car args)
      (if (cdr args) (cadr args) list))))
 
-(assign mac (annotate 'mac
-              (fn (name parms . body)
-                `(do (sref sig ',parms ',name)
-                     (safeset ,name (annotate 'mac (fn ,parms ,@body)))))))
+(def acons (x) (is (type x) 'cons))
+
+(def atom (x) (no (acons x)))
+
+(def idfn (x) x)
+
+(def isa (x y) (is (type x) y))
+
+(def caar (xs) (car (car xs)))
+(def cadr (xs) (car (cdr xs)))
+(def cddr (xs) (cdr (cdr xs)))
 
 (mac square-bracket body
   `(fn (_) (,@body)))
