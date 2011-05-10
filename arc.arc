@@ -1,17 +1,3 @@
-(def no (x) (is x nil))
-
-(assign-fn pair (xs (o f list))
-  (fn args
-    ((fn (xs f)
-       (if (no xs)
-            nil
-           (no (cdr xs))
-            (list (list (car xs)))
-            (cons (f (car xs) (cadr xs))
-                  (pair (cddr xs) f))))
-     (car args)
-     (if (cdr args) (cadr args) list))))
-
 (def acons (x) (is (type x) 'cons))
 
 (def atom (x) (no (acons x)))
@@ -19,10 +5,6 @@
 (def idfn (x) x)
 
 (def isa (x y) (is (type x) y))
-
-(def caar (xs) (car (car xs)))
-(def cadr (xs) (car (cdr xs)))
-(def cddr (xs) (cdr (cdr xs)))
 
 (mac square-bracket body
   `(fn (_) (,@body)))
@@ -42,14 +24,6 @@
       (assoc key (cdr al))))
 
 (def alref (al key) (cadr (assoc key al)))
-
-(mac with (parms . body)
- `((fn ,(map1 car (pair parms))
-    ,@body)
-   ,@(map1 cadr (pair parms))))
-
-(mac let (var val . body)
-  `(with (,var ,val) ,@body))
 
 (mac withs (parms . body)
   (if (no parms)

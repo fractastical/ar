@@ -25,3 +25,29 @@
               (fn (name parms . body)
                 `(do (sref sig ',parms ',name)
                      (safeset ,name (annotate 'mac (fn ,parms ,@body)))))))
+
+(def no (x) (is x nil))
+
+(def caar (xs) (car (car xs)))
+(def cadr (xs) (car (cdr xs)))
+(def cddr (xs) (cdr (cdr xs)))
+
+(assign-fn pair (xs (o f list))
+  (fn args
+    ((fn (xs f)
+       (if (no xs)
+            nil
+           (no (cdr xs))
+            (list (list (car xs)))
+            (cons (f (car xs) (cadr xs))
+                  (pair (cddr xs) f))))
+     (car args)
+     (if (cdr args) (cadr args) list))))
+
+(mac with (parms . body)
+ `((fn ,(map1 car (pair parms))
+    ,@body)
+   ,@(map1 cadr (pair parms))))
+
+(mac let (var val . body)
+  `(with (,var ,val) ,@body))
