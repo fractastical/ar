@@ -237,8 +237,10 @@
              ((3) ar-funcall3)
              ((4) ar-funcall4)
              (else ar-apply))
-           (mcons ((g ac) f env)
-                  ((g map1) (lambda (arg) ((g ac) arg env)) args))))))
+           (mcons (lambda (f)
+                    ((g coerce) f 'fn))
+                  (mcons ((g ac) f env)
+                         ((g map1) (lambda (arg) ((g ac) arg env)) args)))))))
 
 (extend ac (s env)
   (tnil (mpair? s))

@@ -3,8 +3,8 @@
 (require "../ac.ss")
 
 (aload (new-arc)
-  "core.arc"
-  "arc.arc"
-  "tests/equal-wrt-testing.arc"
-  "tests/test.arc"
-  "tests/arc.t")
+  "../core.arc"
+  "../arc.arc"
+  "equal-wrt-testing.arc"
+  "test.arc"
+  "arc.t")

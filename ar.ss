@@ -295,11 +295,15 @@
                                    (if n
                                        (iround n)
                                        (err "Can't coerce" x type))))
+                      ((fn)      (lambda (k)
+                                   (string-ref x k)))
                       (else      (err "Can't coerce" x type))))
     ((mpair? x)     (case type
                       ((string)  (apply string-append
                                         (list-fromarc
                                          (arc-map1 (lambda (y) (arc-coerce y 'string)) x))))
+                      ((fn)      (lambda (k)
+                                   (mlist-ref x k)))
                       (else      (err "Can't coerce" x type))))
     ((eq? x 'nil)   (case type
                       ((string)  "")
@@ -307,7 +311,11 @@
     ((symbol? x)    (case type
                       ((string)  (symbol->string x))
                       (else      (err "Can't coerce" x type))))
-    (#t             x)))
+    ((hash? x)      (case type
+                      ((fn)      (case-lambda
+                                   ((k)   (hash-ref x k 'nil))
+                                   ((k d) (hash-ref x k d))))))
+    (else           (err "Can't coerce" x type))))
 
 (test (arc-coerce #\A                   'int)       65)
 (test (arc-coerce #\A                   'string)    "A")
@@ -392,26 +400,20 @@
 (test (arc-len (arc-list 1 2 3)) 3)
 
 
-(define (ar-apply fn . r/args)
+(define (ar-apply fail fn . r/args)
   (cond ((procedure? fn)
          (apply fn r/args))
-        ((mpair? fn)
-         (mlist-ref fn (car r/args)))
-        ((string? fn)
-         (string-ref fn (car r/args)))
-        ((hash? fn)
-         (hash-ref fn
-                   (car r/args)
-                   (let ((default (if (pair? (cdr r/args)) (car (cdr r/args)) 'nil)))
-                     (lambda () default))))
-        (else (error "Function call on inappropriate object" fn r/args))))
+        ((procedure? fail)
+         (apply (fail fn) r/args))
+        (else
+         (apply (arc-coerce fn 'fn) r/args))))
 
-(test (ar-apply + 1 2 3) 6)
-(test (ar-apply (arc-list 1 2 3) 1) 2)
-(test (ar-apply "abcde" 2) #\c)
-(test (ar-apply (hash 'a 1 'b 2) 'b) 2)
-(test (ar-apply (hash 'a 1 'b 2) 'x) 'nil)
-(test (ar-apply (hash 'a 1 'b 2) 'x 3) 3)
+(test (ar-apply 'nil + 1 2 3) 6)
+(test (ar-apply 'nil (arc-list 1 2 3) 1) 2)
+(test (ar-apply 'nil "abcde" 2) #\c)
+(test (ar-apply 'nil (hash 'a 1 'b 2) 'b) 2)
+(test (ar-apply 'nil (hash 'a 1 'b 2) 'x) 'nil)
+(test (ar-apply 'nil (hash 'a 1 'b 2) 'x 3) 3)
 
 
 (define (combine as (accum '()))
@@ -432,48 +434,48 @@
 
 
 (define (arc-apply fn . args)
-  (apply ar-apply fn (combine args)))
+  (apply ar-apply 'nil fn (combine args)))
 
 (test (arc-apply ar-+) 0)
 (test (arc-apply ar-+ 'nil (toarc '((a b) (c d)))) (toarc '(a b c d)))
 (test (arc-apply ar-+ 1 2 (arc-list 3 4)) 10)
 
-(define (ar-funcall0 fn)
+(define (ar-funcall0 fail fn)
   (if (procedure? fn)
       (fn)
-      (ar-apply fn)))
+      (ar-apply fail fn)))
 
-(test (ar-funcall0 +) 0)
+(test (ar-funcall0 'nil +) 0)
 
-(define (ar-funcall1 fn arg1)
+(define (ar-funcall1 fail fn arg1)
   (if (procedure? fn)
       (fn arg1)
-      (ar-apply fn arg1)))
+      (ar-apply fail fn arg1)))
 
-(test (ar-funcall1 + 3) 3)
-(test (ar-funcall1 "abcd" 2) #\c)
+(test (ar-funcall1 'nil + 3) 3)
+(test (ar-funcall1 'nil "abcd" 2) #\c)
 
-(define (ar-funcall2 fn arg1 arg2)
+(define (ar-funcall2 fail fn arg1 arg2)
   (if (procedure? fn)
       (fn arg1 arg2)
-      (ar-apply fn arg1 arg2)))
+      (ar-apply fail fn arg1 arg2)))
 
-(test (ar-funcall2 + 3 4) 7)
-(test (ar-funcall2 (hash 'a 1 'b 2) 'x 3) 3)
+(test (ar-funcall2 'nil + 3 4) 7)
+(test (ar-funcall2 'nil (hash 'a 1 'b 2) 'x 3) 3)
 
-(define (ar-funcall3 fn arg1 arg2 arg3)
+(define (ar-funcall3 fail fn arg1 arg2 arg3)
   (if (procedure? fn)
       (fn arg1 arg2 arg3)
-      (ar-apply fn arg1 arg2 arg3)))
+      (ar-apply fail fn arg1 arg2 arg3)))
 
-(test (ar-funcall3 + 3 4 5) 12)
+(test (ar-funcall3 'nil + 3 4 5) 12)
 
-(define (ar-funcall4 fn arg1 arg2 arg3 arg4)
+(define (ar-funcall4 fail fn arg1 arg2 arg3 arg4)
   (if (procedure? fn)
       (fn arg1 arg2 arg3 arg4)
-      (ar-apply fn arg1 arg2 arg3 arg4)))
+      (ar-apply fail fn arg1 arg2 arg3 arg4)))
 
-(test (ar-funcall4 + 3 4 5 6) 18)
+(test (ar-funcall4 'nil + 3 4 5 6) 18)
 
 
 (define (racket-module a/module)

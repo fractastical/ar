@@ -1,6 +1,16 @@
 #!/bin/bash
 set -e -v
-mzscheme "tests/ar-test.ss"
-mzscheme "tests/ac-test.ss"
-mzscheme "tests/arc-test.ss"
-mzscheme "tests/strings-test.ss"
+
+./run-tests
+#mzscheme "as.ss" "run-tests"
+
+#cd arubic
+#mzscheme "arubic" "run-tests.arc"
+#cd ..
+
+cd tests
+mzscheme "arc-test.ss"
+mzscheme "ar-test.ss"
+mzscheme "ac-test.ss"
+mzscheme "strings-test.ss"
+cd ..
