@@ -1,7 +1,7 @@
 #!/bin/bash
-set -e -v
+#set -e -v
 
-./run-tests
+#./run-tests
 #mzscheme "as.ss" "run-tests"
 
 #cd arubic
