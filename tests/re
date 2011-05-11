@@ -1,0 +1,336 @@
+;By Conrad Barski, Sep 2008
+;Licensed under GPLv3
+
+;>>> (load "../lib/re.arc")
+
+
+>>> (w/target "a"
+      (re "(xy)*"))
+""
+
+>>> (w/target "x"
+      (re "x"))
+"x"
+
+>>> (w/target "a"
+      (re "a*"))
+"a"
+
+>>> (w/target "aaaa"
+      (re "a*"))
+"aaaa"
+
+>>> (w/target "foobar"
+      (re ".*"))
+"foobar"
+
+>>> (w/target "foobar"
+      (re "foo.*"))
+"foobar"
+
+>>> (w/target "foobar"
+      (re ".*bar"))
+"foobar"
+
+>>> (w/target "foobar"
+      (re "foo.*bar"))
+"foobar"
+
+>>> (w/target "foobar"
+      (re "fo.*ar"))
+"foobar"
+
+>>> (w/target "#<procedure:g1840>"
+      (re "#<procedure:.*>"))
+"#<procedure:g1840>"
+
+>>> (w/target "#<procedure:g1840>"
+      (re "#<procedure:.+>"))
+"#<procedure:g1840>"
+
+>>> (w/target "#<procedure:g1840>"
+      (re "#<procedure:.{0,}>"))
+"#<procedure:g1840>"
+
+>>> (w/target "#<procedure:g1840>"
+      (re "#<procedure:.{0,5}>"))
+"#<procedure:g1840>"
+
+>>> (w/target "#<procedure:g1840>"
+      (re "#<procedure:.{,5}>"))
+"#<procedure:g1840>"
+
+>>> (w/target "#<procedure:g1840>"
+      (re "#<procedure:.{,4}>"))
+nil
+
+>>> (w/target "#<procedure:g1840>"
+      (re "#<procedure:.{1,5}>"))
+"#<procedure:g1840>"
+
+>>> (w/target "#<procedure:g1840>"
+      (re "#<procedure:.{5}>"))
+"#<procedure:g1840>"
+
+>>> (w/target "#<procedure:g1840>"
+      (re "#<procedure:.{5,}>"))
+"#<procedure:g1840>"
+
+>>> (w/target "#<procedure:g1840>"
+      (re "#<procedure:.{6,}>"))
+nil
+
+>>> (w/target "xa"
+      (re "x*a"))
+"xa"
+
+>>> (w/target "xy"
+      (re "x")
+      (re "y"))
+"y"
+
+>>> (w/target "x"
+      (re "a"))
+nil
+
+>>> (w/target "xa"
+      (re "a"))
+"a"
+
+>>> (w/target "aaaax2ybbb"
+      (re "x.y"))
+"x2y"
+
+>>> (w/target "aaaax2ybbb"
+      (re "x")
+      (do1 (re ".")
+           (re "y")))
+"2"
+
+>>> (w/target "aaaax2zbbbb"
+      (re "x.y"))
+nil
+
+>>> (w/target "aaaax2zbbbb"
+      (re "x.y"))
+nil
+
+>>> (w/target "aaaaaxybbbbb"
+      (re "xc*y"))
+"xy"
+
+>>> (w/target "aaxacyaaaxccaaaaxcccybbbb"
+      (re "x")
+      (re "c*y"))
+"cccy"
+
+>>> (w/target "aaaaaxcdcybbbb"
+      (re "xc*y"))
+nil
+
+>>> (w/target "aaaaaxybbbbb"
+      (re "x")
+      (do1 (re "c*")
+           (re "y")))
+""
+
+>>> (w/target "aaaxxxcccybbbbb"
+      (re "x")
+      (do1 (re "c*")
+           (re "y")))
+"ccc"
+
+>>> (w/target "aaaaaxcgccybbbb"
+      (re "x")
+      (do1 (re "c*.c*")
+           (re "y")))
+"cgcc"
+
+>>> (w/target "a"
+      (re "(xy)*"))
+""
+
+>>> (w/target "xyb"
+      (list (re "(xy)*")
+            (re "b")))
+("xy" "b")
+
+>>> (w/target "aaaxyxyb"
+      (list (re "a")
+            (re "(xy)*")
+            (re "b")))
+("a" "xyxy" "b")
+
+>>> (w/target "aaaaxxkykyzzbbbbb"
+      (list (re "a")
+            (re "(xx(ky)*zz)*")
+            (re "b")))
+("a" "xxkykyzz" "b")
+
+>>> (w/target "aaaaxxkykyzzbbbbb"
+      (list (re "a")
+            (re "(xx(ky)*kyzz)*")
+            (re "b")))
+("a" "xxkykyzz" "b")
+
+>>> (w/target "aaaxyaaaxcccybbbb"
+      (re "xc+y"))
+"xcccy"
+
+>>> (w/target "aaaaaxcdcybbbb"
+      (re "xc+y"))
+nil
+
+>>> (w/target "aaaacccccbbbb"
+      (re "ac+"))
+"accccc"
+
+>>> (w/target "a"
+      (re "b|a"))
+"a"
+
+>>> (w/target "jax"
+      (re "b|ax|ay"))
+"ax"
+
+>>> (w/target "jay"
+      (re "b|ax|ay"))
+"ay"
+
+>>> (w/target "fau"
+      (re "f(a|b|c)u"))
+"fau"
+
+>>> (w/target "iiiiiifaxuiiiii"
+      (re "f(b|ax|ay)u"))
+"faxu"
+
+>>> (w/target "uuuuabcuuuu"
+      (re "ab?c"))
+"abc"
+
+>>> (w/target "uuuuacuuuu"
+      (re "ab?c"))
+"ac"
+
+>>> (w/target "uuuubuuuu"
+      (re "[abc]"))
+"b"
+
+>>> (w/target "uuuubuuuu"
+      (re "[a-c]"))
+"b"
+
+>>> (w/target "uuuubuuuu"
+      (re "[^s-z]"))
+"b"
+
+>>> (w/target "saDwTzrtbds"
+      (re "[^a-cA-Z][^a-cA-Z][^a-cA-Z]"))
+"zrt"
+
+>>> (w/target "axaaxxxxaaxxa"
+      (re "ax{2,3}a"))
+"axxa"
+
+>>> (w/target "axaaxxxxaaxxabtbbttttbbttb"
+      (re "ax{2,3}a")
+      (do1 (re ".*")
+           (re "bt{2,3}b")))
+"btbbttttb"
+
+>>> (w/target "blue gry graey grey red"
+      (re "gr[ae]y"))
+"grey"
+
+>>> (w/target "quack Iraq is a country"
+      (re "q[^u]"))
+"q "
+
+>>> (w/target "^^^f"
+      (re "[\\^]*[^\\^]"))
+"^^^f"
+
+>>> (w/target "asdfasdf^^^foowqerasdf"
+      (re "[\\^]*[^\\^].."))
+"^^^foo"
+
+>>> (w/target "adsfasdf345adsasdf"
+      (re "\\d*a"))
+"345a"
+
+>>> (w/target "adsfasdf345adsasdf"
+      (re "[\\d]+a"))
+"345a"
+
+>>> (w/target "dddfooeddddfooi"
+      (re "foo.$"))
+"fooi"
+
+>>> (w/target "dddfooe\nddddfooi"
+      (re "foo.$"))
+"fooe"
+
+>>> (w/target "dddfooeddd\nfooi"
+      (re "^foo."))
+"fooi"
+
+>>> (w/target "fooeddd\\nfooi"
+      (re "^foo."))
+"fooe"
+
+>>> (draintarget "iiiiiaXaiiiiiaYaiiii"
+      (re "a.a"))
+("aXa" "aYa")
+
+>>> (draintarget "foo\nbar\nbaz"
+      (re "^\\w+$"))
+("foo" "bar" "baz")
+
+>>> (draintarget "foo bar baz"
+      (re "^|\\s")
+      (re "\\w+"))
+("foo" "bar" "baz")
+
+>>> (w/target "foobar"
+      (list (re-test "foo")
+            (re-test "bar")
+            (re "foo")))
+("foo" "bar" "foo")
+
+>>> (w/target "foobar"
+      (list (re-test "n")
+            (re "foo")))
+(nil "foo")
+
+>>> (w/target "foobar"
+      (re-test "foo")
+      (re-test "foo"))
+"foo"
+
+>>> (w/target "foobar"
+      (re-test "foo"))
+"foo"
+
+>>> (w/target "foobar"
+      (re-test "n"))
+nil
+
+
+This example works, but sometimes gives the error "attempted to cross a continuation barrier"- I'm still investigating...
+;>>> (def name ()
+      (re "[a-z]+"))
+
+;>>> (map tablist
+      (draintarget "asdweotwerw 2weroq bob.smith@google.com sdfaiosda,sdf weqop82uopdisj [op2';ksadj;ldfp8u2pj ldsajf9p2u8t;jsd;lfashdf924hr;owjsad;fj lisa.north@yahoo.com weqporiuasf90 0289u 9wefh 9psda'pwej2lh2t getsdj;sadf"
+        (w/table p
+          (re " ")
+          (= p!first (name))
+          (re "\\.")
+          (= p!last (name))
+          (re "@")
+          (= p!domain (name))
+          (re "\\.")
+          (= p!tld (name))
+          (re " "))))
+(((tld "com") (domain "google") (last "smith") (first "bob")) ((tld "com") (domain "yahoo") (last "north") (first "lisa")))

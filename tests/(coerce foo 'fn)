@@ -1,0 +1,46 @@
+>>> (= foo (obj call (fn (k) (+ "hiya!" k))))
+#hash((call . #<procedure>))
+
+
+>>> (coerce (obj a 1 b 2) 'fn)
+#<procedure...>
+
+>>> ((coerce (obj a 1 b 2) 'fn) 'a)
+1
+
+>>> ((coerce (obj a 1 b 2) 'fn) 'b)
+2
+
+>>> ((coerce (obj a 1 b 2) 'fn) 'c)
+nil
+
+>>> ((coerce (obj a 1 b 2) 'fn) 'c 'tester)
+tester
+
+
+>>> ((obj call (fn (k) (+ "hiya!" k))) 'call)
+#<procedure>
+
+>>> (foo 'call)
+#<procedure>
+
+
+>>> (extend coerce (tab type) (and (is type 'fn)
+                                   (isa tab 'table))
+      (let f (orig tab 'fn)
+        (or (f 'call) f)))
+#<procedure...>
+
+
+>>> ((obj call (fn (k) (+ "hiya!" k))) 'call)
+"hiya!call"
+
+>>> (foo 'call)
+"hiya!call"
+
+>>> (foo 'foo)
+"hiya!foo"
+
+
+>>> ((table) 'call)
+nil

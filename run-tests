@@ -1,0 +1,15 @@
+#! /usr/bin/env arc
+
+(load "lib/tester.arc")
+
+(mac extend (name arglist test . body)
+  (w/uniq args
+    `(let orig ,name
+       (= ,name
+          (fn ,args
+            (aif (apply (fn ,arglist ,test) ,args)
+                  (apply (fn ,arglist ,@body) ,args)
+                  (apply orig ,args)))))))
+
+(test-file "tests/re")
+(test-file "tests/(coerce foo 'fn)")
