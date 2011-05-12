@@ -5,6 +5,14 @@
 
 (provide (all-from-out "ar.ss") (all-defined-out))
 
+
+(define internal-name-hash
+  (hash 'fn (gensym)))
+
+(define (internal-name x)
+  (hash-ref internal-name-hash x))
+
+
 (define default-globals-implementation 'namespace)
 
 (define (globals-implementation arc)
@@ -298,10 +306,49 @@
               (mcons (arc-list 'racket-list args)
                      ((g ac-body*x) args body env)))))
 
-(extend ac (s env)
-  ((g caris) s 'fn)
+(extend ac (s env) ((g caris) s (internal-name 'fn))
   ((g ac-fn) (arc-cadr s) (arc-cddr s) env))
 
+(add-ac-build-step
+  (lambda (arc)
+    (ac-mac-fn arc 'fn '(parms . body)
+      (lambda (parms . body)
+;        possibly faster?
+;        (mcons (internal-name 'fn)
+;          (mcons (toarc parms) (toarc body)))
+        (toarc `(,(internal-name 'fn) ,parms ,@body))
+))))
+
+#|
+My failed attempt to make fn return a value. We can return to this later.
+
+(add-ac-build-step
+  (lambda (arc)
+    (ac-mac-fn arc 'fn '(parms . body)
+      (lambda (parms . body)
+        (display (toscheme parms))
+        (display " ")
+        (display (toscheme (toarc body)))
+        (newline)
+        (newline)
+        (set! parms (toarc parms))
+        (set! body  (toarc body))
+;        (display (toscheme ((g ac-fn) (toarc parms) (toarc body) current-env)))
+        (display (eval `(lambda ,(toscheme parms) ,(toscheme ((g ac-body*x) parms body current-env)))))
+        (newline)
+        (newline)
+;        'nil
+        `',(eval `(lambda ,(toscheme parms) ,(toscheme ((g ac-body*x) parms body current-env))))
+;        `',(toscheme ((g ac-fn) (toarc parms) (toarc body) current-env))
+
+        (let ((env current-env))
+          (mcons 'quote ((g ac) ((g ac-fn) (toarc parms) (toarc body) env) env)))
+;        (mcons 'quote (toarc `(,(g ac-fn) ,(toarc parms) ,(toarc body) ,current-env)))
+;        (mcons 'quote ((g ac-fn) (toarc parms) (toarc body) current-env))
+;        (eval `(mcons 'quote (lambda ,parms ,((g ac-body*x) (toarc parms) (toarc body) current-env))))
+;        ((g ac-fn) (toarc parms) (toarc body) current-env))
+        ))))
+|#
 
 ;; eval
 
