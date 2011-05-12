@@ -400,6 +400,7 @@ My failed attempt to make fn return a value. We can return to this later.
                       (else      (err "Can't coerce" x type))))
     ((eq? x 'nil)   (case type
                       ((string)  "")
+                      ((cons)    'nil)
                       (else      (err "Can't coerce" x type))))
     ((symbol? x)    (case type
                       ((string)  (symbol->string x))

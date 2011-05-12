@@ -15,4 +15,5 @@
             "tests/coerce"
             "tests/fn"
             "tests/re"
-            "tests/(coerce foo 'fn)")
+            "tests/(coerce foo 'fn)"
+)
