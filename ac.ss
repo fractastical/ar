@@ -245,10 +245,8 @@
              ((3) ar-funcall3)
              ((4) ar-funcall4)
              (else ar-apply))
-           (mcons (lambda (f)
-                    ((g coerce) f 'fn))
-                  (mcons ((g ac) f env)
-                         ((g map1) (lambda (arg) ((g ac) arg env)) args)))))))
+           (mcons ((g ac) f env)
+                  ((g map1) (lambda (arg) ((g ac) arg env)) args))))))
 
 (extend ac (s env)
   (tnil (mpair? s))
@@ -360,6 +358,159 @@ My failed attempt to make fn return a value. We can return to this later.
 
 (ac-def eval (form (other-arc 'nil))
   (arc-eval (if (true? other-arc) other-arc arc) form))
+
+
+(ac-def coerce (x type . rest)
+  (cond
+    ((tagged? x) (err "Can't coerce annotated object"))
+    ((eqv? type (arc-type x)) x)
+    ((char? x)      (case type
+                      ((int)     (char->integer x))
+                      ((string)  (string x))
+                      ((sym)     (string->symbol (string x)))
+                      (else      (err "Can't coerce" x type))))
+    ((exint? x)     (case type
+                      ((num)     x)
+                      ((char)    (integer->char x))
+                      ((string)  (apply number->string x rest))
+                      (else      (err "Can't coerce" x type))))
+    ((number? x)    (case type
+                      ((int)     (iround x))
+                      ((char)    (integer->char (iround x)))
+                      ((string)  (apply number->string x rest))
+                      (else      (err "Can't coerce" x type))))
+    ((string? x)    (case type
+                      ((sym)     (string->symbol x))
+                      ((cons)    (r/list-toarc (string->list x)))
+                      ((num)     (or (apply string->number x rest)
+                                     (err "Can't coerce" x type)))
+                      ((int)     (let ((n (apply string->number x rest)))
+                                   (if n
+                                       (iround n)
+                                       (err "Can't coerce" x type))))
+                      ((fn)      (lambda (k)
+                                   (string-ref x k)))
+                      (else      (err "Can't coerce" x type))))
+    ((mpair? x)     (case type
+                      ((string)  (apply string-append
+                                        (list-fromarc
+                                         (arc-map1 (lambda (y) ((g coerce) y 'string)) x))))
+                      ((fn)      (lambda (k)
+                                   (mlist-ref x k)))
+                      (else      (err "Can't coerce" x type))))
+    ((eq? x 'nil)   (case type
+                      ((string)  "")
+                      (else      (err "Can't coerce" x type))))
+    ((symbol? x)    (case type
+                      ((string)  (symbol->string x))
+                      (else      (err "Can't coerce" x type))))
+    ((hash? x)      (case type
+                      ((fn)      (case-lambda
+                                   ((k)   (hash-ref x k 'nil))
+                                   ((k d) (hash-ref x k d))))))
+    (else           (err "Can't coerce" x type))))
+
+
+;; this makes apply work on macros
+
+(extend coerce (x type . rest) (tnil (and (eq? type 'fn)
+                                     (tfalse (arc-isa x 'mac))))
+  (lambda args
+    ((g eval) (apply (ar-rep x) args))))
+
+
+;; ugh, this is needed, unfortunately
+;; got a better idea?
+
+(define ar-apply (void))
+
+(add-ac-build-step
+  (lambda (arc)
+    (set! ar-apply
+      (lambda (fn . args)
+        (cond ((procedure? fn)
+      ;         (display (combine args))
+      ;         (newline)
+      ;         (newline)
+               (apply fn args))
+              (else
+               (apply ((g coerce) fn 'fn) args)))))))
+
+;(arc-coerce fn 'fn)
+
+#|(test (ar-apply 'nil + 1 2 3) 6)
+(test (ar-apply 'nil (arc-list 1 2 3) 1) 2)
+(test (ar-apply 'nil "abcde" 2) #\c)
+(test (ar-apply 'nil (hash 'a 1 'b 2) 'b) 2)
+(test (ar-apply 'nil (hash 'a 1 'b 2) 'x) 'nil)
+(test (ar-apply 'nil (hash 'a 1 'b 2) 'x 3) 3)|#
+
+
+(ac-def apply (fn . args)
+  (apply ar-apply fn (combine args))) ; this probably shouldn't use 'nil
+                                      ; because it needs to be the current
+                                      ; version of coerce
+
+(define (ar-funcall0 fn)
+  (if (procedure? fn)
+      (fn)
+      (ar-apply fn)))
+
+;(test (ar-funcall0 'nil +) 0)
+
+(define (ar-funcall1 fn arg1)
+  (if (procedure? fn)
+      (fn arg1)
+      (ar-apply fn arg1)))
+
+;(test (ar-funcall1 'nil + 3) 3)
+;(test (ar-funcall1 'nil "abcd" 2) #\c)
+
+(define (ar-funcall2 fn arg1 arg2)
+  (if (procedure? fn)
+      (fn arg1 arg2)
+      (ar-apply fn arg1 arg2)))
+
+;(test (ar-funcall2 'nil + 3 4) 7)
+;(test (ar-funcall2 'nil (hash 'a 1 'b 2) 'x 3) 3)
+
+(define (ar-funcall3 fn arg1 arg2 arg3)
+  (if (procedure? fn)
+      (fn arg1 arg2 arg3)
+      (ar-apply fn arg1 arg2 arg3)))
+
+;(test (ar-funcall3 'nil + 3 4 5) 12)
+
+(define (ar-funcall4 fn arg1 arg2 arg3 arg4)
+  (if (procedure? fn)
+      (fn arg1 arg2 arg3 arg4)
+      (ar-apply fn arg1 arg2 arg3 arg4)))
+
+;(test (ar-funcall4 'nil + 3 4 5 6) 18)
+
+
+(ac-def + args
+  (cond ((null? args)
+         0)
+        ((char-or-string? (car args))
+         (apply string-append
+                (map (lambda (a) ((g coerce) a 'string)) args)))
+        ((arc-list? (car args))
+         (apply arc-join args))
+        (else
+         (apply + args))))
+
+#|(test (ar-+) 0)
+(test (ar-+ #\a "b" 'c 3) "abc3")
+(test (ar-+ "a" 'b #\c) "abc")
+(test (ar-+ 'nil (arc-list 1 2 3)) (arc-list 1 2 3))
+(test (ar-+ (arc-list 1 2) (arc-list 3)) (arc-list 1 2 3))
+(test (ar-+ 1 2 3) 6)
+
+
+(test (arc-apply ar-+) 0)
+(test (arc-apply ar-+ 'nil (toarc '((a b) (c d)))) (toarc '(a b c d)))
+(test (arc-apply ar-+ 1 2 (arc-list 3 4)) 10)|#
 
 
 ;; quasiquotation
@@ -481,7 +632,7 @@ My failed attempt to make fn return a value. We can return to this later.
          'nil)))
 
 (ac-def ac-mac-call (m args env)
-  (let ((x1 (arc-apply m args)))
+  (let ((x1 ((g apply) m args)))
     (let ((x2 ((g ac) x1 env)))
       x2)))
 

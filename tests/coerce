@@ -1,0 +1,56 @@
+>>> (coerce #\A 'int)
+65
+
+>>> (coerce #\A 'string)
+"A"
+
+>>> (coerce #\A 'sym)
+A
+
+>>> (coerce 123 'num)
+123
+
+>>> (coerce 65 'char)
+#\A
+
+>>> (coerce 123 'string)
+"123"
+
+>>> (coerce 128 'string 16)
+"80"
+
+>>> (coerce 13.4 'int)
+13
+
+>>> (coerce 65.0 'char)
+#\A
+
+>>> (coerce 14.5 'string)
+"14.5"
+
+>>> (coerce "foo" 'sym)
+foo
+
+>>> (coerce "foo" 'cons)
+(#\f #\o #\o)
+
+>>> (coerce "123.5" 'num)
+123.5
+
+>>> (coerce "123" 'int)
+123
+
+>>> (coerce '("a" b #\c) 'string)
+"abc"
+
+>>> (coerce nil 'string)
+""
+
+>>> (coerce nil 'cons)
+nil
+
+>>> (coerce "" 'sym)
+||
+
+>>> (coerce "" 'cons)
+nil

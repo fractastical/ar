@@ -2,11 +2,11 @@
 
 (require scheme/mpair)
 
-(provide ar-apply ar-caris ar-funcall0 ar-funcall1 ar-funcall2
-         ar-funcall3 ar-funcall4 ar-rep arc-apply arc-cadr
-         arc-car arc-cddr arc-cdr arc-isa arc-join arc-list arc-map1
-         ar-tag arc-type deep-fromarc err hash new-ar no? noprint
-         run-ar-tests tagged? tnil toarc toscheme true? write-to-string)
+(provide ar-caris arc-cadr arc-car arc-cddr arc-cdr arc-is arc-isa arc-join
+         arc-list arc-list? arc-map1 arc-type ar-rep ar-tag char-or-string?
+         combine deep-fromarc err exint? hash iround list-fromarc new-ar no?
+         noprint r/list-toarc run-ar-tests tagged? tfalse tnil toarc toscheme
+         true? write-to-string)
 
 (define ar-tests* '())
 
@@ -175,6 +175,11 @@
 
 (define (tnil x) (if x 't 'nil))
 
+(define (tfalse x)
+  (case x
+    ((nil) #f)
+    ((t)   #t)))
+
 (define (arc-map1 f xs)
   (if (no? xs)
       'nil
@@ -267,95 +272,10 @@
 
 (define (iround x) (inexact->exact (round x)))
 
-(define (arc-coerce x type . args)
-  (cond
-    ((tagged? x) (err "Can't coerce annotated object"))
-    ((eqv? type (arc-type x)) x)
-    ((char? x)      (case type
-                      ((int)     (char->integer x))
-                      ((string)  (string x))
-                      ((sym)     (string->symbol (string x)))
-                      (else      (err "Can't coerce" x type))))
-    ((exint? x)     (case type
-                      ((num)     x)
-                      ((char)    (integer->char x))
-                      ((string)  (apply number->string x args))
-                      (else      (err "Can't coerce" x type))))
-    ((number? x)    (case type
-                      ((int)     (iround x))
-                      ((char)    (integer->char (iround x)))
-                      ((string)  (apply number->string x args))
-                      (else      (err "Can't coerce" x type))))
-    ((string? x)    (case type
-                      ((sym)     (string->symbol x))
-                      ((cons)    (r/list-toarc (string->list x)))
-                      ((num)     (or (apply string->number x args)
-                                     (err "Can't coerce" x type)))
-                      ((int)     (let ((n (apply string->number x args)))
-                                   (if n
-                                       (iround n)
-                                       (err "Can't coerce" x type))))
-                      ((fn)      (lambda (k)
-                                   (string-ref x k)))
-                      (else      (err "Can't coerce" x type))))
-    ((mpair? x)     (case type
-                      ((string)  (apply string-append
-                                        (list-fromarc
-                                         (arc-map1 (lambda (y) (arc-coerce y 'string)) x))))
-                      ((fn)      (lambda (k)
-                                   (mlist-ref x k)))
-                      (else      (err "Can't coerce" x type))))
-    ((eq? x 'nil)   (case type
-                      ((string)  "")
-                      (else      (err "Can't coerce" x type))))
-    ((symbol? x)    (case type
-                      ((string)  (symbol->string x))
-                      (else      (err "Can't coerce" x type))))
-    ((hash? x)      (case type
-                      ((fn)      (case-lambda
-                                   ((k)   (hash-ref x k 'nil))
-                                   ((k d) (hash-ref x k d))))))
-    (else           (err "Can't coerce" x type))))
-
-(test (arc-coerce #\A                   'int)       65)
-(test (arc-coerce #\A                   'string)    "A")
-(test (arc-coerce #\A                   'sym)       'A)
-(test (arc-coerce 123                   'num)       123)
-(test (arc-coerce 65                    'char)      #\A)
-(test (arc-coerce 123                   'string)    "123")
-(test (arc-coerce 128                   'string 16) "80")
-(test (arc-coerce 13.4                  'int)       13)
-(test (arc-coerce 65.0                  'char)      #\A)
-(test (arc-coerce 14.5                  'string)    "14.5")
-(test (arc-coerce "foo"                 'sym)       'foo)
-(test (arc-coerce "foo"                 'cons)      (arc-list #\f #\o #\o))
-(test (arc-coerce "123.5"               'num)       123.5)
-(test (arc-coerce "123"                 'int)       123)
-(test (arc-coerce (arc-list "a" 'b #\c) 'string)    "abc")
-(test (arc-coerce 'nil                  'string)    "")
-
 
 (define (char-or-string? x) (or (string? x) (char? x)))
 
 (define (arc-list? x) (or (no? x) (mpair? x)))
-
-(define (ar-+ . args)
-  (cond ((null? args)
-         0)
-        ((char-or-string? (car args))
-         (apply string-append
-                (map (lambda (a) (arc-coerce a 'string)) args)))
-        ((arc-list? (car args))
-         (apply arc-join args))
-        (else
-         (apply + args))))
-
-(test (ar-+) 0)
-(test (ar-+ #\a "b" 'c 3) "abc3")
-(test (ar-+ "a" 'b #\c) "abc")
-(test (ar-+ 'nil (arc-list 1 2 3)) (arc-list 1 2 3))
-(test (ar-+ (arc-list 1 2) (arc-list 3)) (arc-list 1 2 3))
-(test (ar-+ 1 2 3) 6)
 
 
 (define (arc->2 x y)
@@ -400,22 +320,6 @@
 (test (arc-len (arc-list 1 2 3)) 3)
 
 
-(define (ar-apply fail fn . r/args)
-  (cond ((procedure? fn)
-         (apply fn r/args))
-        ((procedure? fail)
-         (apply (fail fn) r/args))
-        (else
-         (apply (arc-coerce fn 'fn) r/args))))
-
-(test (ar-apply 'nil + 1 2 3) 6)
-(test (ar-apply 'nil (arc-list 1 2 3) 1) 2)
-(test (ar-apply 'nil "abcde" 2) #\c)
-(test (ar-apply 'nil (hash 'a 1 'b 2) 'b) 2)
-(test (ar-apply 'nil (hash 'a 1 'b 2) 'x) 'nil)
-(test (ar-apply 'nil (hash 'a 1 'b 2) 'x 3) 3)
-
-
 (define (combine as (accum '()))
   (cond ((null? as)
          accum)
@@ -431,51 +335,6 @@
 (test (combine (list 'a (arc-list)))          '(a))
 (test (combine (list 'a (arc-list 'b 'c 'd))) '(a b c d))
 (test (combine (list 'a 'b (arc-list 'c 'd))) '(a b c d))
-
-
-(define (arc-apply fn . args)
-  (apply ar-apply 'nil fn (combine args)))
-
-(test (arc-apply ar-+) 0)
-(test (arc-apply ar-+ 'nil (toarc '((a b) (c d)))) (toarc '(a b c d)))
-(test (arc-apply ar-+ 1 2 (arc-list 3 4)) 10)
-
-(define (ar-funcall0 fail fn)
-  (if (procedure? fn)
-      (fn)
-      (ar-apply fail fn)))
-
-(test (ar-funcall0 'nil +) 0)
-
-(define (ar-funcall1 fail fn arg1)
-  (if (procedure? fn)
-      (fn arg1)
-      (ar-apply fail fn arg1)))
-
-(test (ar-funcall1 'nil + 3) 3)
-(test (ar-funcall1 'nil "abcd" 2) #\c)
-
-(define (ar-funcall2 fail fn arg1 arg2)
-  (if (procedure? fn)
-      (fn arg1 arg2)
-      (ar-apply fail fn arg1 arg2)))
-
-(test (ar-funcall2 'nil + 3 4) 7)
-(test (ar-funcall2 'nil (hash 'a 1 'b 2) 'x 3) 3)
-
-(define (ar-funcall3 fail fn arg1 arg2 arg3)
-  (if (procedure? fn)
-      (fn arg1 arg2 arg3)
-      (ar-apply fail fn arg1 arg2 arg3)))
-
-(test (ar-funcall3 'nil + 3 4 5) 12)
-
-(define (ar-funcall4 fail fn arg1 arg2 arg3 arg4)
-  (if (procedure? fn)
-      (fn arg1 arg2 arg3 arg4)
-      (ar-apply fail fn arg1 arg2 arg3 arg4)))
-
-(test (ar-funcall4 'nil + 3 4 5 6) 18)
 
 
 (define (racket-module a/module)
@@ -500,18 +359,15 @@
     (if (eof-object? c) 'nil c)))
 
 (define ar-namespace*
-  (hash '+                   ar-+
-        '-                   -
+  (hash '-                   -
         '/                   /
         '*                   *
         '<                   arc-<
         '>                   arc->
         'annotate            ar-tag
-        'apply               arc-apply
         'car                 arc-car
         'caris               ar-caris
         'cdr                 arc-cdr
-        'coerce              arc-coerce
         'cons                mcons
         'err                 err
         'join                arc-join
@@ -531,6 +387,7 @@
         'racket-module       racket-module
         'racket-parameterize racket-parameterize
         'readc               arc-readc
+        'rep                 ar-rep
         't                   't
         'ar-toarc            toarc
         'type                arc-type

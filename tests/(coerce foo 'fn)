@@ -35,12 +35,26 @@ tester
 >>> ((obj call (fn (k) (+ "hiya!" k))) 'call)
 "hiya!call"
 
+>>> (apply (obj call (fn (k) (+ "hiya!" k))) '(call))
+"hiya!call"
+
+
 >>> (foo 'call)
 "hiya!call"
+
+>>> (apply foo '(call))
+"hiya!call"
+
 
 >>> (foo 'foo)
 "hiya!foo"
 
+>>> (apply foo '(foo))
+"hiya!foo"
+
 
 >>> ((table) 'call)
+nil
+
+>>> (apply (table) '(call))
 nil

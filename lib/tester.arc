@@ -72,3 +72,8 @@
   (w/infile file x
     (each x (parse-string:allchars file)
       (eval-test x))))
+
+(mac test-files args
+  `(do ,@(map (fn (x)
+                `(test-file ,x))
+              args)))

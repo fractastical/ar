@@ -1,0 +1,55 @@
+>>> fn
+#(tagged mac #<procedure...>)
+
+
+>>> (fn (a b c) (list a b c))
+#<procedure>
+
+>>> ((fn (a b c) (list a b c)) 1 2 3)
+(1 2 3)
+
+
+>>> (= other-fn fn)
+#(tagged mac #<procedure...>)
+
+>>> (other-fn (a b c) (list a b c))
+#<procedure>
+
+>>> ((other-fn (a b c) (list a b c)) 1 2 3)
+(1 2 3)
+
+
+>>> (mac fn (parms . body)
+      '(list 4 5 6))
+#(tagged mac #<procedure>)
+
+>>> (fn (a b c) (list a b c))
+(4 5 6)
+
+>>> (other-fn (a b c) (list a b c))
+#<procedure>
+
+
+>>> (assign fn other-fn)
+#(tagged mac #<procedure...>)
+
+>>> (mac fn (parms . body)
+      `(,other-fn args
+         (apply + 7 8 9 args)))
+#(tagged mac #<procedure>)
+
+>>> ((fn (a b c) (list a b c)) 1 2 3)
+30
+
+>>> ((other-fn (a b c) (list a b c)) 1 2 3)
+(1 2 3)
+
+
+>>> (assign fn other-fn)
+#(tagged mac #<procedure...>)
+
+>>> (fn (a b c) (list a b c))
+#<procedure>
+
+>>> (let fn 5 fn)
+5

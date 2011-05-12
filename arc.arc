@@ -160,6 +160,19 @@
          (racket-read-from-string x)
          x)))
 
+
+#|
+;; makes apply work on macros
+;; this is currently defined in ac.ss
+;; maybe it should be defined here instead?
+
+(defrule coerce (and (is type 'fn)
+                     (isa x 'mac))
+  (lambda args
+    (eval (apply (rep x) args))))
+|#
+
+
 (assign ac-defined-vars* (table))
 
 (def ac-defvar (v x)

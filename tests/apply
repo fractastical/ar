@@ -1,0 +1,49 @@
+>>> (in 1 1 2 3)
+t
+
+>>> (apply in '(1 1 2 3))
+t
+
+>>> (apply (coerce in 'fn) '(1 1 2 3))
+t
+
+>>> ((coerce in 'fn) 1 1 2 3)
+t
+
+
+>>> (let a 5 a)
+5
+
+>>> (apply let '(a 5 a))
+5
+
+
+>>> (let a 5 (+ a 10))
+15
+
+>>> (apply let '(a 5 (+ a 10)))
+15
+
+
+>>> (let a 5
+      (let b 10
+        (+ a b)))
+15
+
+>>> (let a 5
+      (apply let '(b 10 (+ a b))))
+15
+
+
+>>> (fn (a b c) (list a b c))
+#<procedure>
+
+>>> (apply fn '((a b c) (list a b c)))
+#<procedure>
+
+
+>>> ((fn (a b c) (list a b c)) 1 2 3)
+(1 2 3)
+
+>>> ((apply fn '((a b c) (list a b c))) 1 2 3)
+(1 2 3)
