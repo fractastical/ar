@@ -10,6 +10,7 @@
 
 (let ((arc (new-arc)))
   (aload arc "core.arc"
+             "base.arc"
              "arc.arc")
   (let loop ()
     (display "arc> ")

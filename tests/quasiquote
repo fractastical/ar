@@ -1,0 +1,8 @@
+>>> `(a b ,@nil)
+(a b)
+
+>>> `(a b ,nil)
+(a b nil)
+
+>>> `(,@nil)
+nil

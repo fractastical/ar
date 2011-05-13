@@ -26,7 +26,7 @@
                 `(do (sref sig ',parms ',name)
                      (safeset ,name (annotate 'mac (fn ,parms ,@body)))))))
 
-(def no (x) (is x nil))
+(def not (x) (is x nil))
 
 (def caar (xs) (car (car xs)))
 (def cadr (xs) (car (cdr xs)))
@@ -35,9 +35,9 @@
 (assign-fn pair (xs (o f list))
   (fn args
     ((fn (xs f)
-       (if (no xs)
+       (if (not xs)
             nil
-           (no (cdr xs))
+           (not (cdr xs))
             (list (list (car xs)))
             (cons (f (car xs) (cadr xs))
                   (pair (cddr xs) f))))
@@ -51,3 +51,12 @@
 
 (mac let (var val . body)
   `(with (,var ,val) ,@body))
+
+
+;=============================================================================
+;  Predicates
+;=============================================================================
+
+(def isa (x y) (is (type x) y))
+
+(def cons? (x) (isa x 'cons))

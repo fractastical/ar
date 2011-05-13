@@ -38,15 +38,15 @@
 (testis (cadr '(1 2 3)) 2)
 (testis (cddr '(1 2 3)) '(3))
 
-(testis (acons 3) nil)
-(testis (acons '(3)) t)
+(testis (cons? 3) nil)
+(testis (cons? '(3)) t)
 
 (testis (atom 3) t)
 (testis (atom '(3)) nil)
- 
+
 (testis (idfn 123) 123)
 
-(testis (map1 acons '(1 (2) 3 (4))) '(nil t nil t))
+(testis (map1 cons? '(1 (2) 3 (4))) '(nil t nil t))
 
 (testis (pair '(1 2 3 4 5)) '((1 2) (3 4) (5)))
 (testis (pair '(1 2 3 4 5) cons) '((1 . 2) (3 . 4) (5)))
@@ -65,13 +65,13 @@
 
 (testis (withs (a 1 b (+ a 2)) (list a b)) '(1 3))
 
-(testis ((rfn foo (x) (if (no x) 0 (+ 1 (foo (cdr x))))) '(a b c)) 3)
+(testis ((rfn foo (x) (if (not x) 0 (+ 1 (foo (cdr x))))) '(a b c)) 3)
 
-(testis ((afn (x) (if (no x) 0 (+ 1 (self (cdr x))))) '(a b c)) 3)
+(testis ((afn (x) (if (not x) 0 (+ 1 (self (cdr x))))) '(a b c)) 3)
 
 (testis ((compose + car) '(3 4)) 3)
 
-(testis ((complement acons) 3) t)
+(testis ((complement cons?) 3) t)
 
 (testis (rev '(1 2 3 4 5)) '(5 4 3 2 1))
 
@@ -86,9 +86,9 @@
 (testis (or nil 4) 4)
 (testis (or nil nil 5) 5)
 
-(testis (alist nil) t)
-(testis (alist '(1 2 3)) t)
-(testis (alist 3) nil)
+(testis (list? nil) t)
+(testis (list? '(1 2 3)) t)
+(testis (list? 3) nil)
 
 (testis (in 'c 'a 'b 'c) t)
 (testis (in 'x 'a 'b 'c) nil)
@@ -292,11 +292,11 @@
 (testis (ac-chars->value '(#\1 #\2 #\3)) 123)
 
 (testis (ac-expand-compose 'abc:d:e) '(compose abc d e))
-(testis (ac-expand-compose '~:a) '(compose no a))
+(testis (ac-expand-compose '~:a) '(compose not a))
 (testis (ac-expand-compose '~abc:def) '(compose (complement abc) def))
 
 (testis (car:+ '(1 2) '(3 4)) 1)
-(testis (~acons 3) t)
+(testis (~cons? 3) t)
 
 (testis (ac-build-sexpr '((#\a #\b)) nil) 'ab)
 (testis (ac-build-sexpr '((#\a) #\!) nil) '(get 'a))
@@ -305,14 +305,14 @@
 
 (testis (ac-expand-sexpr 'ab!cde) '(ab 'cde))
 
-(testis acons!a nil)
+(testis cons?!a nil)
 (testis type.cons 'fn)
 
-(testis ((andf acons cdr) '(1 . 2)) 2)
+(testis ((andf cons? cdr) '(1 . 2)) 2)
 
-(testis (ac-expand-and 'acons&cdr) '(andf acons cdr))
+(testis (ac-expand-and 'cons?&cdr) '(andf cons? cdr))
 
-(testis (acons&cdr '(1 . 2)) 2)
+(testis (cons?&cdr '(1 . 2)) 2)
 
 (testis (and&or 3) 3)
 
@@ -362,7 +362,7 @@
 
 (testis (keep 3 '(1 2 3 4 5 6)) '(3))
 
-(testis (trues acons '(1 2 '(3 4) 5 '(6))) '(t t))
+(testis (trues cons? '(1 2 '(3 4) 5 '(6))) '(t t))
 
 (do (= x '(1 2 3))
     (push 4 x)
@@ -426,7 +426,7 @@
     (-- x)
     (testis x 6))
 
-(do (= x 7) 
+(do (= x 7)
     (zap + x 1)
     (testis x 8))
 

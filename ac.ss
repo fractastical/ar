@@ -413,6 +413,7 @@ My failed attempt to make fn return a value. We can return to this later.
 
 
 ;; this makes apply work on macros
+;; this should probably be defined in core.arc, though
 
 (extend coerce (x type . rest) (tnil (and (eq? type 'fn)
                                      (tfalse (arc-isa x 'mac))))

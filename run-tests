@@ -15,5 +15,6 @@
             "tests/coerce"
             "tests/fn"
             "tests/re"
+            "tests/quasiquote"
             "tests/(coerce foo 'fn)"
 )

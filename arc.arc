@@ -1,80 +1,28 @@
-(def acons (x) (is (type x) 'cons))
-
-(def atom (x) (no (acons x)))
+(def atom (x) (not (cons? x)))
 
 (def idfn (x) x)
-
-(def isa (x y) (is (type x) y))
-
-(mac square-bracket body
-  `(fn (_) (,@body)))
-
-(mac and args
-  (if args
-      (if (cdr args)
-          `(if ,(car args) (and ,@(cdr args)))
-          (car args))
-      t))
 
 (def assoc (key al)
   (if (atom al)
        nil
-      (and (acons (car al)) (is (caar al) key))
+      (and (cons? (car al)) (is (caar al) key))
        (car al)
       (assoc key (cdr al))))
 
 (def alref (al key) (cadr (assoc key al)))
 
-(mac withs (parms . body)
-  (if (no parms)
-      `(do ,@body)
-      `(let ,(car parms) ,(cadr parms)
-         (withs ,(cddr parms) ,@body))))
-
-(mac rfn (name parms . body)
-  `(let ,name nil
-     (assign ,name (fn ,parms ,@body))))
-
-(mac afn (parms . body)
- `(let self nil
-    (assign self (fn ,parms ,@body))))
-
-(mac compose args
-  (let g (uniq)
-    `(fn ,g
-       ,((afn (fs)
-           (if (cdr fs)
-               (list (car fs) (self (cdr fs)))
-               `(apply ,(if (car fs) (car fs) 'idfn) ,g)))
-         args))))
-
 (mac complement (f)
   (let g (uniq)
-    `(fn ,g (no (apply ,f ,g)))))
+    `(fn ,g (not (apply ,f ,g)))))
 
 (def rev (xs)
   ((afn (xs acc)
-     (if (no xs)
+     (if (not xs)
          acc
          (self (cdr xs) (cons (car xs) acc))))
    xs nil))
 
-(def isnt (x y) (no (is x y)))
-
-(mac w/uniq (names . body)
-  (if (acons names)
-      `(with ,(apply + nil (map1 (fn (n) (list n '(uniq)))
-                             names))
-         ,@body)
-      `(let ,names (uniq) ,@body)))
-
-(mac or args
-  (and args
-       (w/uniq g
-         `(let ,g ,(car args)
-            (if ,g ,g (or ,@(cdr args)))))))
-
-(def alist (x) (or (no x) (is (type x) 'cons)))
+(def isnt (x y) (not (is x y)))
 
 (mac in (x . choices)
   (w/uniq g
@@ -83,16 +31,10 @@
 
 (def iso (x y)
   (or (is x y)
-      (and (acons x)
-           (acons y)
+      (and (cons? x)
+           (cons? y)
            (iso (car x) (car y))
            (iso (cdr x) (cdr y)))))
-
-(mac when (test . body)
-  `(if ,test (do ,@body)))
-
-(mac unless (test . body)
-  `(if (no ,test) (do ,@body)))
 
 (mac while (test . body)
   (w/uniq (gf gp)
@@ -101,34 +43,9 @@
       ,test)))
 
 (def empty (seq)
-  (or (no seq)
-      (and (or (is (type seq) 'string) (is (type seq) 'table))
+  (or (not seq)
+      (and (in (type seq) 'string 'table)
            (is (len seq) 0))))
-
-(def reclist (f xs)
-  (and xs (or (f xs) (reclist f (cdr xs)))))
-
-(def caddr (x) (car (cddr x)))
-
-(assign-fn recstring (test s (o start 0))
-  (fn args
-    (with (test (car args)
-           s    (cadr args)
-           start (if (cddr args) (caddr args) 0))
-      ((afn (i)
-         (and (< i (len s))
-              (or (test i)
-                  (self (+ i 1)))))
-       start))))
-
-(def testify (x)
-  (if (isa x 'fn) x [is _ x]))
-
-(def some (test seq)
-  (let f (testify test)
-    (if (alist seq)
-         (reclist   (compose f car) seq)
-         (recstring (compose f seq) seq))))
 
 (def all (test seq)
   ((complement some) (complement (testify test)) seq))
@@ -287,28 +204,28 @@
        (writec #\newline)))
 
 (def ac-complex-args? (args)
-  (if (no args)
+  (if (not args)
        nil
       (isa args 'sym)
        nil
-      (and (acons args) (isa (car args) 'sym))
+      (and (cons? args) (isa (car args) 'sym))
        (ac-complex-args? (cdr args))
        t))
 
 (def ac-complex-getargs (a) (map1 car a))
 
 (def ac-complex-opt (var expr ra)
-  (list (list var `(if (acons ,ra) (car ,ra) ,expr))))
+  (list (list var `(if (cons? ,ra) (car ,ra) ,expr))))
 
 (def ac-complex-args (args ra)
-  (if (no args)
+  (if (not args)
        nil
       (isa args 'sym)
        (list (list args ra))
-      (acons args)
+      (cons? args)
        (withs (a (car args)
                r (cdr args)
-               x (if (and (acons a) (is (car a) 'o))
+               x (if (and (cons? a) (is (car a) 'o))
                       (ac-complex-opt (cadr a) (car (cddr a)) ra)
                       (ac-complex-args a (list 'car ra))))
          (join x (ac-complex-args (cdr args) (list 'cdr ra))))
@@ -334,10 +251,10 @@
   (ac (ac-complex-fn args body) env))
 
 (def printwith-list (primitive x port)
-  (if (no (cdr x))
+  (if (not (cdr x))
        (do (print primitive (car x) port)
            (disp ")" port))
-      (acons (cdr x))
+      (cons? (cdr x))
        (do (print primitive (car x) port)
            (disp " " port)
            (printwith-list primitive (cdr x) port))
@@ -350,78 +267,24 @@
   (disp "(" port)
   (printwith-list primitive x port))
 
-(assign-fn newstring (k (o char)) racket-make-string)
-
-(def maptable (f table)
-  (racket-hash-for-each table f)
-  table)
-
-(mac each (var expr . body)
-  (w/uniq (gseq gf gv)
-    `(let ,gseq ,expr
-       (if (alist ,gseq)
-            ((rfn ,gf (,gv)
-               (when (acons ,gv)
-                 (let ,var (car ,gv) ,@body)
-                 (,gf (cdr ,gv))))
-             ,gseq)
-           (isa ,gseq 'table)
-            (maptable (fn ,var ,@body)
-                      ,gseq)
-            (for ,gv 0 (- (len ,gseq) 1)
-              (let ,var (,gseq ,gv) ,@body))))))
-
-(def best (f seq)
-  (if (no seq)
-      nil
-      (let wins (car seq)
-        (each elt (cdr seq)
-          (if (f elt wins) (assign wins elt)))
-        wins)))
-
-(def max args (best > args))
-(def min args (best < args))
-
-(def map (f . seqs)
-  (if (some [isa _ 'string] seqs)
-       (withs (n   (apply min (map len seqs))
-               new (newstring n))
-         ((afn (i)
-            (if (is i n)
-                new
-                (do (sref new (apply f (map [_ i] seqs)) i)
-                    (self (+ i 1)))))
-          0))
-      (no (cdr seqs))
-       (map1 f (car seqs))
-      ((afn (seqs)
-        (if (some no seqs)
-            nil
-            (cons (apply f (map1 car seqs))
-                  (self (map1 cdr seqs)))))
-       seqs)))
-
-(def string args
-  (apply + "" (map [coerce _ 'string] args)))
-
 (def ac-ssyntax (x)
   (and (isa x 'sym)
-       (no (in x '+ '++ '_))
+       (not (in x '+ '++ '_))
        (some [in _ #\: #\~ #\& #\. #\!] (string x))))
 
 (def ac-symbol->chars (x)
   (coerce (coerce x 'string) 'cons))
 
 (def ac-tokens (test source token acc keepsep?)
-  (if (no source)
-       (rev (if (acons token)
+  (if (not source)
+       (rev (if (cons? token)
                  (cons (rev token) acc)
                  acc))
       (test (car source))
        (ac-tokens test
                   (cdr source)
                   '()
-                  (let rec (if (no token)
+                  (let rec (if (not token)
                                 acc
                                 (cons (rev token) acc))
                     (if keepsep?
@@ -469,7 +332,7 @@
 
 (mac caselet (var expr . args)
   (let ex (afn (args)
-            (if (no (cdr args))
+            (if (not (cdr args))
                 (car args)
                 `(if (is ,var ',(car args))
                      ,(cadr args)
@@ -535,12 +398,12 @@
 (def ac-expand-compose (sym)
   (let elts (map1 (fn (tok)
                     (if (is (car tok) #\~)
-                         (if (no (cdr tok))
-                             'no
+                         (if (not (cdr tok))
+                             'not
                              `(complement ,(ac-chars->value (cdr tok))))
                          (ac-chars->value tok)))
                   (ac-tokens [is _ #\:] (ac-symbol->chars sym) nil nil nil))
-    (if (no (cdr elts))
+    (if (not (cdr elts))
          (car elts)
          (cons 'compose elts))))
 
@@ -557,9 +420,9 @@
   (ac-expand-compose sym))
 
 (def ac-build-sexpr (toks orig)
-  (if (no toks)
+  (if (not toks)
        'get
-      (no (cdr toks))
+      (not (cdr toks))
        (ac-chars->value (car toks))
        (list (ac-build-sexpr (cddr toks) orig)
              (if (is (cadr toks) #\!)
@@ -585,14 +448,14 @@
           ,@(cdr s)))
       env))
 
-(def xcar (x) (and (acons x) (car x)))
+(def xcar (x) (and (cons? x) (car x)))
 
 (defrule ac (is (xcar:xcar s) 'andf) (ac-andf s env))
 
 (def ac-expand-and (sym)
   (let elts (map1 ac-chars->value
                   (ac-tokens [is _ #\&] (ac-symbol->chars sym) nil nil nil))
-    (if (no (cdr elts))
+    (if (not (cdr elts))
          (car elts)
          (cons 'andf elts))))
 
@@ -604,9 +467,9 @@
 ; (and:or 3) => ((compose and or) 3) => (and (or 3))
 
 (def ac-decompose (fns args)
-  (if (no fns)
+  (if (not fns)
        `((fn vals (car vals)) ,@args)
-      (no (cdr fns))
+      (not (cdr fns))
        (cons (car fns) args)
        (list (car fns) (ac-decompose (cdr fns) args))))
 
@@ -615,17 +478,17 @@
 
 (def cadar (x) (car (cdar x)))
 
-; (~and 3 nil) => ((complement and) 3 nil) => (no (and 3 nil))
+; (~and 3 nil) => ((complement and) 3 nil) => (not (and 3 nil))
 
 (defrule ac (is (xcar:xcar s) 'complement)
-  (ac (list 'no (cons (cadar s) (cdr s))) env))
+  (ac (list 'not (cons (cadar s) (cdr s))) env))
 
 (def macex (e (o once))
-  (if (acons e)
+  (if (cons? e)
        (let m (ac-macro? (car e))
          (if m
               (let expansion (apply m (cdr e))
-                (if (no once) (macex expansion) expansion))
+                (if (not once) (macex expansion) expansion))
               e))
        e))
 
@@ -647,7 +510,7 @@
   ((racket call-with-semaphore) sema (fn () (func))))
 
 (def nil->racket-false (x)
-  (if (no x) (racket "#f") x))
+  (if (not x) (racket "#f") x))
 
 (def make-thread-cell (v (o preserved))
   (racket-make-thread-cell v (nil->racket-false preserved)))
@@ -682,23 +545,20 @@
 (mac atwiths args
   `(atomic (withs ,@args)))
 
-(def mappend (f . args)
-  (apply + nil (apply map f args)))
-
 (def firstn (n xs)
-  (if (no n)            xs
+  (if (not n)            xs
       (and (> n 0) xs)  (cons (car xs) (firstn (- n 1) (cdr xs)))
                         nil))
 
 (def nthcdr (n xs)
-  (if (no n)  xs
+  (if (not n)  xs
       (> n 0) (nthcdr (- n 1) (cdr xs))
               xs))
 
 ; Generalization of pair: (tuples x) = (pair x)
 
 (def tuples (xs (o n 2))
-  (if (no xs)
+  (if (not xs)
       nil
       (cons (firstn n xs)
             (tuples (nthcdr n xs) n))))
@@ -761,9 +621,9 @@
                      g
                      `(fn (,h) (assign ,expr ,h)))))
         ; make it also work for uncompressed calls to compose
-        (and (acons expr) (metafn (car expr)))
+        (and (cons? expr) (metafn (car expr)))
          (setforms (expand-metafn-call (ssexpand (car expr)) (cdr expr)))
-        (and (acons expr) (acons (car expr)) (is (caar expr) 'get))
+        (and (cons? expr) (cons? (car expr)) (is (caar expr) 'get))
          (setforms (list (cadr expr) (cadr (car expr))))
          (let f (setter (car expr))
            (if f
@@ -781,7 +641,7 @@
 
 (def metafn (x)
   (or (ac-ssyntax x)
-      (and (acons x) (in (car x) 'compose 'complement))))
+      (and (cons? x) (in (car x) 'compose 'complement))))
 
 (def expand-metafn-call (f args)
   (if (is (car f) 'compose)
@@ -792,7 +652,7 @@
                (list (car fs) (self (cdr fs)))
               (cons (car fs) args)))
         (cdr f))
-      (is (car f) 'no)
+      (is (car f) 'not)
        (err "Can't invert " (cons f args))
        (cons f args)))
 
@@ -811,20 +671,6 @@
 (mac = args
   (expand=list args))
 
-(mac loop (start test update . body)
-  (w/uniq (gfn gparm)
-    `(do ,start
-         ((rfn ,gfn (,gparm)
-            (if ,gparm
-                (do ,@body ,update (,gfn ,test))))
-          ,test))))
-
-(mac for (v init max . body)
-  (w/uniq (gi gm)
-    `(with (,v nil ,gi ,init ,gm (+ ,max 1))
-       (loop (assign ,v ,gi) (< ,v ,gm) (assign ,v (+ ,v 1))
-         ,@body))))
-
 (mac down (v init min . body)
   (w/uniq (gi gm)
     `(with (,v nil ,gi ,init ,gm (- ,min 1))
@@ -837,7 +683,7 @@
 ; (nthcdr x y) = (cut y x).
 
 (def cut (seq start (o end))
-  (let end (if (no end)   (len seq)
+  (let end (if (not end)   (len seq)
                (< end 0)  (+ (len seq) end)
                           end)
     (if (isa seq 'string)
@@ -861,9 +707,9 @@
 
 (def rem (test seq)
   (let f (testify test)
-    (if (alist seq)
+    (if (list? seq)
         ((afn (s)
-           (if (no s)       nil
+           (if (not s)       nil
                (f (car s))  (self (cdr s))
                             (cons (car s) (self (cdr s)))))
           seq)
@@ -968,7 +814,7 @@
   (with (gop    (uniq)
          gargs  (map [uniq] args)
          mix    (afn seqs
-                  (if (some no seqs)
+                  (if (some not seqs)
                       nil
                       (+ (map car seqs)
                          (apply self (map cdr seqs))))))
@@ -986,23 +832,13 @@
 (mac set args
   `(do ,@(map (fn (a) `(= ,a t)) args)))
 
-; Destructuring means ambiguity: are pat vars bound in else? (no)
-
-(mac iflet (var expr then . rest)
-  (w/uniq gv
-    `(let ,gv ,expr
-       (if ,gv (let ,var ,gv ,then) ,@rest))))
-
-(mac whenlet (var expr . body)
-  `(iflet ,var ,expr (do ,@body)))
-
 (mac awhen (expr . body)
   `(let it ,expr (if it (do ,@body))))
 
 (mac aand args
-  (if (no args)
+  (if (not args)
       't
-      (no (cdr args))
+      (not (cdr args))
        (car args)
       `(let it ,(car args) (and it (aand ,@(cdr args))))))
 
@@ -1011,7 +847,7 @@
 (mac drain (expr (o eof nil))
   (w/uniq (gacc gdone gres)
     `(with (,gacc nil ,gdone nil)
-       (while (no ,gdone)
+       (while (not ,gdone)
          (let ,gres ,expr
            (if (is ,gres ,eof)
                (= ,gdone t)
@@ -1024,14 +860,14 @@
 (mac whiler (var expr endval . body)
   (w/uniq gf
     `(withs (,var nil ,gf (testify ,endval))
-       (while (no (,gf (= ,var ,expr)))
+       (while (not (,gf (= ,var ,expr)))
          ,@body))))
 
 (def consif (x y) (if x (cons x y) y))
 
 (def flat x
   ((afn (x acc)
-     (if (no x)   acc
+     (if (not x)   acc
          (atom x) (cons x acc)
                   (self (car x) (self (cdr x) acc))))
    x nil))
@@ -1043,9 +879,9 @@
 
 (def pos (test seq (o start 0))
   (let f (testify test)
-    (if (alist seq)
+    (if (list? seq)
         ((afn (seq n)
-           (if (no seq)
+           (if (not seq)
                 nil
                (f (car seq))
                 n
@@ -1059,7 +895,7 @@
 
 (def even (n) (is (mod n 2) 0))
 
-(def odd (n) (no (even n)))
+(def odd (n) (not (even n)))
 
 (mac fromstring (str . body)
   (w/uniq gv
@@ -1079,7 +915,7 @@
    (if (isa src 'string) (instring src) src)))
 
 (def allchars (str)
-  (tostring (whiler c (readc str nil) no
+  (tostring (whiler c (readc str nil) not
               (writec c))))
 
 (def filechars (name)
@@ -1114,7 +950,7 @@
   (is x (racket "#f")))
 
 (def aracket-true (x)
-  (no (aracket-false x)))
+  (not (aracket-false x)))
 
 (def aracket-eof (x)
   (aracket-true (racket-eof-object? x)))
@@ -1152,7 +988,7 @@
                ,@body))))))
 
 (def most (f seq)
-  (unless (no seq)
+  (unless (not seq)
     (withs (wins (car seq) topscore (f wins))
       (each elt (cdr seq)
         (let score (f elt)
@@ -1160,7 +996,7 @@
       wins)))
 
 (def insert-sorted (test elt seq)
-  (if (no seq)
+  (if (not seq)
        (list elt)
       (test elt (car seq))
        (cons elt seq)
@@ -1170,7 +1006,7 @@
   `(zap [insert-sorted ,test ,elt _] ,seq))
 
 (def reinsert-sorted (test elt seq)
-  (if (no seq)
+  (if (not seq)
        (list elt)
       (is elt (car seq))
        (reinsert-sorted test elt (cdr seq))
@@ -1185,7 +1021,7 @@
   (with (cache (table) nilcache (table))
     (fn args
       (or (cache args)
-          (and (no (nilcache args))
+          (and (not (nilcache args))
                (aif (apply f args)
                     (= (cache args) it)
                     (do (set (nilcache args))
@@ -1195,21 +1031,21 @@
   `(safeset ,name (memo (fn ,parms ,@body))))
 
 (def <= args
-  (or (no args)
-      (no (cdr args))
-      (and (no (> (car args) (cadr args)))
+  (or (not args)
+      (not (cdr args))
+      (and (not (> (car args) (cadr args)))
            (apply <= (cdr args)))))
 
 (def >= args
-  (or (no args)
-      (no (cdr args))
-      (and (no (< (car args) (cadr args)))
+  (or (not args)
+      (not (cdr args))
+      (and (not (< (car args) (cadr args)))
            (apply >= (cdr args)))))
 
 (def whitec (c)
   (in c #\space #\newline #\tab #\return))
 
-(def nonwhite (c) (no (whitec c)))
+(def nonwhite (c) (not (whitec c)))
 
 (def letter (c) (or (<= #\a c #\z) (<= #\A c #\Z)))
 
@@ -1318,7 +1154,7 @@
 
 (def read-table ((o i stdin) (o eof))
   (let e (read i eof)
-    (if (alist e) (listtab e) e)))
+    (if (list? e) (listtab e) e)))
 
 (def load-table (file (o eof))
   (w/infile i file (read-table i eof)))
@@ -1377,7 +1213,7 @@
 ; benchmark: (let td (n-of 10000 (rand 100)) (time (sort < td)) 1)
 
 (def sort (test seq)
-  (if (alist seq)
+  (if (list? seq)
       (mergesort test (copy seq))
       (coerce (mergesort test (coerce seq 'cons)) (type seq))))
 
@@ -1421,8 +1257,8 @@
 ; Also by Eli.
 
 (def merge (less? x y)
-  (if (no x) y
-      (no y) x
+  (if (not x) y
+      (not y) x
       (let lup nil
         (assign lup
                 (fn (r x y r-x?) ; r-x? for optimization -- is r connected to x?
@@ -1430,7 +1266,7 @@
                     (do (if r-x? (scdr r y))
                         (if (cdr y) (lup y x (cdr y) nil) (scdr y x)))
                     ; (car x) <= (car y)
-                    (do (if (no r-x?) (scdr r x))
+                    (do (if (not r-x?) (scdr r x))
                         (if (cdr x) (lup x (cdr x) y t) (scdr x y))))))
         (if (less? (car y) (car x))
           (do (if (cdr y) (lup y x (cdr y) nil) (scdr y x))
@@ -1470,7 +1306,7 @@
 (= templates* (table))
 
 (mac deftem (tem . fields)
-  (withs (name (carif tem) includes (if (acons tem) (cdr tem)))
+  (withs (name (carif tem) includes (if (cons? tem) (cdr tem)))
     `(= (templates* ',name)
         (+ (mappend templates* ',(rev includes))
            (list ,@(map (fn ((k v)) `(list ',k (fn () ,v)))
@@ -1485,8 +1321,8 @@
 
 (def inst (tem . args)
   (let x (table)
-    (each (k v) (if (acons tem) tem (templates* tem))
-      (unless (no v) (= (x k) (v))))
+    (each (k v) (if (cons? tem) tem (templates* tem))
+      (unless (not v) (= (x k) (v))))
     (each (k v) (pair args)
       (= (x k) v))
     x))
@@ -1496,11 +1332,11 @@
 (def temread (tem (o str (stdin)))
   (templatize tem (read str)))
 
-; Converts alist to inst; ugly; maybe should make this part of coerce.
+; Converts list? to inst; ugly; maybe should make this part of coerce.
 ; Note: discards fields not defined by the template.
 
 (def templatize (tem raw)
-  (with (x (inst tem) fields (if (acons tem) tem (templates* tem)))
+  (with (x (inst tem) fields (if (cons? tem) tem (templates* tem)))
     (each (k v) raw
       (when (assoc k fields)
         (= (x k) v)))
@@ -1589,11 +1425,11 @@
   (seq (rand (len seq))))
 
 (mac until (test . body)
-  `(while (no ,test) ,@body))
+  `(while (not ,test) ,@body))
 
 (def before (x y seq (o i 0))
   (with (xp (pos x seq i) yp (pos y seq i))
-    (and xp (or (no yp) (< xp yp)))))
+    (and xp (or (not yp) (< xp yp)))))
 
 (def orf fns
   (fn args
@@ -1604,8 +1440,8 @@
 (def andf fns
   (fn args
     ((afn (fs)
-       (if (no fs)       t
-           (no (cdr fs)) (apply (car fs) args)
+       (if (not fs)       t
+           (not (cdr fs)) (apply (car fs) args)
                          (and (apply (car fs) args) (self (cdr fs)))))
      fns)))
 
@@ -1615,7 +1451,7 @@
 (def multiple (x y)
   (is 0 (mod x y)))
 
-(mac nor args `(no (or ,@args)))
+(mac nor args `(not (or ,@args)))
 
 (def compare (comparer scorer)
   (fn (x y) (comparer (scorer x) (scorer y))))
@@ -1624,8 +1460,8 @@
   (fn args (if (car args) (apply f args))))
 
 (def retrieve (n f xs)
-  (if (no n)                 (keep f xs)
-      (or (<= n 0) (no xs))  nil
+  (if (not n)                 (keep f xs)
+      (or (<= n 0) (not xs))  nil
       (f (car xs))           (cons (car xs) (retrieve (- n 1) f (cdr xs)))
                              (retrieve n f (cdr xs))))
 
@@ -1637,14 +1473,14 @@
         (set (h x))))
     (rev acc)))
 
-(def single (x) (and (acons x) (no (cdr x))))
+(def single (x) (and (cons? x) (not (cdr x))))
 
 (def intersperse (x ys)
   (and ys (cons (car ys)
                 (mappend [list x _] (cdr ys)))))
 
 (def counts (seq (o c (table)))
-  (if (no seq)
+  (if (not seq)
       c
       (do (++ (c (car seq) 0))
           (counts (cdr seq) c))))
@@ -1697,7 +1533,7 @@
 (def enq (obj q)
   (atomic
     (++ (q 2))
-    (if (no (car q))
+    (if (not (car q))
         (= (cadr q) (= (car q) (list obj)))
         (= (cdr (cadr q)) (list obj)
            (cadr q)       (cdr (cadr q))))
@@ -1861,7 +1697,7 @@
 (mac evtil (expr test)
   (w/uniq gv
     `(let ,gv ,expr
-       (while (no (,test ,gv))
+       (while (not (,test ,gv))
          (= ,gv ,expr))
        ,gv)))
 
@@ -1884,7 +1720,7 @@
 
 (def find (test seq)
   (let f (testify test)
-    (if (alist seq)
+    (if (list? seq)
         (reclist   [if (f:car _) (car _)] seq)
         (recstring [if (f:seq _) (seq _)] seq))))
 

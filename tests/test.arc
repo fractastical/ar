@@ -58,7 +58,7 @@
             (err "test failed"))))
 
 (mac testnil (expr)
-  `(if (no ,expr)
+  `(if (not ,expr)
         (when test-verbose*
             (pr "ok ")
             (write ',expr)
