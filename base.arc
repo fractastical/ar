@@ -1,4 +1,20 @@
 ;=============================================================================
+;  Type coercion
+;=============================================================================
+
+(def sym (x) (coerce x 'sym))
+
+
+;=============================================================================
+;  Errors/exceptions
+;=============================================================================
+
+(mac errsafe (expr)
+  `(on-err (fn (c) nil)
+           (fn () ,expr)))
+
+
+;=============================================================================
 ;  Variable binding
 ;=============================================================================
 
@@ -59,6 +75,67 @@
 
 (mac whenlet (var expr . body)
   `(iflet ,var ,expr (do ,@body)))
+
+(mac aif (expr . body)
+  `(let it ,expr
+     (if it
+         ,@(if (cddr body)
+               `(,(car body) (aif ,@(cdr body)))
+               body))))
+
+;=============================================================================
+;  Extending
+;=============================================================================
+
+(mac defrule (name test . body)
+  (let arglist (sig name)
+    (w/uniq args
+      `(let orig ,name
+         (assign ,name
+           (fn ,args
+             (aif (apply (fn ,arglist ,test) ,args)
+                   (apply (fn ,arglist ,@body) ,args)
+                   (apply orig ,args))))))))
+
+
+;=============================================================================
+;  Functions
+;=============================================================================
+
+(def ac-complex-args? (args)
+  (if (not args)
+       nil
+      (isa args 'sym)
+       nil
+      (and (cons? args) (isa (car args) 'sym))
+       (ac-complex-args? (cdr args))
+       t))
+
+(def ac-complex-opt (var expr ra)
+  (list (list var `(if (cons? ,ra) (car ,ra) ,expr))))
+
+(def ac-complex-args (args ra)
+  (if (not args)
+       nil
+      (isa args 'sym)
+       (list (list args ra))
+      (cons? args)
+       (withs (a (car args)
+               r (cdr args)
+               x (if (caris a 'o)
+                      (ac-complex-opt (cadr a) (car (cddr a)) ra)
+                      (ac-complex-args a (list 'car ra))))
+         (join x (ac-complex-args (cdr args) (list 'cdr ra))))
+       (err "Can't understand fn arg list" args)))
+
+(def ac-complex-fn (args body)
+  (w/uniq ra
+    `(fn ,ra
+       (withs ,(apply join (ac-complex-args args ra))
+         ,@body))))
+
+(defrule ac-fn (ac-complex-args? args)
+  (ac (ac-complex-fn args body) env))
 
 
 ;=============================================================================
@@ -121,16 +198,12 @@
 
 (def caddr (x) (car (cddr x)))
 
-(assign-fn recstring (test s (o start 0))
-  (fn args
-    (with (test (car args)
-           s    (cadr args)
-           start (if (cddr args) (caddr args) 0))
-      ((afn (i)
-         (and (< i (len s))
-              (or (test i)
-                  (self (+ i 1)))))
-       start))))
+(def recstring (test s (o start 0))
+  ((afn (i)
+     (and (< i (len s))
+          (or (test i)
+              (self (+ i 1)))))
+   start))
 
 (mac compose args
   (let g (uniq)
@@ -189,3 +262,122 @@
 
 (def string args
   (apply + "" (map [coerce _ 'string] args)))
+
+
+;=============================================================================
+;  Lists
+;=============================================================================
+
+(def rev (xs)
+  ((afn (xs acc)
+     (if (not xs)
+         acc
+         (self (cdr xs) (cons (car xs) acc))))
+   xs nil))
+
+
+;=============================================================================
+;  Special variable binding
+;=============================================================================
+
+(assign dynamic-parameter* (table))
+(assign ac-defined-vars* (table))
+
+(def ac-defvar (v x)
+  (sref ac-defined-vars* x v)
+  nil)
+
+(def ac-defined-var (v)
+  (ac-defined-vars* v))
+
+(defrule ac-global (ac-defined-var v)
+  `(,(car it)))
+
+(def ac-not-assignable (v)
+  (fn (x)
+    (err (string v " is not assignable"))))
+
+(defrule ac-global-assign (ac-defined-var a)
+  `(,(or (cadr it) (ac-not-assignable a)) ,b))
+
+(mac defvar (name get (o set))
+  `(ac-defvar ',name (list ,get ,set)))
+
+(mac make-dynamic (name param)
+  (w/uniq paramval
+    `(let ,paramval ,param
+       (sref dynamic-parameter* ,paramval ',name)
+       (defvar ,name (fn () (,paramval)) (fn (val) (,paramval val))))))
+
+(mac paramfor (name)
+  `(dynamic-parameter* ',name))
+
+(mac dlet (name val . body)
+  `(racket-parameterize (paramfor ,name) ,val (fn () ,@body)))
+
+(mac make-w/ (name)
+  (let w/name (sym (+ "w/" name))
+    `(mac ,w/name (val . body)
+       `(dlet ,',name ,val ,@body))))
+
+(mac make-implicit (name param)
+  `(do (make-dynamic ,name ,param)
+       (make-w/ ,name)))
+
+(mac parameterize (param val . body)
+  `(racket-parameterize ,param ,val (fn () ,@body)))
+
+(mac dynamic (name (o init))
+  `(make-dynamic ,name (parameter ,init)))
+
+(mac implicit (name (o init))
+  `(make-implicit ,name (parameter ,init)))
+
+
+;=============================================================================
+;  Printing
+;=============================================================================
+
+(make-implicit stdin  racket-stdin)
+(make-implicit stdout racket-stdout)
+(make-implicit stderr racket-stderr)
+
+(def print (primitive x port)
+  (primitive x port))
+
+(def disp (x (o port stdout))
+  (print racket-disp x port))
+
+(def write (x (o port stdout))
+  (print racket-write x port))
+
+(def pr args
+  (map1 disp args)
+  (car args))
+
+(mac do1 args
+  (w/uniq g
+    `(let ,g ,(car args)
+       ,@(cdr args)
+       ,g)))
+
+(def prn args
+  (do1 (apply pr args)
+       (writec #\newline)))
+
+(def printwith-list (primitive x port)
+  (if (not (cdr x))
+       (do (print primitive (car x) port)
+           (disp ")" port))
+      (cons? (cdr x))
+       (do (print primitive (car x) port)
+           (disp " " port)
+           (printwith-list primitive (cdr x) port))
+       (do (print primitive (car x) port)
+           (disp " . " port)
+           (print primitive (cdr x) port)
+           (disp ")" port))))
+
+(defrule print (isa x 'cons)
+  (disp "(" port)
+  (printwith-list primitive x port))

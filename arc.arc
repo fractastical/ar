@@ -15,13 +15,6 @@
   (let g (uniq)
     `(fn ,g (not (apply ,f ,g)))))
 
-(def rev (xs)
-  ((afn (xs acc)
-     (if (not xs)
-         acc
-         (self (cdr xs) (cons (car xs) acc))))
-   xs nil))
-
 (def isnt (x y) (not (is x y)))
 
 (mac in (x . choices)
@@ -54,23 +47,6 @@
   (let f (testify test)
     (reclist [if (f (car _)) _] seq)))
 
-(mac aif (expr . body)
-  `(let it ,expr
-     (if it
-         ,@(if (cddr body)
-               `(,(car body) (aif ,@(cdr body)))
-               body))))
-
-(mac defrule (name test . body)
-  (let arglist (sig name)
-    (w/uniq (orig args)
-      `(let ,orig ,name
-         (assign ,name
-           (fn ,args
-             (aif (apply (fn ,arglist ,test) ,args)
-                   (apply (fn ,arglist ,@body) ,args)
-                   (apply ,orig ,args))))))))
-
 (defrule ac (caris s 'racket)
   (let x (cadr s)
     (if (isa x 'string)
@@ -85,110 +61,12 @@
 
 (defrule coerce (and (is type 'fn)
                      (isa x 'mac))
-  (lambda args
+  (fn args
     (eval (apply (rep x) args))))
 |#
 
-
-(assign ac-defined-vars* (table))
-
-(def ac-defvar (v x)
-  (sref ac-defined-vars* x v)
-  nil)
-
-(def ac-defined-var (v)
-  (ac-defined-vars* v))
-
-(defrule ac-global (ac-defined-var v)
-  `(,(car it)))
-
-(def ac-not-assignable (v)
-  (fn (x)
-    (err (string v " is not assignable"))))
-
-(defrule ac-global-assign (ac-defined-var a)
-  `(,(or (cadr it) (ac-not-assignable a)) ,b))
-
-(mac defvar args
-  (with (name (car args)
-         get  (cadr args)
-         set  (caddr args))
-  `(ac-defvar ',name (list ,get ,set))))
-(sref sig '(name get (o set)) 'defvar)
-
-(def sym (x) (coerce x 'sym))
-
-(assign-fn int (x (o b 10))
-  (fn args
-    (with (x (car args)
-           b (if (cdr args) (cadr args) 10))
-      (coerce x 'int b))))
-
-(mac parameterize (param val . body)
-  `(racket-parameterize ,param ,val (fn () ,@body)))
-
-(assign dynamic-parameter* (table))
-
-(mac make-dynamic (name param)
-  (w/uniq paramval
-    `(let ,paramval ,param
-       (sref dynamic-parameter* ,paramval ',name)
-       (defvar ,name (fn () (,paramval)) (fn (val) (,paramval val))))))
-
-(mac paramfor (name)
-  `(dynamic-parameter* ',name))
-
-(mac dlet (name val . body)
-  `(racket-parameterize (paramfor ,name) ,val (fn () ,@body)))
-
-(mac dynamic args
-  (with (name (car args)
-         init (cadr args))
-    `(make-dynamic ,name (parameter ,init))))
-
-(mac make-w/ (name)
-  (let w/name (sym (+ "w/" name))
-    `(mac ,w/name (val . body)
-       `(dlet ,',name ,val ,@body))))
-
-(mac make-implicit (name param)
-  `(do (make-dynamic ,name ,param)
-       (make-w/ ,name)))
-
-(mac implicit args
-  (with (name (car args)
-         init (cadr args))
-    `(make-implicit ,name (parameter ,init))))
-(sref sig '(name (o init)) 'implicit)
-
-(make-implicit stdin  racket-stdin)
-(make-implicit stdout racket-stdout)
-(make-implicit stderr racket-stderr)
-
-(def print (primitive x port)
-  (primitive x port))
-
-(def disp args
-  (with (x (car args)
-         port (or (cadr args) stdout))
-    (print racket-disp x port)))
-(sref sig '(x (o port)) 'disp)
-
-(def write args
-  (with (x (car args)
-         port (or (cadr args) stdout))
-    (print racket-write x port)))
-(sref sig '(x (o port)) 'write)
-
-(def pr args
-  (map1 disp args)
-  (car args))
-
-(mac do1 args
-  (w/uniq g
-    `(let ,g ,(car args)
-       ,@(cdr args)
-       ,g)))
+(def int (x (o b 10))
+  (coerce x 'int b))
 
 (mac w/outstring (var . body)
   `(let ,var (outstring) ,@body))
@@ -199,44 +77,6 @@
       (w/stdout ,gv ,@body)
       (inside ,gv))))
 
-(def prn args
-  (do1 (apply pr args)
-       (writec #\newline)))
-
-(def ac-complex-args? (args)
-  (if (not args)
-       nil
-      (isa args 'sym)
-       nil
-      (and (cons? args) (isa (car args) 'sym))
-       (ac-complex-args? (cdr args))
-       t))
-
-(def ac-complex-getargs (a) (map1 car a))
-
-(def ac-complex-opt (var expr ra)
-  (list (list var `(if (cons? ,ra) (car ,ra) ,expr))))
-
-(def ac-complex-args (args ra)
-  (if (not args)
-       nil
-      (isa args 'sym)
-       (list (list args ra))
-      (cons? args)
-       (withs (a (car args)
-               r (cdr args)
-               x (if (and (cons? a) (is (car a) 'o))
-                      (ac-complex-opt (cadr a) (car (cddr a)) ra)
-                      (ac-complex-args a (list 'car ra))))
-         (join x (ac-complex-args (cdr args) (list 'cdr ra))))
-       (err "Can't understand fn arg list" args)))
-
-(def ac-complex-fn (args body)
-  (let ra (uniq)
-    `(fn ,ra
-       (withs ,(apply join (ac-complex-args args ra))
-         ,@body))))
-
 (mac erp (x)
   (w/uniq (gx)
     `(let ,gx ,x
@@ -246,26 +86,6 @@
          (write ,gx)
          (disp #\newline))
        ,gx)))
-
-(defrule ac-fn (ac-complex-args? args)
-  (ac (ac-complex-fn args body) env))
-
-(def printwith-list (primitive x port)
-  (if (not (cdr x))
-       (do (print primitive (car x) port)
-           (disp ")" port))
-      (cons? (cdr x))
-       (do (print primitive (car x) port)
-           (disp " " port)
-           (printwith-list primitive (cdr x) port))
-       (do (print primitive (car x) port)
-           (disp " . " port)
-           (print primitive (cdr x) port)
-           (disp ")" port))))
-
-(defrule print (isa x 'cons)
-  (disp "(" port)
-  (printwith-list primitive x port))
 
 (def ac-ssyntax (x)
   (and (isa x 'sym)
@@ -1373,10 +1193,6 @@
 (mac defcache (name lasts . body)
   `(safeset ,name (cache (fn () ,lasts)
                          (fn () ,@body))))
-
-(mac errsafe (expr)
-  `(on-err (fn (c) nil)
-           (fn () ,expr)))
 
 (def saferead (arg) (errsafe:read arg))
 

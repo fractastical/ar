@@ -7,7 +7,13 @@
 
 
 (define internal-name-hash
-  (hash 'fn (gensym)))
+  (hash 'fn         (gensym)))
+
+#|
+        'quote      (gensym)
+        'quasiquote (gensym)
+        'if         (gensym)
+        'assign     (gensym)|#
 
 (define (internal-name x)
   (hash-ref internal-name-hash x))
@@ -107,11 +113,11 @@
 (define ac-mac-fn (new-ac-fn (lambda (x) (ar-tag 'mac x))))
 
 
-(add-ac-build-step
+#|(add-ac-build-step
   (lambda (arc)
     (ac-mac-fn arc 'racket '(x)
       (lambda (x)
-        (toarc `',(eval (toscheme x) (hash-ref arc 'racket-namespace*)))))))
+        (toarc `',(eval (toscheme x) (hash-ref arc 'racket-namespace*)))))))|#
 
 (add-ac-build-step
  (lambda (arc)
@@ -131,6 +137,52 @@
              (lambda (arc)
                (ac-def-fn arc 'name 'args (lambda args body ...)))
              `(ac-def ,'name ,'args)))))))
+
+(define-syntax ac-mac
+  (lambda (stx)
+    (syntax-case stx ()
+      ((ac-mac name args body ...)
+       (with-syntax ((arc (datum->syntax #'name 'arc)))
+         #'(add-ac-build-step
+             (lambda (arc)
+               (ac-mac-fn arc 'name 'args (lambda args body ...)))
+             `(ac-mac ,'name ,'args)))))))
+
+#|(ac-mac racket (x)
+  (toarc `',(eval (toscheme x) (hash-ref arc 'racket-namespace*))))|#
+#|
+(define-syntax internal-mac
+  (lambda (stx)
+    (syntax-case stx ()
+      ((internal-mac name parms body)
+       (with-syntax ((arc (datum->syntax #'name 'arc)))
+         #'(ac-mac name parms
+;                   possibly faster?
+;                   (mcons (internal-name 'fn)
+;                     (mcons (toarc parms) (toarc body)))
+               (toarc `(,(internal-name 'name) parms body))
+           `(internal-mac ,'name ,'parms ,'body)))))))
+
+(define-syntax-rule (internal-mac name parms body)
+  (ac-mac name parms
+;                   possibly faster?
+;                   (mcons (internal-name 'fn)
+;                     (mcons (toarc parms) (toarc body)))
+      (toarc `(,(internal-name 'name) 'parms 'body))))
+
+
+(internal-mac fn (parms . body) `(,parms ,@body))
+
+(internal-mac quote (x) `(,x))
+
+(internal-mac quasiquote (x) `(,x))
+
+(internal-mac if args `(,@args))
+
+(internal-mac assign (x y) `(,x ,y))|#
+
+(ac-mac fn (parms . body)
+  (toarc `(,(internal-name 'fn) ,parms ,@body)))
 
 
 ;; The Arc compiler!
@@ -160,7 +212,7 @@
     (syntax-case stx ()
       ((extend name args test body ...)
        (with-syntax ((arc (datum->syntax #'args 'arc))
-                     (it       (datum->syntax #'args 'it)))
+                     (it  (datum->syntax #'args 'it)))
          #'(extend-impl 'name
             (lambda (arc . args) test)
             (lambda (arc it . args) body ...)
@@ -263,6 +315,8 @@
   (let ((v (arc-cadr s)))
     ((g list) ((g list) 'racket-quote (lambda () v)))))
 
+#| (internal-name ) |#
+
 
 ;; fn
 
@@ -306,16 +360,6 @@
 
 (extend ac (s env) ((g caris) s (internal-name 'fn))
   ((g ac-fn) (arc-cadr s) (arc-cddr s) env))
-
-(add-ac-build-step
-  (lambda (arc)
-    (ac-mac-fn arc 'fn '(parms . body)
-      (lambda (parms . body)
-;        possibly faster?
-;        (mcons (internal-name 'fn)
-;          (mcons (toarc parms) (toarc body)))
-        (toarc `(,(internal-name 'fn) ,parms ,@body))
-))))
 
 #|
 My failed attempt to make fn return a value. We can return to this later.
@@ -558,10 +602,11 @@ My failed attempt to make fn return a value. We can return to this later.
         (else
          (arc-list 'quote (list x)))))
 
-(extend ac (s env)
-  ((g caris) s 'quasiquote)
+(extend ac (s env) ((g caris) s 'quasiquote)
   (let ((expansion ((g qq-expand) (arc-cadr s))))
     ((g ac) expansion env)))
+
+#| (internal-name ) |#
 
 
 ;; if
@@ -577,9 +622,10 @@ My failed attempt to make fn return a value. We can return to this later.
                    ((g ac) (arc-cadr args) env)
                    ((g ac-if) (arc-cddr args) env)))))
 
-(extend ac (s env)
-  ((g caris) s 'if)
+(extend ac (s env) ((g caris) s 'if)
   ((g ac-if) ((g cdr) s) env))
+
+#| (internal-name ) |#
 
 
 ;; assign
@@ -611,9 +657,10 @@ My failed attempt to make fn return a value. We can return to this later.
   (mcons 'racket-begin
          ((g ac-assignn) x env)))
 
-(extend ac (s env)
-  (ar-caris s 'assign)
+(extend ac (s env) (ar-caris s 'assign)
   ((g ac-assign) (arc-cdr s) env))
+
+#| (internal-name ) |#
 
 
 ;; macro
