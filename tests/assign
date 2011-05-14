@@ -1,0 +1,59 @@
+>>> assign
+#(tagged mac #<procedure...>)
+
+>>> %%internal-assign
+g...
+
+>>> (assign %%internal-assign "hiya!")
+"hiya!"
+
+
+>>> (assign foo 'bar)
+bar
+
+>>> foo
+bar
+
+
+>>> (= other-assign assign)
+#(tagged mac #<procedure...>)
+
+>>> (other-assign foo 'qux)
+qux
+
+>>> foo
+qux
+
+
+>>> (mac assign (x y) "foo")
+#(tagged mac #<procedure>)
+
+>>> (assign foo 'bar)
+"foo"
+
+>>> foo
+qux
+
+>>> (other-assign foo 'bar)
+bar
+
+>>> foo
+bar
+
+
+>>> (other-assign assign other-assign)
+#(tagged mac #<procedure...>)
+
+>>> (assign foo 'foo)
+foo
+
+>>> foo
+foo
+
+
+>>> (let assign 5 assign)
+5
+
+>>> (let assign (fn (x y) "bar")
+      (assign 'a 1))
+"bar"

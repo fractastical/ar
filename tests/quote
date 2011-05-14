@@ -1,0 +1,68 @@
+>>> quote
+#(tagged mac #<procedure...>)
+
+>>> %%internal-quote
+g...
+
+>>> (assign %%internal-quote "hiya!")
+"hiya!"
+
+
+>>> (quote a)
+a
+
+>>> 'a
+a
+
+
+>>> (quote (1 2 3))
+(1 2 3)
+
+>>> '(1 2 3)
+(1 2 3)
+
+
+>>> (quote (quote (1 2 3)))
+(quote (1 2 3))
+
+>>> ''(1 2 3)
+(quote (1 2 3))
+
+
+>>> (= other-quote quote)
+#(tagged mac #<procedure...>)
+
+>>> (other-quote a)
+a
+
+
+>>> (mac quote (x) "foo")
+#(tagged mac #<procedure>)
+
+>>> (quote a)
+"foo"
+
+>>> 'a
+"foo"
+
+>>> (other-quote a)
+a
+
+
+>>> (assign quote other-quote)
+#(tagged mac #<procedure...>)
+
+>>> (quote a)
+a
+
+
+>>> (let quote 5 quote)
+5
+
+>>> (let quote (fn (x) "bar")
+      (quote 1))
+"bar"
+
+>>> (let quote (fn (x) "bar")
+      '1)
+"bar"

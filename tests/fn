@@ -1,6 +1,12 @@
 >>> fn
 #(tagged mac #<procedure...>)
 
+>>> %%internal-fn
+g...
+
+>>> (assign %%internal-fn "hiya!")
+"hiya!"
+
 
 >>> (fn (a b c) (list a b c))
 #<procedure>

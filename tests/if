@@ -1,0 +1,47 @@
+>>> if
+#(tagged mac #<procedure...>)
+
+>>> %%internal-if
+g...
+
+>>> (assign %%internal-if "hiya!")
+"hiya!"
+
+
+>>> (if 'a)
+a
+
+>>> (if nil)
+nil
+
+
+>>> (= other-if if)
+#(tagged mac #<procedure...>)
+
+>>> (other-if 'a)
+a
+
+
+>>> (mac if (x) "foo")
+#(tagged mac #<procedure>)
+
+>>> (if 'a)
+"foo"
+
+>>> (other-if 'a)
+a
+
+
+>>> (assign if other-if)
+#(tagged mac #<procedure...>)
+
+>>> (if 'a)
+a
+
+
+>>> (let if 5 if)
+5
+
+>>> (let if (fn (x) "bar")
+      (if 1))
+"bar"

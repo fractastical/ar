@@ -1,3 +1,59 @@
+>>> quasiquote
+#(tagged mac #<procedure...>)
+
+>>> %%internal-quasiquote
+g...
+
+>>> (assign %%internal-quasiquote "hiya!")
+"hiya!"
+
+
+>>> (quasiquote a)
+a
+
+>>> `a
+a
+
+
+>>> (= other-quasiquote quasiquote)
+#(tagged mac #<procedure...>)
+
+>>> (other-quasiquote a)
+a
+
+
+>>> (mac quasiquote (x) "foo")
+#(tagged mac #<procedure>)
+
+>>> (quasiquote a)
+"foo"
+
+>>> `a
+"foo"
+
+>>> (other-quasiquote a)
+a
+
+
+>>> (assign quasiquote other-quasiquote)
+#(tagged mac #<procedure...>)
+
+>>> (quasiquote a)
+a
+
+
+>>> (let quasiquote 5 quasiquote)
+5
+
+>>> (let quasiquote (fn (x) "bar")
+      (quasiquote 1))
+"bar"
+
+>>> (let quasiquote (fn (x) "bar")
+      `1)
+"bar"
+
+
 >>> `(a b ,@nil)
 (a b)
 
