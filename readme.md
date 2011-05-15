@@ -1,42 +1,43 @@
-The goal of this runtime project is to make Arc (even more!) hackable
-by reflecting the Arc compiler into Arc, which in turn also lets more
-of the Arc compiler to be written in Arc itself.
+Join the conversation about the Arc Runtime Project ("ar") on Convore:
+https://convore.com/arc-runtime-project/
 
-    arc> (ac-literal? 123)
-    t
-    arc> (eval 123)
-    123
-    arc> +
-    #<procedure:ar-+>
-    arc> (ac-literal? +)
-    nil
-    arc> (eval +)
-    err: Bad object in expression #<procedure:ar-+>
-    arc> (defrule ac-literal? (isa x 'fn) t)
-    #<procedure:g1444>
-    arc> (ac-literal? +)
-    t
-    arc> (eval +)
-    #<procedure:ar-+>
+Goals of ar include:
 
-Along the way we take advantage of the more hackable Arc to fix some
-bugs and make some enhancements in the runtime that turn out to be
-easier to do with a compiler which isn't quite as tightly bound to
-Scheme.
+* Make Arc (even more!) hackable, enabling people to create their
+  own personal programming language -- beyond what can be done just
+  with with macros.
+
+* Provide a complete implementation of Arc 3.1, as one of the
+  available languages based on ar.
+
+* Be at least as good as Arc 3.1 at running a production website; thus
+  for example you should be able to run a news.arc site on top of ar
+  if you wanted to.
+
+* Use the latest Racket version directly, instead of relying on the
+  "mzscheme" backwards compatibility mode.
+
+* Fix bugs and make enhancements in the runtime which are easier to do
+  with a compiler which isn't quite as tightly bound to Scheme.
 
 This code is under development, much of Arc is unimplemented.
 
 Get to the REPL with:
 
-    racket as.ss
+    ./arc
 
 or, if you have rlwrap:
 
-    rlwrap -q \" racket as.ss
+    rlwrap -q \" ./arc
 
-You can also use "mzscheme" instead of "racket".
+You can load Arc files from the command line and then go into the
+REPL:
 
-Note that you don't use the "-f" option like you would with Arc 3.1.
+    /path/to/ar/arc foo.arc bar.arc
+
+or, if you want to execute your Arc program without entering the REPL:
+
+    /path/to/ar/arc --no-repl foo.arc bar.arc
 
 Run tests with:
 
@@ -51,7 +52,12 @@ Bug reports are *greatly* appreciated!
 Todo
 ----
 
+* The code currently requires Racket, though a compatibility mode for
+  PLT Scheme would be useful.
 * clean up messy code in io.arc
+* I haven't been able to replicate the socket force close problem yet
+  that Arc 3.1 solves by using custodians; is this still a problem in
+  Racket?
 * the strategy for representing Racket lists in Arc (which we need to
   have ac return an Arc list representing Racket code) is a bit
   confused... a clearer way to distinguish nil and () would be better.
@@ -107,14 +113,9 @@ Todo
   * rmfile
   * client-ip
 
- 
+
 Changes
 -------
-
-These bug fixes and enhancements are demonstrations of things that
-become easier to do when more of the Arc compiler is written in Arc.
-Because of the flexibility of the compiler they're easily reversed or
-changed.
 
 * Arc lists are implemented using Racket's mutable pairs (mpair's)
 
@@ -130,6 +131,27 @@ changed.
 * Function rest arguments are 'nil terminated Arc lists
 
          (cdr ((fn args args) 1)) => nil
+
+
+* the Arc compiler is reflected into Arc (where it can be hacked by
+  redefining or extending the functions which implement the compiler)
+
+         arc> (ac-literal? 123)
+         t
+         arc> (eval 123)
+         123
+         arc> +
+         #<procedure:ar-+>
+         arc> (ac-literal? +)
+         nil
+         arc> (eval +)
+         err: Bad object in expression #<procedure:ar-+>
+         arc> (defrule ac-literal? (isa x 'fn) t)
+         #<procedure:g1444>
+         arc> (ac-literal? +)
+         t
+         arc> (eval +)
+         #<procedure:ar-+>
 
 
 * lexical identifiers take precedence over macros
@@ -264,15 +286,15 @@ changed.
          (mac square-bracket body
            `(fn (_) (,@body)))
 
-  this makes it easier to hack the square bracket syntax. 
+  this makes it easier to hack the square bracket syntax.
 
 * the REPL removes excess characters at the end of the input line
 
   In Arc 3.1:
 
-         arc> (readline) ;Fee fi fo fum   
+         arc> (readline) ;Fee fi fo fum
          " ;Fee fi fo fum"
-         arc> 
+         arc>
 
   this is because Racket's reader reads up to the closing ")", leaving
   the rest of the input line in the input buffer, which is then read
@@ -286,7 +308,12 @@ changed.
          arc> (readline) ;Fee fi fo fum
          hello
          "hello"
-         arc> 
+         arc>
+
+* (coerce '() 'cons) now returns nil
+
+  thus any list can be coerce'd to a "cons", even though the empty
+  list isn't actually represented by a cons cell.
 
 
 Contributors
@@ -318,3 +345,6 @@ that.
 
 rocketnia provided the patch to make lexical variables take precedence
 over macros with the same name; waterhouse contributed the test.
+
+Pauan moved Arc's coerce and + functions out of ar; and made `(coerce
+'() 'cons)` return nil.

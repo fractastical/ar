@@ -3,10 +3,9 @@
 (require scheme/mpair)
 
 (provide ar-caris arc-cadr arc-car arc-cddr arc-cdr arc-is arc-isa arc-join
-         arc-list arc-list? arc-map1 arc-type ar-rep ar-tag char-or-string?
-         combine deep-fromarc err exint? hash iround list-fromarc new-ar no?
-         noprint r/list-toarc run-ar-tests tagged? tfalse tnil toarc toscheme
-         true? write-to-string)
+         arc-list arc-map1 arc-type ar-rep ar-tag combine deep-fromarc err
+         exint? hash list-fromarc new-ar no? noprint r/list-toarc run-ar-tests
+         tagged? tfalse tnil toarc toscheme true? write-to-string)
 
 (define ar-tests* '())
 
@@ -269,13 +268,6 @@
 
 (define (arc-isa x y)
   (arc-is (arc-type x) y))
-
-(define (iround x) (inexact->exact (round x)))
-
-
-(define (char-or-string? x) (or (string? x) (char? x)))
-
-(define (arc-list? x) (or (no? x) (mpair? x)))
 
 
 (define (arc->2 x y)
