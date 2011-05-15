@@ -366,12 +366,12 @@
   `(atomic (withs ,@args)))
 
 (def firstn (n xs)
-  (if (not n)            xs
+  (if (not n)           xs
       (and (> n 0) xs)  (cons (car xs) (firstn (- n 1) (cdr xs)))
                         nil))
 
 (def nthcdr (n xs)
-  (if (not n)  xs
+  (if (not n) xs
       (> n 0) (nthcdr (- n 1) (cdr xs))
               xs))
 
@@ -503,7 +503,7 @@
 ; (nthcdr x y) = (cut y x).
 
 (def cut (seq start (o end))
-  (let end (if (not end)   (len seq)
+  (let end (if (not end)  (len seq)
                (< end 0)  (+ (len seq) end)
                           end)
     (if (isa seq 'string)
@@ -529,7 +529,7 @@
   (let f (testify test)
     (if (list? seq)
         ((afn (s)
-           (if (not s)       nil
+           (if (not s)      nil
                (f (car s))  (self (cdr s))
                             (cons (car s) (self (cdr s)))))
           seq)
@@ -687,7 +687,7 @@
 
 (def flat x
   ((afn (x acc)
-     (if (not x)   acc
+     (if (not x)  acc
          (atom x) (cons x acc)
                   (self (car x) (self (cdr x) acc))))
    x nil))
@@ -1258,7 +1258,7 @@
     ((afn (fs)
        (if (not fs)       t
            (not (cdr fs)) (apply (car fs) args)
-                         (and (apply (car fs) args) (self (cdr fs)))))
+                          (and (apply (car fs) args) (self (cdr fs)))))
      fns)))
 
 (def atend (i s)
@@ -1276,8 +1276,8 @@
   (fn args (if (car args) (apply f args))))
 
 (def retrieve (n f xs)
-  (if (not n)                 (keep f xs)
-      (or (<= n 0) (not xs))  nil
+  (if (not n)                (keep f xs)
+      (or (<= n 0) (not xs)) nil
       (f (car xs))           (cons (car xs) (retrieve (- n 1) f (cdr xs)))
                              (retrieve n f (cdr xs))))
 

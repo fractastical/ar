@@ -5,7 +5,7 @@
 
 
 (def input->list (x)
-  (collect:whiler c (readc x nil) not
+  (collect:whiler c (readc x nil) no
     (yield c)))
 
 
@@ -51,7 +51,7 @@
 (def match (x y)
   (w/target x
     (re:subst ".*" "\\.\\.\\." (escape y))
-    (not re-text*)))
+    (no re-text*)))
 
 
 (def eval-test ((run expect))

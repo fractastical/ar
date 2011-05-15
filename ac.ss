@@ -111,12 +111,6 @@
 (define ac-mac-fn (new-ac-fn (lambda (x) (ar-tag 'mac x))))
 
 
-#|(add-ac-build-step
-  (lambda (arc)
-    (ac-mac-fn arc 'racket '(x)
-      (lambda (x)
-        (toarc `',(eval (toscheme x) (hash-ref arc 'racket-namespace*)))))))|#
-
 (add-ac-build-step
  (lambda (arc)
    (ac-def-fn arc 'new-arc '((o options)) new-arc)

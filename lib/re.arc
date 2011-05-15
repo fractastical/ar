@@ -48,7 +48,7 @@
 
 (def match-char (char c)
   (when (and char (isnt c #\nul))
-    (if (is car.char #\^) (not:match-char cdr.char c)
+    (if (is car.char #\^) (no:match-char cdr.char c)
         (is car.char #\\) (case cadr.char
                             #\s (in c #\  #\tab #\return #\newline #\return)
                             #\w (or (is c #\_) alphadig.c)
@@ -76,11 +76,11 @@
                             (match-core rest cdr.text (cons car.text acc) cont) it
                             cont (cont))
                        cont (cont))))
-    (aif not.re (obj result rev.acc rest text cont cont)
+    (aif no.re (obj result rev.acc rest text cont cont)
          (is car.re #\() (apply subex (match-parens:cdr re))
          (and (is car.re #\$) (in car.text nil #\newline #\return)) (match-core cdr.re text acc cont)
          (and (is car.re #\^) (or (in car.text #\newline #\nul))) (match-core cdr.re cdr.text acc cont)
-         not.text nil
+         no.text nil
          (is car.re #\\) (if (mem cadr.re shorthand*) (dochar (list car.re cadr.re) cddr.re)
                              (is cadr.re car.text) (match-core cddr.re cdr.text (cons car.text acc) cont)
                              cont (cont))

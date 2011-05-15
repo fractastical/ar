@@ -3,14 +3,14 @@
 
 (require scheme/cmdline)
 
-(define run-repl #t)
+(define run-repl #f)
 (define files-to-load '())
 
 (command-line
  #:once-each
- (("--no-repl")
-  "do not run the REPL"
-  (set! run-repl #f))
+ (("--repl")
+  "run the REPL even when specifying files"
+  (set! run-repl #t))
 
  #:args files
  (set! files-to-load files))
@@ -28,9 +28,11 @@
   (aload arc (string-append srcdir* "core.arc")
              (string-append srcdir* "base.arc")
              (string-append srcdir* "arc.arc")
-             (string-append srcdir* "arc3.1/backcompat.arc"))
-  ((get arc 'load) (string-append srcdir* "arc3.1/strings.arc"))
+             (string-append srcdir* "arc3.1/backcompat.arc")
+             (string-append srcdir* "arc3.1/strings.arc"))
+; this should work, but says "undefined variable: _"
+;  ((get arc 'load) (string-append srcdir* "arc3.1/strings.arc"))
   (for-each (get arc 'load) files-to-load)
-  (when run-repl
+  (when (or run-repl (null? files-to-load))
     ((get arc 'load) (string-append srcdir* "repl.arc"))
     (noprint ((get arc 'repl)))))
