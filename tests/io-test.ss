@@ -7,7 +7,7 @@
        "../base.arc"
        "../arc.arc"
        "../arc3.1/backcompat.arc"
-       "../arc3.1/strings.arc"
+       "../io.arc"
        "equal-wrt-testing.arc"
        "test.arc"
-       "strings.t")
+       "io.t")

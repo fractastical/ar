@@ -147,7 +147,7 @@
   `',(eval x))
 
 (def system (cmd)
-  ((inline ((racket-module 'scheme/system) 'system)) cmd)
+  ((inline ((racket-module-ref 'scheme/system) 'system)) cmd)
   nil)
 
 (mac caselet (var expr . args)
@@ -166,6 +166,8 @@
 
 (def try-custodian (port))
 
+(racket (racket-require (racket-prefix-in racket- scheme/tcp)))
+
 (def close ports
   (each port ports
     (case (type port)
@@ -183,7 +185,7 @@
     (racket (racket-open-output-file filename #:mode (racket-quote text) #:exists flag))))
 
 (def open-socket (port)
-  ((inline ((racket-module 'scheme/tcp) 'tcp-listen)) port 50 (racket "#t")))
+  ((inline ((racket-module-ref 'scheme/tcp) 'tcp-listen)) port 50 (racket "#t")))
 
 (let expander
      (fn (f var name body)
@@ -323,7 +325,7 @@
   (map [do (write _) (disp " ")] args)
   (disp #\newline))
 
-(def make-semaphore ((o init))
+(def make-semaphore ((o init 0))
   (racket-make-semaphore init))
 
 (def call-with-semaphore (sema func)

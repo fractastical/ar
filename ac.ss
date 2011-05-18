@@ -140,66 +140,16 @@
                (ac-mac-fn arc 'name 'args (lambda args body ...)))
              `(ac-mac ,'name ,'args)))))))
 
-#|(define-syntax internal-mac
+(define-syntax ac-def-sig
   (lambda (stx)
     (syntax-case stx ()
-      ((internal-mac name args body ...)
+      ((ac-def-sig name racket-args arc-signature body ...)
        (with-syntax ((arc (datum->syntax #'name 'arc)))
          #'(add-ac-build-step
-             (lambda (arc)
-               (ac-mac-fn arc 'name 'args
-                 (lambda args
-                   (toarc ``(,(internal-name 'name) args body ...)))))
-             `(internal-mac ,'name ,'args)))))))|#
-
-#|(ac-mac racket (x)
-  (toarc `',(eval (toscheme x) (hash-ref arc 'racket-namespace*))))|#
-#|
-(define-syntax internal-mac
-  (lambda (stx)
-    (syntax-case stx ()
-      ((internal-mac name parms body)
-       (with-syntax ((arc (datum->syntax #'name 'arc)))
-         #'(ac-mac name parms
-;                   possibly faster?
-;                   (mcons (internal-name 'fn)
-;                     (mcons (toarc parms) (toarc body)))
-               (toarc `(,(internal-name 'name) parms body))
-           `(internal-mac ,'name ,'parms ,'body)))))))
-|#
-#|(define-syntax-rule (internal-mac name parms body ...)
-  (ac-mac name parms
-;                   possibly faster?
-;                   (mcons (internal-name 'fn)
-;                     (mcons (toarc parms) (toarc body)))
-    (toarc `(,(internal-name 'name) parms body ...))))
-|#
-#|
-(define-syntax internal-mac
-  (lambda (stx)
-    (syntax-case stx ()
-      ((internal-mac name args body ...)
-       (with-syntax ((arc (datum->syntax #'name 'arc)))
-         #'(ac-mac name args
-             (toarc `(,(internal-name 'name) args body ...))))))))|#
-#|
-        (add-ac-build-step
-             (lambda (arc)
-
-               (ac-mac-fn arc 'name 'args (lambda args body ...)))
-             `(internal-mac ,'name ,'args)))))))|#
-
-
-#|(internal-mac fn (parms . body) `(,parms ,@body))
-
-(internal-mac quote (x) `(,x))
-
-(internal-mac quasiquote (x) `(,x))
-
-(internal-mac if args `(,@args))
-
-(internal-mac assign (x y) `(,x ,y))|#
-
+            (lambda (arc)
+              (ac-def-fn arc 'name 'arc-signature
+                (lambda racket-args body ...)))
+            `(ac-def-sig ,'name ,'racket-args)))))))
 
 ;; coerce
 
@@ -305,6 +255,71 @@
 
 (ac-mac quote (x)
   (toarc `(,(internal-name 'quote) ,x)))
+
+
+;; peekc
+
+(ac-def-sig peekc ((port (current-input-port))) ((o port stdin))
+  (let ((c (peek-char port)))
+    (if (eof-object? c) 'nil c)))
+
+
+;; readc
+
+(ac-def-sig readc ((port (current-input-port)) (eof 'nil))
+                  ((o port stdin) (o eof nil))
+  (let ((c (read-char port)))
+    (if (eof-object? c) eof c)))
+
+
+;; writec
+
+(ac-def-sig writec (c (port (current-output-port)))
+                   (c (o port stdout))
+  (write-char c port))
+
+
+;; racket-parameterize
+
+(ac-def racket-parameterize (parameter value body)
+  (parameterize ((parameter value))
+    (body)))
+
+
+;; racket-module-ref
+
+(ac-def racket-module-ref (a/module)
+  (let ((r/module (deep-fromarc a/module)))
+    (lambda (sym)
+      (dynamic-require r/module sym))))
+
+
+;; ar-funcall
+
+(ac-def ar-funcall0 (fn)
+  (if (procedure? fn)
+      (fn)
+      (ar-apply fn)))
+
+(ac-def ar-funcall1 (fn arg1)
+  (if (procedure? fn)
+      (fn arg1)
+      (ar-apply fn arg1)))
+
+(ac-def ar-funcall2 (fn arg1 arg2)
+  (if (procedure? fn)
+      (fn arg1 arg2)
+      (ar-apply fn arg1 arg2)))
+
+(ac-def ar-funcall3 (fn arg1 arg2 arg3)
+  (if (procedure? fn)
+      (fn arg1 arg2 arg3)
+      (ar-apply fn arg1 arg2 arg3)))
+
+(ac-def ar-funcall4 (fn arg1 arg2 arg3 arg4)
+  (if (procedure? fn)
+      (fn arg1 arg2 arg3 arg4)
+      (ar-apply fn arg1 arg2 arg3 arg4)))
 
 
 ;; The Arc compiler!
@@ -413,11 +428,11 @@
 
    (else
     (mcons (case ((g len) args)
-             ((0) ar-funcall0)
-             ((1) ar-funcall1)
-             ((2) ar-funcall2)
-             ((3) ar-funcall3)
-             ((4) ar-funcall4)
+             ((0) (g ar-funcall0))
+             ((1) (g ar-funcall1))
+             ((2) (g ar-funcall2))
+             ((3) (g ar-funcall3))
+             ((4) (g ar-funcall4))
              (else ar-apply))
            (mcons ((g ac) f env)
                   ((g map1) (lambda (arg) ((g ac) arg env)) args))))))
@@ -563,40 +578,16 @@ My failed attempt to make fn return a value. We can return to this later.
 (ac-def apply (fn . args)
   (apply ar-apply fn (combine args)))
 
-(define (ar-funcall0 fn)
-  (if (procedure? fn)
-      (fn)
-      (ar-apply fn)))
 
 ;(test (ar-funcall0 'nil +) 0)
-
-(define (ar-funcall1 fn arg1)
-  (if (procedure? fn)
-      (fn arg1)
-      (ar-apply fn arg1)))
 
 ;(test (ar-funcall1 'nil + 3) 3)
 ;(test (ar-funcall1 'nil "abcd" 2) #\c)
 
-(define (ar-funcall2 fn arg1 arg2)
-  (if (procedure? fn)
-      (fn arg1 arg2)
-      (ar-apply fn arg1 arg2)))
-
 ;(test (ar-funcall2 'nil + 3 4) 7)
 ;(test (ar-funcall2 'nil (hash 'a 1 'b 2) 'x 3) 3)
 
-(define (ar-funcall3 fn arg1 arg2 arg3)
-  (if (procedure? fn)
-      (fn arg1 arg2 arg3)
-      (ar-apply fn arg1 arg2 arg3)))
-
 ;(test (ar-funcall3 'nil + 3 4 5) 12)
-
-(define (ar-funcall4 fn arg1 arg2 arg3 arg4)
-  (if (procedure? fn)
-      (fn arg1 arg2 arg3 arg4)
-      (ar-apply fn arg1 arg2 arg3 arg4)))
 
 ;(test (ar-funcall4 'nil + 3 4 5 6) 18)
 

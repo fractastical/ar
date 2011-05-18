@@ -329,26 +329,6 @@
 (test (combine (list 'a 'b (arc-list 'c 'd))) '(a b c d))
 
 
-(define (racket-module a/module)
-  (let ((r/module (deep-fromarc a/module)))
-    (lambda (sym)
-      (dynamic-require r/module sym))))
-
-(define (racket-parameterize parameter value body)
-  (parameterize ((parameter value))
-    (body)))
-
-(define (arc-writec c (port (current-output-port)))
-  (write-char c port))
-
-
-(define (arc-readc (port (current-input-port)) (eof 'nil))
-  (let ((c (read-char port)))
-    (if (eof-object? c) eof c)))
-
-(define (arc-peekc (port (current-input-port)))
-  (let ((c (peek-char port)))
-    (if (eof-object? c) 'nil c)))
 
 (define ar-namespace*
   (hash '-                   -
@@ -371,20 +351,15 @@
         'map1                arc-map1
         'nil                 'nil
         'outstring           open-output-string
-        'peekc               arc-peekc
         'r/list-toarc        r/list-toarc
         'racket-stdin        current-input-port
         'racket-stdout       current-output-port
         'racket-stderr       current-error-port
-        'racket-module       racket-module
-        'racket-parameterize racket-parameterize
-        'readc               arc-readc
         'rep                 ar-rep
         't                   't
         'ar-toarc            toarc
         'type                arc-type
         'uniq                gensym
-        'writec              arc-writec
         ))
 
 (define (new-ar)
