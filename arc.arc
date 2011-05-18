@@ -54,17 +54,6 @@
          x)))
 
 
-#|
-;; makes apply work on macros
-;; this is currently defined in ac.ss
-;; maybe it should be defined here instead?
-
-(defrule coerce (and (is type 'fn)
-                     (isa x 'mac))
-  (fn args
-    (eval (apply (rep x) args))))
-|#
-
 (def int (x (o b 10))
   (coerce x 'int b))
 
@@ -74,7 +63,9 @@
 (mac tostring body
   (w/uniq gv
    `(w/outstring ,gv
-      (w/stdout ,gv ,@body)
+      (w/stdout ,gv
+        (w/stderr ,gv
+          ,@body))
       (inside ,gv))))
 
 (mac erp (x)

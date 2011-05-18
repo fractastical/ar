@@ -97,6 +97,17 @@
                    (apply (fn ,arglist ,@body) ,args)
                    (apply orig ,args))))))))
 
+#|
+;; makes apply work on macros
+;; this is currently defined in ac.ss
+;; maybe it should be defined here instead?
+
+(defrule coerce (and (is type 'fn)
+                     (isa x 'mac))
+  (fn args
+    (eval (apply (rep x) args))))
+|#
+
 
 ;=============================================================================
 ;  Functions
@@ -381,3 +392,22 @@
 (defrule print (isa x 'cons)
   (disp "(" port)
   (printwith-list primitive x port))
+
+
+(def printwith-table (primitive x keys port)
+  (whenlet n (car keys)
+    (disp "(" port)
+    (print primitive n port)
+    (disp " . " port)
+    (print primitive (x n) port)
+    (disp ")" port)
+    (when (cdr keys)
+      (disp "\n      " port)
+      (printwith-table primitive x (cdr keys) port))))
+
+;; should move `keys` and `sort` into base.arc
+
+(defrule print (isa x 'table)
+  (disp "#hash(" port)
+  (printwith-table primitive x (sort < (keys x)) port)
+  (disp ")" port))
