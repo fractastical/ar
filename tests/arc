@@ -1,0 +1,1680 @@
+>>> (w/instring s "" (readc s 'end))
+end
+
+>>> (w/instring s ""    (peekc s))
+nil
+
+>>> (w/instring s "abc" (peekc s))
+#\a
+
+>>> (w/instring s "abc"
+      (peekc s)
+      (readc s))
+#\a
+
+>>> (tostring (writec #\a))
+"a"
+
+>>> (do (assign a 1)
+        (assign b 2)
+        (assign c 3)
+        (list a b c))
+(1 2 3)
+
+>>> (do (safeset a 123) a)
+123
+
+>>> (let p (outstring)
+      (w/stderr p
+        (assign a 123)
+        (safeset a 456))
+      (inside p))
+"*** redefining a\n"
+
+>>> (do (assign-fn foo () (fn () 123))
+        (foo))
+123
+
+
+>>> (mac achtung (x) `(+ ,x 2))
+#(tagged mac #<procedure>)
+
+>>> (let achtung [+ _ 5]
+      (achtung 0))
+5
+
+
+>>> (do (def a () 123)
+        (a))
+123
+
+>>> (car nil)
+nil
+
+>>> (car '(1 2 3))
+1
+
+>>> (cdr nil)
+nil
+
+>>> (cdr '(1 2 3))
+(2 3)
+
+>>> (caar '((1 2)))
+1
+
+>>> (cadr '(1 2 3))
+2
+
+>>> (cddr '(1 2 3))
+(3)
+
+>>> (cons? 3)
+nil
+
+>>> (cons? '(3))
+t
+
+>>> (atom 3)
+t
+
+>>> (atom '(3))
+nil
+
+>>> (idfn 123)
+123
+
+>>> (map1 cons? '(1 (2) 3 (4)))
+(nil t nil t)
+
+>>> (pair '(1 2 3 4 5))
+((1 2) (3 4) (5))
+
+>>> (pair '(1 2 3 4 5) cons)
+((1 . 2) (3 . 4) (5))
+
+>>> (and)
+t
+
+>>> (and 3)
+3
+
+>>> (and 3 4)
+4
+
+>>> (and nil 4)
+nil
+
+>>> (and 3 4 5)
+5
+
+
+>>> (alref '((a 1) (b 2)) 'b)
+2
+
+>>> (with (a 1 b 2) (list a b))
+(1 2)
+
+>>> (let a 1 a)
+1
+
+>>> (withs (a 1 b (+ a 2)) (list a b))
+(1 3)
+
+>>> ((rfn foo (x) (if (not x) 0 (+ 1 (foo (cdr x))))) '(a b c))
+3
+
+>>> ((afn (x) (if (not x) 0 (+ 1 (self (cdr x))))) '(a b c))
+3
+
+>>> ((compose + car) '(3 4))
+3
+
+>>> ((complement cons?) 3)
+t
+
+>>> (rev '(1 2 3 4 5))
+(5 4 3 2 1)
+
+
+>>> (isnt 5 5)
+nil
+
+>>> (isnt 4 6)
+t
+
+>>> (w/uniq (a b))
+nil
+
+
+>>> (or)
+nil
+
+>>> (or 3)
+3
+
+>>> (or 3 4)
+3
+
+>>> (or nil 4)
+4
+
+>>> (or nil nil 5)
+5
+
+>>> (list? nil)
+t
+
+>>> (list? '(1 2 3))
+t
+
+>>> (list? 3)
+nil
+
+
+>>> (in 'c 'a 'b 'c)
+t
+
+>>> (in 'x 'a 'b 'c)
+nil
+
+
+>>> (iso '(1 2 3) (list 1 2 3))
+t
+
+>>> (iso 'x 5)
+nil
+
+>>> (when 'yes 1 2 3 (+ 4 5))
+9
+
+>>> (unless 'yes 1 2 3 (+ 4 5))
+nil
+
+>>> (do (assign x 5)
+        (while (> x 0)
+          (assign x (- x 1)))
+        x)
+0
+
+>>> (empty '())
+t
+
+>>> (empty '(a b))
+nil
+
+>>> (empty "")
+t
+
+>>> (empty "ab")
+nil
+
+>>> (empty (table))
+t
+
+>>> (empty (let h (table)
+             (sref h 4 'x)
+             h))
+nil
+
+>>> (some 'x '(a b c))
+nil
+
+>>> (some 'x '(a x c))
+t
+
+>>> (some atom '((a) (b) (c)))
+nil
+
+>>> (some atom '((a) b (c)))
+t
+
+>>> (some #\x "abc")
+nil
+
+>>> (some #\x "abx")
+t
+
+>>> (some (fn (_) (> (coerce _ 'int) 99)) "abc")
+nil
+
+>>> (some (fn (_) (> (coerce _ 'int) 99)) "abcd")
+t
+
+>>> (all 'x '(a x x))
+nil
+
+>>> (all 'x '(x x x))
+t
+
+
+>>> (defvar N1WcGPq9wG (fn () 3))
+nil
+
+>>> N1WcGPq9wG
+3
+
+
+>>> (sym "foo")
+foo
+
+>>> (int "123")
+123
+
+
+>>> (ac-defvar 'j4K3II9Jh6 (list (fn () 'foo)))
+nil
+
+>>> j4K3II9Jh6
+foo
+
+
+>>> (ac-defvar 'EFsEQlU8S1 (list nil (fn (x) (assign U5liRzluxt (+ x 1)))))
+nil
+
+>>> (assign EFsEQlU8S1 5)
+5
+
+>>> U5liRzluxt
+6
+
+
+>>> (ac-defvar 'Y1jAJlOrAr (list nil))
+nil
+
+>>> (assign Y1jAJlOrAr 5)
+error: Y1jAJlOrAr is not assignable
+
+
+>>> (do (assign NJyVDPGgYb (parameter 33))
+        (parameterize NJyVDPGgYb 77 (NJyVDPGgYb)))
+77
+
+
+>>> (make-dynamic fJFyT3D6q9 (parameter 36))
+nil
+
+>>> fJFyT3D6q9
+36
+
+
+>>> (make-dynamic NwhlXqTbBJ (parameter 36))
+nil
+
+>>> (type (paramfor NwhlXqTbBJ))
+parameter
+
+
+>>> (make-dynamic asbHOchCJG (parameter 36))
+nil
+
+>>> (dlet asbHOchCJG 77 asbHOchCJG)
+77
+
+
+>>> (dynamic Y2J8kJ2gV6 33)
+nil
+
+>>> (dlet Y2J8kJ2gV6 77 Y2J8kJ2gV6)
+77
+
+
+>>> (dynamic GuLWTizlbc 33)
+nil
+
+>>> (make-w/ GuLWTizlbc)
+#(tagged mac #<procedure>)
+
+>>> (w/GuLWTizlbc 77 GuLWTizlbc)
+77
+
+
+>>> (make-implicit niW5mJq4IO (parameter 3))
+#(tagged mac #<procedure>)
+
+>>> niW5mJq4IO
+3
+
+>>> (w/niW5mJq4IO 4 niW5mJq4IO)
+4
+
+
+>>> (implicit imapnBKGmp 3)
+#(tagged mac #<procedure>)
+
+>>> imapnBKGmp
+3
+
+>>> (assign imapnBKGmp 4)
+4
+
+>>> imapnBKGmp
+4
+
+>>> (w/imapnBKGmp 5 imapnBKGmp)
+5
+
+
+>>> (do1 3 4)
+3
+
+>>> (tostring (pr 1 2 3))
+"123"
+
+>>> (tostring (prn "hi"))
+"hi\n"
+
+>>> (aif 3 it)
+3
+
+>>> (aif nil 3 nil 4 5 it)
+5
+
+
+>>> (def w1Sf3jg6ii (x)
+      0)
+#<procedure...>
+
+>>> (defrule w1Sf3jg6ii (is x 4)
+      (* 2 x))
+#<procedure...>
+
+>>> (w1Sf3jg6ii 3)
+0
+
+>>> (w1Sf3jg6ii 4)
+8
+
+
+>>> (def NdGo83w92b (a (o b 3))
+      b)
+#<procedure...>
+
+>>> (NdGo83w92b 1)
+3
+
+>>> (defrule NdGo83w92b (is a 5)
+      (* b 2))
+#<procedure...>
+
+>>> (NdGo83w92b 1)
+3
+
+>>> (NdGo83w92b 5)
+6
+
+
+>>> (ac-complex-args nil 'ra)
+nil
+
+>>> (ac-complex-args 'a  'ra)
+((a ra))
+
+>>> ((eval (ac-complex-fn '(a (o b 3)) '((+ a b)))) 5)
+8
+
+>>> (ac-complex-args? '(a b c))
+nil
+
+>>> (ac-complex-args? '(a b . rest))
+nil
+
+>>> (ac-complex-args? '(a (o b)))
+t
+
+
+>>> ((fn (a (o b 3)) (+ a b)) 5)
+8
+
+>>> ((fn ((o a 3) . rest) (list a rest)))
+(3 nil)
+
+>>> ((fn ((o a 3) . rest) (list a rest)) 1)
+(1 nil)
+
+>>> ((fn ((o a 3) . rest) (list a rest)) 1 2)
+(1 (2))
+
+>>> ((fn (a (o b a)) b) 3)
+3
+
+>>> ((fn ((a b c)) (+ a (* b c))) (list 1 2 3))
+7
+
+
+>>> (newstring 5)
+"\u0000\u0000\u0000\u0000\u0000"
+
+>>> (newstring 5 #\a)
+"aaaaa"
+
+
+>>> (tostring (disp '(a "b" 3)))
+"(a b 3)"
+
+>>> (tostring (disp '(a . b)))
+"(a . b)"
+
+>>> (tostring (disp '(a ((b (c))))))
+"(a ((b (c))))"
+
+>>> (tostring (write '(a "b" 3)))
+"(a \"b\" 3)"
+
+
+>>> (max)
+nil
+
+>>> (max 1 3 6 3 7 2)
+7
+
+
+>>> (map [+ _ 1] '(1 2 3 4))
+(2 3 4 5)
+
+>>> (map (fn (_) #\x) "hello")
+"xxxxx"
+
+
+>>> (string 1 nil #\b "c" '(d e))
+"1bcde"
+
+
+>>> (ac-ssyntax 'abc)
+nil
+
+>>> (ac-ssyntax 'a:b)
+t
+
+
+>>> (ac-symbol->chars 'abc)
+(#\a #\b #\c)
+
+>>> (ac-tokens [is _ #\:] '(#\a #\: #\b #\c) nil nil nil)
+((#\a) (#\b #\c))
+
+
+>>> (point foo (foo 5) 6)
+5
+
+>>> (catch 1 2 (throw 3) 4 5)
+3
+
+>>> (let a 1
+      (catch (after (throw nil)
+                    (assign a 2)))
+      a)
+2
+
+
+>>> (case 2 1 7 2 8 3 9)
+8
+
+
+>>> (tostring (system "echo hello"))
+"hello\n"
+
+
+>>> (assign td "/tmp/SR0hwhic5P")
+"/tmp/SR0hwhic5P"
+
+>>> (def clean ()
+      (system (string "rm -rf " td))
+      (system (string "mkdir " td)))
+#<procedure...>
+
+>>> (let f (string td "/foo")
+      (clean)
+      (w/outfile s f (disp "hi" s))
+      (tostring (system (string "cat " f))))
+"hi"
+
+
+>>> (let s (outstring) (disp "foo" s) (inside s))
+"foo"
+
+>>> (w/outstring s (disp "foo" s) (inside s))
+"foo"
+
+
+>>> (let f (string td "/foo")
+      (clean)
+      (w/outfile s f (disp "hello" s))
+      (w/appendfile s f (disp " there" s))
+      (tostring (system (string "cat " f))))
+"hello there"
+
+
+>>> (let f (string td "/foo")
+      (clean)
+      (w/outfile s f
+        (w/stdout s (disp "xyzzy")))
+      (tostring (system (string "cat " f))))
+"xyzzy"
+
+
+>>> (readstring1 "123")
+123
+
+>>> (readstring1 "[+ 3 _]")
+(square-bracket + 3 _)
+
+
+>>> (ac-chars->value '(#\1 #\2 #\3))
+123
+
+>>> (ac-expand-compose 'abc:d:e)
+(compose abc d e)
+
+>>> (ac-expand-compose '~:a)
+(compose not a)
+
+>>> (ac-expand-compose '~abc:def)
+(compose (complement abc) def)
+
+
+>>> (car:+ '(1 2) '(3 4))
+1
+
+>>> (~cons? 3)
+t
+
+
+>>> (ac-build-sexpr '((#\a #\b)) nil)
+ab
+
+>>> (ac-build-sexpr '((#\a) #\!) nil)
+(get (quote a))
+
+>>> (ac-build-sexpr '((#\a) #\! (#\b)) nil)
+(b (quote a))
+
+>>> (ac-build-sexpr '((#\a) #\. (#\b)) nil)
+(b a)
+
+
+>>> (ac-expand-sexpr 'ab!cde)
+(ab (quote cde))
+
+>>> cons?!a
+nil
+
+>>> type.cons
+fn
+
+
+>>> ((andf cons? cdr) '(1 . 2))
+2
+
+>>> (ac-expand-and 'cons?&cdr)
+(andf cons? cdr)
+
+>>> (cons?&cdr '(1 . 2))
+2
+
+>>> (and&or 3)
+3
+
+>>> (ac-decompose '(and or) '(3))
+(and (or 3))
+
+>>> (and:or 3)
+3
+
+>>> (~and 3 nil)
+t
+
+
+;; don't know how to test atomic adequately
+
+>>> (atomic-invoke (fn () 123))
+123
+
+>>> (atomic-invoke (fn ()
+                     (atomic-invoke (fn () 123))))
+123
+
+
+>>> (firstn 3 '(1 2 3 4 5))
+(1 2 3)
+
+>>> (nthcdr 4 '(a b c d e))
+(e)
+
+>>> (tuples '(1 2 3 4 5 6 7) 3)
+((1 2 3) (4 5 6) (7))
+
+
+>>> (let x '(1 2 3)
+      (= (car x) 'one)
+      (prn x)
+
+      (= (cadr x) 'two)
+      (prn x)
+
+      (= (cdr x) 'blam)
+      (prn x)
+
+      nil)
+(one 2 3)
+(one two 3)
+(one . blam)
+nil
+
+
+>>> (accum a (down x 5 0 (a x)))
+(5 4 3 2 1 0)
+
+>>> (accum a (repeat 5 (a 7)))
+(7 7 7 7 7)
+
+>>> (accum a (each (x y) '((1 2) (3 4) (5 6)) (a (+ x y))))
+(3 7 11)
+
+>>> (accum a (each c "abc" (a c)))
+(#\a #\b #\c)
+
+
+; todo test for whilet
+
+>>> (last '(1 2 3 4 5 6))
+6
+
+>>> (rem 3 '(1 2 3 4 5 6))
+(1 2 4 5 6)
+
+>>> (keep 3 '(1 2 3 4 5 6))
+(3)
+
+>>> (trues cons? '(1 2 '(3 4) 5 '(6)))
+(t t)
+
+
+>>> (do (= x '(1 2 3))
+        (push 4 x)
+        x)
+(4 1 2 3)
+
+
+>>> (do (= x 'one)
+        (= y 'two)
+        (swap x y)
+        (prn x)
+        (prn y)
+        nil)
+two
+one
+nil
+
+
+>>> (do (= x '(1 2 3 4 5))
+        (swap (car x) (cadr x))
+        x)
+(2 1 3 4 5)
+
+
+>>> (do (= x '(1 2 3 4))
+        (rotate (car x) (cadr x))
+        x)
+(2 1 3 4)
+
+
+>>> (do (= x '(1 2 3 4))
+        (= y 5)
+        (rotate (car x) (cadr x) y)
+        (prn x)
+        (prn y)
+        nil)
+(2 5 3 4)
+1
+nil
+
+
+>>> (do (= x '(1 2 3 4))
+        (prn (pop x))
+        (prn x)
+        nil)
+1
+(2 3 4)
+nil
+
+
+>>> (adjoin 1 '(2 3 4))
+(1 2 3 4)
+
+>>> (adjoin 3 '(2 3 4))
+(2 3 4)
+
+>>> (adjoin 1 '(2 3 4) (fn (a b) (and (odd a) (odd b))))
+(2 3 4)
+
+>>> (adjoin 1 '(2 4 6) (fn (a b) (and (odd a) (odd b))))
+(1 2 4 6)
+
+
+>>> (do (= x '(1 2 3 4))
+        (pushnew 0 x)
+        x)
+(0 1 2 3 4)
+
+
+>>> (do (= x '(1 2 3 4))
+        (pushnew 3 x)
+        x)
+(1 2 3 4)
+
+
+>>> (do (= x '(a (1 2 3 4) b))
+        (pull 3 (cadr x))
+        x)
+(a (1 2 4) b)
+
+
+>>> (do (= x '(1 2 3 4))
+        (togglemem 5 x)
+        x)
+(5 1 2 3 4)
+
+
+>>> (do (= x '(1 2 3 4))
+        (togglemem 3 x)
+        x)
+(1 2 4)
+
+
+>>> (do (= x '(0 1 2 3 4))
+        (++ (x 3))
+        x)
+(0 1 2 4 4)
+
+
+>>> (do (= x 7)
+        (-- x)
+        x)
+6
+
+
+>>> (do (= x 7)
+        (zap + x 1)
+        x)
+8
+
+
+>>> (tostring (prt 1 2 nil 3))
+"123"
+
+
+>>> (do (= x '(1 2 3 4))
+        (= y 5)
+        (wipe (cadr x) y)
+        (prn x)
+        (prn y)
+        nil)
+(1 nil 3 4)
+nil
+nil
+
+
+>>> (do (= x '(1 nil 3 4))
+        (= y nil)
+        (set (cadr x) y)
+        (prn x)
+        (prn y)
+        nil)
+(1 t 3 4)
+t
+nil
+
+
+; todo test for awhen
+
+>>> (aand (+ 3 4) (+ it 5))
+12
+
+>>> (let x 5 (drain (-- x) 0))
+(4 3 2 1)
+
+
+; todo test for whiler
+
+; todo test for consif
+
+>>> (flat '(1 (2 (3 4 (5) 6) 7) 8 9))
+(1 2 3 4 5 6 7 8 9)
+
+; todo test for check
+
+>>> (pos 'c '(a b c d))
+2
+
+>>> (pos #\c "abcd")
+2
+
+
+>>> (even 0)
+t
+
+>>> (even 1)
+nil
+
+>>> (odd 1)
+t
+
+
+>>> (tostring (system "echo hello"))
+"hello\n"
+
+
+>>> (do (system "echo abc >/tmp/foo")
+        (w/infile s "/tmp/foo"
+          (list (readc s)
+                (readc s))))
+(#\a #\b)
+
+
+>>> (do (w/outfile s "/tmp/foo" (disp "hi" s))
+        (tostring (system "cat /tmp/foo")))
+"hi"
+
+>>> (let s (outstring) (disp "foo" s) (inside s))
+"foo"
+
+>>> (w/outstring s (disp "foo" s) (inside s))
+"foo"
+
+
+>>> (do (w/outfile s "/tmp/foo" (disp "hello" s))
+        (w/appendfile s "/tmp/foo" (disp " there" s))
+        (tostring (system "cat /tmp/foo")))
+"hello there"
+
+
+>>> (do (w/outfile s "/tmp/foo"
+          (w/stdout s
+            (disp "xyzzy")))
+        (tostring (system "cat /tmp/foo")))
+"xyzzy"
+
+
+>>> (fromstring "abc" (readc))
+#\a
+
+>>> (w/instring s "abc" (allchars s))
+"abc"
+
+
+>>> (do (w/outfile s "/tmp/foo" (disp "1 2 3" s))
+        (readfile "/tmp/foo"))
+(1 2 3)
+
+>>> (do (w/outfile s "/tmp/foo" (disp "123 456" s))
+        (readfile1 "/tmp/foo"))
+123
+
+>>> (do (system "echo '1 2 (3 4)' >/tmp/foo")
+        (w/infile s "/tmp/foo" (readall s)))
+(1 2 (3 4))
+
+
+>>> (readall "1 2 (3 4)")
+(1 2 (3 4))
+
+>>> (do (system "echo xyzzy >/tmp/foo")
+        (filechars "/tmp/foo"))
+"xyzzy\n"
+
+>>> (do (clean)
+        (system (string "echo abc >" (string td "/foo")))
+        (mvfile (string td "/foo") (string td "/bar"))
+        (filechars (string td "/bar")))
+"abc\n"
+
+>>> (do (writefile '(a b "cd" 5 6) "/tmp/foo")
+        (filechars "/tmp/foo"))
+"(a b \"cd\" 5 6)"
+
+
+>>> (rand 1)
+0
+
+>>> (tostring (dlet rand (fn (n) 1)
+                (rand-choice (pr "a") (pr "b") (pr "c"))))
+"b"
+
+
+>>> (n-of 5 7)
+(7 7 7 7 7)
+
+
+>>> (aracket-false (racket (racket-> 1 2)))
+t
+
+>>> (aracket-false (racket (racket-< 1 2)))
+nil
+
+>>> (fromstring "λ"
+      (list (readb) (readb) (readb)))
+(206 187 nil)
+
+>>> (tostring (writeb 65) (writeb 66) (writeb 67))
+"ABC"
+
+
+>>> (dlet infile (fn (name)
+                   ;; a not very random /dev/urandom :-)
+                   (instring "\u0000\u0001\u0002"))
+      (rand-string 3))
+"012"
+
+
+>>> (accum a (a 1) (a 2) (a 3))
+(1 2 3)
+
+>>> (accum a (forlen i '(a b c) (a i)))
+(0 1 2)
+
+>>> (accum a (on x '(a b c) (a (list index x))))
+((0 a) (1 b) (2 c))
+
+
+>>> (most - '(5 9 2 7 3))
+2
+
+>>> (insert-sorted < 4 '(1 5 6))
+(1 4 5 6)
+
+>>> (let x '(a b (1 5 6) c d)
+      (insort < 4 (x 2))
+      x)
+(a b (1 4 5 6) c d)
+
+>>> (let x nil
+      (each i '(6 4 9 2 5 1 2) (insort < i x))
+      x)
+(1 2 2 4 5 6 9)
+
+; todo test for reinsert-sorted, insortnew
+
+; todo test for memo, defmemo
+
+>>> (<=)
+t
+
+>>> (<= 3)
+t
+
+>>> (<= 3 4)
+t
+
+>>>  (<= 4 4)
+t
+
+>>> (<= 5 4)
+nil
+
+>>> (<= 1 2 3)
+t
+
+
+>>> (>=)
+t
+
+>>> (>= 3)
+t
+
+>>> (>= 3 4)
+nil
+
+>>> (>= 4 4)
+t
+
+>>> (>= 5 4)
+t
+
+
+>>> (alphadig #\7)
+t
+
+>>> (alphadig #\:)
+nil
+
+
+>>> (tostring (xloop (x 0)
+                (pr x)
+                (if (< x 10)
+                      (next (+ x 1)))))
+"012345678910"
+
+>>> (fromstring ""
+      (list (readline) (readc)))
+(nil nil)
+
+>>> (fromstring "\n"
+      (list (readline) (readc)))
+("" nil)
+
+>>> (fromstring "\r\n"
+      (list (readline) (readc)))
+("" nil)
+
+>>> (fromstring "one"
+      (list (readline) (readc)))
+("one" nil)
+
+>>> (fromstring "one\n"
+      (list (readline) (readc)))
+("one" nil)
+
+>>> (fromstring "one\r\n"
+      (list (readline) (readc)))
+("one" nil)
+
+>>> (fromstring "one\ntwo"
+      (list (readline) (readc)))
+("one" #\t)
+
+>>> (fromstring "one\r\ntwo"
+      (list (readline) (readc)))
+("one" #\t)
+
+
+>>> (whitec #\a)
+nil
+
+>>> (whitec #\space)
+t
+
+>>> (letter #\a)
+t
+
+>>> (letter #\0)
+nil
+
+>>> (digit #\a)
+nil
+
+>>> (digit #\0)
+t
+
+>>> (punc #\;)
+t
+
+
+>>> (summing p (p nil) (p t) (p t) (p nil))
+2
+
+>>> (sum [* _ 2] '(1 2 3))
+12
+
+>>> (treewise cons [if _ (+ _ 1)] '(1 2 (3 (4 5) 6 7) 8))
+(2 3 (4 (5 6) 7 8) 9)
+
+
+; todo test for prall, prs
+
+>>> (tree-subst 3 'X '(1 (2 3 (4 5) 6)))
+(1 (2 X (4 5) 6))
+
+>>> (accum a
+      (ontree a '(1 . (2 . 3))))
+((1 2 . 3) 1 (2 . 3) 2 3)
+
+
+>>> (dotted 'a)
+nil
+
+>>> (dotted '(a b))
+nil
+
+>>> (dotted '(a . b))
+t
+
+
+>>> (accum a (each (k v) (fill-table (table) '(a 1)) (a (list k v))))
+((a 1))
+
+>>> (with (h  (listtab '((a 1) (b 2) (c 3) (d 4) (e 5)))
+           ks nil)
+      (each k (keys h) (insort < k ks))
+      ks)
+(a b c d e)
+
+
+;; todo later
+
+;>>> (tostring (write (listtab '((a 1)))))
+"#table((a 1))"
+
+;>>> (tablist (car (readall "#table((a 1))")))
+((a 1))
+
+;>>> (sort < (keys '#table((a 1) (b 2) (c 3) (d 4))))
+(a b c d)
+
+
+>>> (def assoc-key-sort (xs)
+      (sort (fn (a b) (< (car a) (car b))) xs))
+#<procedure...>
+
+>>> (assoc-key-sort '((b 2) (d 4) (a 1) (c 3)))
+((a 1) (b 2) (c 3) (d 4))
+
+
+>>> (do (writefile (obj a 1 b 2) "/tmp/foo")
+        (assoc-key-sort (erp (tablist (w/infile s "/tmp/foo" (read-table s))))))
+(tablist (w/infile s "/tmp/foo" (read-table s))): ((a 1) (b 2))
+((a 1) (b 2))
+
+
+>>> (erp (fromstring "((a 1) (b 2))" (read-table)))
+(fromstring "((a 1) (b 2))" (read-table)): #hash((a . 1)
+      (b . 2))
+#hash((a . 1)
+      (b . 2))
+
+
+>>> (do (writefile (obj a 1 b 2) "/tmp/foo")
+        (w/infile s "/tmp/foo" (read-table s)))
+#hash((a . 1)
+      (b . 2))
+
+>>> (do (writefile (obj a 1 b 2 c 3) "/tmp/foo")
+        (load-table "/tmp/foo"))
+#hash((a . 1)
+      (b . 2)
+      (c . 3))
+
+>>> (do (save-table (obj a 1 b 2 c 3) "/tmp/foo")
+        (listtab (readfile1 "/tmp/foo")))
+#hash((a . 1)
+      (b . 2)
+      (c . 3))
+
+>>> (listtab (read (tostring (write-table (obj a 1 b 2 c 3 d 4 e 5)))))
+#hash((a . 1)
+      (b . 2)
+      (c . 3)
+      (d . 4)
+      (e . 5))
+
+
+>>> (copy 'abc)
+abc
+
+>>> (copy '(a b c d))
+(a b c d)
+
+>>> (copy "hello")
+"hello"
+
+>>> (copy (obj a 1 b 2 c 3 d 4 e 5))
+#hash((a . 1)
+      (b . 2)
+      (c . 3)
+      (d . 4)
+      (e . 5))
+
+>>> (copy "hello" 2 #\X 3 #\X)
+"heXXo"
+
+
+>>> (abs -33)
+33
+
+
+>>> (trunc 3)
+3
+
+>>> (trunc 3.0)
+3
+
+>>> (trunc 3.3)
+3
+
+>>> (trunc 3.999)
+3
+
+
+>>> (round 3)
+3
+
+>>> (round 3.01)
+3
+
+>>> (round 3.49)
+3
+
+>>> (round 3.50)
+4
+
+>>> (round 3.51)
+4
+
+>>> (round 3.99)
+4
+
+>>> (round 4.5)
+4
+
+>>> (round -4.5)
+-4
+
+>>> (round -3.5)
+-4
+
+
+>>> (roundup 3.0)
+3
+
+>>> (roundup 3.01)
+3
+
+>>> (roundup 3.5)
+4
+
+>>> (roundup 3.99)
+4
+
+>>> (roundup 4.5)
+5
+
+>>> (roundup -3.01)
+-3
+
+>>> (roundup -3.5)
+-4
+
+>>> (roundup -4.5)
+-5
+
+
+>>> (nearest 13 10)
+10
+
+>>> (nearest 18 10)
+20
+
+
+>>> (avg '(2 20 8))
+10
+
+>>> (med '(3 30000 5 30001 4 30002 2 1))
+4
+
+>>> (sort < '(7 9 13 42 193 -50))
+(-50 7 9 13 42 193)
+
+>>> (sort < "cbfdaeg")
+"abcdefg"
+
+>>> (bestn 3 < '(9 13 11 5 78 4 0))
+(0 4 5)
+
+>>> (split '(a b c d e f g) 3)
+((a b c) (d e f g))
+
+>>> (def stream (xs)
+      (fn ()
+        (if xs
+             (do1 (car xs)
+                  (= xs (cdr xs))))))
+#<procedure...>
+
+>>> (let s (stream '(a b c))
+      (list (s)
+            (s)
+            (s)
+            (s)))
+(a b c nil)
+
+>>> (w/msec (stream '(-205086062 -205086061))
+      (tostring (time (+ 8 90))))
+"time: 1 msec.\n"
+
+>>> (union is '(a b c d e) '(x y c z))
+(a b c d e x y z)
+
+
+; todo test templates
+
+>>> (number 123)
+t
+
+>>> (number 10.5)
+t
+
+>>> (number "foo")
+nil
+
+
+>>> (w/seconds (fn () 1000500)
+      (since 1000000))
+500
+
+>>> (accum a (let x nil (loop (assign x 0) (< x 5) (assign x (+ x 1))
+                          (a x))))
+(0 1 2 3 4)
+
+>>> (accum a (for x 0 5 (a x)))
+(0 1 2 3 4 5)
+
+
+; todo tests for cache, defcache
+
+>>> (errsafe (/ 1 0))
+nil
+
+
+>>> (saferead "123")
+123
+
+>>> (saferead "#abc")
+nil
+
+
+>>> (do (racket-delete-file "/tmp/foo")
+        (prn (safe-load-table "/tmp/foo"))
+        (writefile (obj a 1 b 2) "/tmp/foo")
+        (prn (safe-load-table "/tmp/foo"))
+        nil)
+#hash()
+#hash((a . 1)
+      (b . 2))
+nil
+
+
+>>> (do (system "rm -rf /tmp/bar /tmp/bar2")
+        (system "mkdir /tmp/bar")
+        (prn (dir-exists "/tmp/bar"))
+        (prn (dir-exists "/tmp/bar2"))
+        (system "rm -rf /tmp/bar")
+        nil)
+/tmp/bar
+nil
+nil
+
+>>> (do (system "rm -rf /tmp/foo")
+        (ensure-dir "/tmp/foo/a/b/c")
+        (prn (dir-exists "/tmp/foo/a/b/c"))
+        (system "rm -rf /tmp/foo")
+        nil)
+/tmp/foo/a/b/c
+nil
+
+
+>>> (timedate 1296961475)
+(35 4 19 5 2 2011)
+
+>>> (date 1296961475)
+(2011 2 5)
+
+>>> (datestring 1296961475)
+"2011-02-05"
+
+
+>>> (count even '(1 2 3 4 5 6))
+3
+
+>>> (count 'a '(a b c a b c a a))
+4
+
+
+>>> (ellipsize "hello" 10)
+"hello"
+
+>>> (ellipsize "hello there" 10)
+"hello ther..."
+
+
+>>> (dlet rand (fn (x) 2)
+      (rand-elt '(a b c d e)))
+c
+
+
+; todo test for until
+
+>>> (before 'c 'e '(a b c d e f g))
+t
+
+>>> (before even [> _ 10] '(3 7 2 11 4))
+t
+
+>>> (before even [> _ 10] '(3 11 7 2 4))
+nil
+
+
+>>> ((orf letter digit) #\6)
+t
+
+>>> ((orf letter digit) #\*)
+nil
+
+
+>>> ((andf even [> _ 0]) -4)
+nil
+
+>>> ((andf even [> _ 0]) 4)
+t
+
+
+>>> (atend 1 "abc")
+nil
+
+>>> (atend 2 "abc")
+t
+
+>>> (atend 3 "abc")
+t
+
+
+>>> (multiple 25 5)
+t
+
+>>> (multiple 25 25)
+t
+
+>>> (multiple 25 4)
+nil
+
+
+>>> (nor nil nil nil)
+t
+
+>>> (nor nil t nil nil)
+nil
+
+
+>>> (only.avg '(3 2 3 4))
+3
+
+>>> (only.avg '())
+nil
+
+
+>>> (retrieve 3 even '(1 2 3 4 5 6 7))
+(2 4 6)
+
+>>> (dedup '(a b c a c d e e f a))
+(a b c d e f)
+
+
+>>> (single '())
+nil
+
+>>> (single '(a))
+t
+
+>>> (single '(a b))
+nil
+
+
+>>> (intersperse 'x '(a b c d))
+(a x b x c x d)
+
+>>> (counts '(a b a c c d c b))
+#hash((a . 2)
+      (b . 2)
+      (c . 3)
+      (d . 1))
+
+>>> (commonest '(a b a c c d c b))
+(c 3)
+
+>>> (reduce + '(1 2 3 4 5 6))
+21
+
+>>> (len> "abc" 3)
+nil
+
+>>> (len> "abc" 2)
+t
+
+
+>>> (let f (string td "/foo.arc")
+      (clean)
+      (writefile '(def MWiyhWKuZG (x) (* x 5)) f)
+      (load f)
+      (MWiyhWKuZG 6))
+30
+
+
+>>> (positive 'foo)
+nil
+
+>>> (positive -5)
+nil
+
+>>> (positive 0)
+nil
+
+>>> (positive 0.0)
+nil
+
+>>> (positive 55)
+t
+
+>>> (positive 55/3)
+t
+
+>>> (positive 48.6)
+t
+
+
+>>> (keys (w/table h (set h!x)))
+(x)
+
+
+>>> (w/outstring s (w/stderr s (ero "foo" 3)) (inside s))
+"\"foo\" 3 \n"
+
+
+;; todo tests for queue
+
+>>> (median '(1 2 3 4 5 6))
+3
+
+
+;; todo tests for flushout, noisy-each
+
+>>> (downcase "AbCDef..00")
+"abcdef..00"
+
+>>> (downcase #\B)
+#\b
+
+>>> (downcase 'FOObar)
+foobar
+
+
+>>> (upcase "AbCDef..00")
+"ABCDEF..00"
+
+>>> (upcase #\b)
+#\B
+
+>>> (upcase 'FOObar)
+FOOBAR
+
+
+>>> (inc 10)
+11
+
+>>> (inc 10 5)
+15
+
+>>> (inc "13")
+"14"
+
+
+>>> (range 1 5)
+(1 2 3 4 5)
+
+
+>>> (mismatch "abcdef" "abcXef")
+3
+
+>>> (mismatch "abcdef" "abcdef")
+nil
+
+
+>>> (memtable '(a b c d))
+#hash((a . t)
+      (b . t)
+      (c . t)
+      (d . t))
+
+
+>>> (tostring (w/bars (pr "ab") (pr "cd") (pr "ef")))
+"ab | cd | ef"
+
+
+;; todo tests for threads, trav
+
+
+>>> (let x (list 'a nil 'c)
+      (or= (cadr x) 'b)
+      (or= (cadr x) 'X)
+      x)
+(a b c)
+
+
+;; todo tests for hooks, out, get
+
+;; todo tests for disk savers
+
+;; todo test for evtil, rand-key, ratio
+
+
+>>> (find digit "abc9def")
+#\9
+
+
+>>> (find positive '(-7 -8 6 3))
+6
+
+>>> (find positive '())
+nil
+
+>>> (find positive '(-7 -8 -6 -3))
+nil
+
+
+>>> (exact 3/5)
+nil
+
+>>> (exact 1/3)
+nil
+
+>>> (exact 5)
+t
+
+>>> (exact 5.0)
+nil
+
+
+>>> (expt 10 3)
+1000
+
+
+>>> (sqrt 25)
+5

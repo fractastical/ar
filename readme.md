@@ -40,11 +40,7 @@ or, if you want to execute your Arc programs and go into the REPL afterwards:
 
 Run tests with:
 
-    racket ar-test.ss
-    racket ac-test.ss
-    racket arc-test.ss
-    racket strings-test.ss
-    arc run-tests
+    sh tests.sh
 
 Bug reports are *greatly* appreciated!
 

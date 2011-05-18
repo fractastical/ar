@@ -1,0 +1,26 @@
+;; tests that need to be run as root
+
+>>> (load "io.arc")
+nil
+
+>>> (def euid ()
+      (tostring (system "id -u")))
+#<procedure...>
+
+>>> (racket-current-directory "/")
+#<void>
+
+>>> (euid)
+"0\n"
+
+>>> (setuid 13983)
+0
+
+>>> (euid)
+"13983\n"
+
+>>> (setuid 0)
+-1
+
+>>> (euid)
+"13983\n"

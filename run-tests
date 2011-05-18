@@ -12,12 +12,16 @@
                   (apply orig ,args)))))))
 
 (test-files "tests/apply"
+            "tests/arc"
             "tests/assign"
             "tests/coerce"
             "tests/fn"
             "tests/if"
-            ;"tests/re"
+            "tests/io.arc"
+            ;"tests/io.arc (root)"
             "tests/quasiquote"
             "tests/quote"
+            ;"tests/re"
+            "tests/strings.arc"
             "tests/(coerce foo 'fn)"
 )
