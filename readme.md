@@ -30,14 +30,13 @@ or, if you have rlwrap:
 
     rlwrap -q \" ./arc
 
-You can load Arc files from the command line and then go into the
-REPL:
+You can load Arc files from the command line:
 
     /path/to/ar/arc foo.arc bar.arc
 
-or, if you want to execute your Arc program without entering the REPL:
+or, if you want to execute your Arc programs and go into the REPL afterwards:
 
-    /path/to/ar/arc --no-repl foo.arc bar.arc
+    /path/to/ar/arc --repl foo.arc bar.arc
 
 Run tests with:
 
@@ -45,6 +44,7 @@ Run tests with:
     racket ac-test.ss
     racket arc-test.ss
     racket strings-test.ss
+    arc run-tests
 
 Bug reports are *greatly* appreciated!
 

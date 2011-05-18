@@ -8,6 +8,26 @@
       (re "(xy)*"))
 ""
 
+>>> (w/target "aaaa"
+      (re "a*a"))
+"aaaa"
+
+>>> (w/target "fbarfobar"
+      (re "foo*"))
+"fo"
+
+>>> (w/target "fooooobarfobar"
+      (re "fo*"))
+"fooooo"
+
+>>> (w/target "fooooobarfobar"
+      (re "fo+"))
+"fooooo"
+
+>>> (w/target "farfoobar"
+      (re "fo*arfo+"))
+"farfoo"
+
 >>> (w/target "x"
       (re "x"))
 "x"
@@ -279,15 +299,20 @@ nil
       (re "^foo."))
 "fooe"
 
->>> (draintarget "iiiiiaXaiiiiiaYaiiii"
+>>> (w/target (drain "iiiiiaXaiiiiiaYaiiii")
       (re "a.a"))
 ("aXa" "aYa")
 
->>> (draintarget "foo\nbar\nbaz"
+>>> (w/target (drain "farffofofo")
+      (list (re "f")
+            (re "fo")))
+(("f" "fo"))
+
+>>> (w/target (drain "foo\nbar\nbaz")
       (re "^\\w+$"))
 ("foo" "bar" "baz")
 
->>> (draintarget "foo bar baz"
+>>> (w/target (drain "foo bar baz")
       (re "^|\\s")
       (re "\\w+"))
 ("foo" "bar" "baz")
@@ -322,7 +347,7 @@ This example works, but sometimes gives the error "attempted to cross a continua
       (re "[a-z]+"))
 
 ;>>> (map tablist
-      (draintarget "asdweotwerw 2weroq bob.smith@google.com sdfaiosda,sdf weqop82uopdisj [op2';ksadj;ldfp8u2pj ldsajf9p2u8t;jsd;lfashdf924hr;owjsad;fj lisa.north@yahoo.com weqporiuasf90 0289u 9wefh 9psda'pwej2lh2t getsdj;sadf"
+      (w/target (drain "asdweotwerw 2weroq bob.smith@google.com sdfaiosda,sdf weqop82uopdisj [op2';ksadj;ldfp8u2pj ldsajf9p2u8t;jsd;lfashdf924hr;owjsad;fj lisa.north@yahoo.com weqporiuasf90 0289u 9wefh 9psda'pwej2lh2t getsdj;sadf")
         (w/table p
           (re " ")
           (= p!first (name))

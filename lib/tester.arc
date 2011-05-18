@@ -1,5 +1,9 @@
 (load "lib/re.arc")
 
+;; options
+(= verbose nil)
+
+
 (mac collect (x)
   `(accum yield ,x))
 
@@ -20,17 +24,22 @@
                (writeuntil str #\newline)
                (iflet c (peekc str)
                  (if (isnt c x)
-                   (self)))))))
+                       (self)))))))
 
 
 (def parse-string (str)
-  (draintarget str
-    (let spaces (- (len:re "^ *>") 1)
-      (re ">> ")
-      (let rest (instring:string re-text*)
+  (w/target (drain str)
+;    (prn (re "^ *>"))
+    (let spaces (re "(^|\n) *>>>")
+;      (re ">>> ")
+#|    (let spaces (- (len:re "^ *>") 1)
+      (re ">> ")|#
+      (let rest re-input*
+;      (let rest (instring:string re-text*)
         (do1 (list (read rest)
                    (errsafe:cut (readuntil rest #\newline) 1 -1))
-             (= re-text* (input->list rest)))))))
+;             (= re-text* (input->list rest))
+             )))))
 
 
 (mac errdet (body)
@@ -41,7 +50,8 @@
 (def backescape (str)
   (map (fn (x)
          (list (string x)
-               (+ "\\" x))) (coerce str 'cons)))
+               (+ "\\" x)))
+       (coerce str 'cons)))
 
 
 (def escape (x)
@@ -51,22 +61,32 @@
 (def match (x y)
   (w/target x
     (re:subst ".*" "\\.\\.\\." (escape y))
-    (no re-text*)))
+    (no:peekc re-input*)
+;    (no re-text*)
+    ))
 
 
 (def eval-test ((run expect))
   (let result (tostring
                 (errdet:eval run))
-    (if (match result expect) t
-        (do (prn "\n- Failed example:")
-            (write run)
-            (prn)
-            (prn "\n- Expected:")
-            (prn expect)
-            (prn "\n- Got:")
-            (prn result)
-            (prn "\n" (newstring 80 #\=))
-            nil))))
+    (if (match result expect)
+          (do (when verbose
+                (prn "\n- Testing example:")
+                (write run)
+                (prn)
+                (prn "\n- Success:")
+                (prn expect)
+                (prn "\n" (newstring 80 #\=)))
+              t)
+          (do (prn "\n- Failed example:")
+              (write run)
+              (prn)
+              (prn "\n- Expected:")
+              (prn expect)
+              (prn "\n- Got:")
+              (prn result)
+              (prn "\n" (newstring 80 #\=))
+              nil))))
 
 (def test-file (x)
   (w/infile file x
