@@ -52,9 +52,7 @@
 (mac tostring body
   (w/uniq gv
    `(w/outstring ,gv
-      (w/stdout ,gv
-        (w/stderr ,gv
-          ,@body))
+      (w/stdout ,gv ,@body)
       (inside ,gv))))
 
 (mac erp (x)
