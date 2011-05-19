@@ -83,6 +83,12 @@
                `(,(car body) (aif ,@(cdr body)))
                body))))
 
+(mac in (x . choices)
+  (w/uniq g
+    `(let ,g ,x
+       (or ,@(map1 (fn (c) `(is ,g ,c)) choices)))))
+
+
 ;=============================================================================
 ;  Extending
 ;=============================================================================
@@ -107,6 +113,12 @@
   (fn args
     (eval (apply (rep x) args))))
 |#
+
+(defrule ac (caris s 'racket)
+  (let x (cadr s)
+    (if (isa x 'string)
+         (racket-read-from-string x)
+         x)))
 
 
 ;=============================================================================
@@ -411,3 +423,75 @@
   (disp "#hash(" port)
   (printwith-table primitive x (sort < (keys x)) port)
   (disp ")" port))
+
+
+;=============================================================================
+;  Input
+;=============================================================================
+
+(def racket-true (x)
+  (racket (racket-if x (racket-quote t) (racket-quote nil))))
+
+(def sread (p eof)
+  (let v (racket-read p)
+    (if (racket-true (racket-eof-object? v))
+         eof
+         (ar-toarc v))))
+
+(def read ((o x stdin) (o eof nil))
+  (if (isa x 'string) (readstring1 x eof) (sread x eof)))
+
+(mac accum (accfn . body)
+  (w/uniq gacc
+    `(withs (,gacc nil ,accfn [push _ ,gacc])
+       ,@body
+       (rev ,gacc))))
+
+(mac xloop (withses . body)
+  (let w (pair withses)
+    `((rfn next ,(map1 car w) ,@body) ,@(map1 cadr w))))
+
+(def readline ((o s stdin))
+  (aif (readc s)
+    (coerce
+     (accum a
+       (xloop (c it)
+         (if (is c #\return)
+              (if (is (peekc s) #\newline)
+                   (readc s))
+             (is c #\newline)
+              nil
+              (do (a c)
+                  (aif (readc s)
+                        (next it))))))
+     'string)))
+
+
+;=============================================================================
+;  Ssyntax
+;=============================================================================
+
+(def ac-ssyntax (x)
+  (and (isa x 'sym)
+       (not (in x '+ '++ '_))
+       (some [in _ #\: #\~ #\& #\. #\!] (string x))))
+
+
+;=============================================================================
+;  Assignment
+;=============================================================================
+
+(def expand= (place val)
+  (if (and (isa place 'sym) (not (ac-ssyntax place)))
+      `(assign ,place ,val)
+      (let (vars prev setter) (setforms place)
+        (w/uniq g
+          `(atwith ,(+ vars (list g val))
+             (,setter ,g))))))
+
+(def expand=list (terms)
+  `(do ,@(map (fn ((p v)) (expand= p v))  ; [apply expand= _]
+                  (pair terms))))
+
+(mac = args
+  (expand=list args))

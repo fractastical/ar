@@ -17,11 +17,6 @@
 
 (def isnt (x y) (not (is x y)))
 
-(mac in (x . choices)
-  (w/uniq g
-    `(let ,g ,x
-       (or ,@(map1 (fn (c) `(is ,g ,c)) choices)))))
-
 (def iso (x y)
   (or (is x y)
       (and (cons? x)
@@ -46,12 +41,6 @@
 (def mem (test seq)
   (let f (testify test)
     (reclist [if (f (car _)) _] seq)))
-
-(defrule ac (caris s 'racket)
-  (let x (cadr s)
-    (if (isa x 'string)
-         (racket-read-from-string x)
-         x)))
 
 
 (def int (x (o b 10))
@@ -78,11 +67,6 @@
          (disp #\newline))
        ,gx)))
 
-(def ac-ssyntax (x)
-  (and (isa x 'sym)
-       (not (in x '+ '++ '_))
-       (some [in _ #\: #\~ #\& #\. #\!] (string x))))
-
 (def ac-symbol->chars (x)
   (coerce (coerce x 'string) 'cons))
 
@@ -107,15 +91,6 @@
                   (cons (car source) token)
                   acc
                   keepsep?)))
-
-(def racket-true (x)
-  (racket (racket-if x (racket-quote t) (racket-quote nil))))
-
-(def sread (p eof)
-  (let v (racket-read p)
-    (if (racket-true (racket-eof-object? v))
-         eof
-         (ar-toarc v))))
 
 (assign-fn ccc (k) racket-call-with-current-continuation)
 
@@ -178,6 +153,11 @@
 (def open-socket (port)
   ((inline ((racket-module-ref 'scheme/tcp) 'tcp-listen)) port 50 (racket "#t")))
 
+
+;=============================================================================
+;  Input
+;=============================================================================
+
 (let expander
      (fn (f var name body)
        `(let ,var (,f ,name)
@@ -201,9 +181,6 @@
      (after (do ,@body) (close ,var))))
 
 (def readstring1 (s (o eof nil)) (w/instring i s (read i eof)))
-
-(def read ((o x stdin) (o eof nil))
-  (if (isa x 'string) (readstring1 x eof) (sread x eof)))
 
 (def ac-chars->value (x)
   (read (coerce x 'string)))
@@ -376,6 +353,11 @@
       (cons (firstn n xs)
             (tuples (nthcdr n xs) n))))
 
+
+;=============================================================================
+;  Setforms
+;=============================================================================
+
 (assign setter (table))
 
 (mac defset (name parms . body)
@@ -468,21 +450,6 @@
       (is (car f) 'not)
        (err "Can't invert " (cons f args))
        (cons f args)))
-
-(def expand= (place val)
-  (if (and (isa place 'sym) (~ac-ssyntax place))
-      `(assign ,place ,val)
-      (let (vars prev setter) (setforms place)
-        (w/uniq g
-          `(atwith ,(+ vars (list g val))
-             (,setter ,g))))))
-
-(def expand=list (terms)
-  `(do ,@(map (fn ((p v)) (expand= p v))  ; [apply expand= _]
-                  (pair terms))))
-
-(mac = args
-  (expand=list args))
 
 (mac down (v init min . body)
   (w/uniq (gi gm)
@@ -916,12 +883,6 @@
       (and (cdr x) (or (atom (cdr x))
                        (dotted (cdr x))))))
 
-(mac accum (accfn . body)
-  (w/uniq gacc
-    `(withs (,gacc nil ,accfn [push _ ,gacc])
-       ,@body
-       (rev ,gacc))))
-
 (def fill-table (table data)
   (each (k v) (pair data) (= (table k) v))
   table)
@@ -945,25 +906,6 @@
   `(listtab (list ,@(map (fn ((k v))
                            `(list ',k ,v))
                          (pair args)))))
-
-(mac xloop (withses . body)
-  (let w (pair withses)
-    `((rfn next ,(map1 car w) ,@body) ,@(map1 cadr w))))
-
-(def readline ((o s stdin))
-  (aif (readc s)
-    (coerce
-     (accum a
-       (xloop (c it)
-         (if (is c #\return)
-              (if (is (peekc s) #\newline)
-                   (readc s))
-             (is c #\newline)
-              nil
-              (do (a c)
-                  (aif (readc s)
-                        (next it))))))
-     'string)))
 
 (def read-table ((o i stdin) (o eof))
   (let e (read i eof)
