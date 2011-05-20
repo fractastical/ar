@@ -287,9 +287,10 @@
   ((racket racket-set-mcdr!) x val))
 
 (def warn (msg . args)
-  (disp (+ "Warning: " msg ". "))
+  (disp (+ "Warning: " msg " "))
   (map [do (write _) (disp " ")] args)
-  (disp #\newline))
+  (writec #\newline)
+  nil)
 
 (def make-semaphore ((o init 0))
   (racket-make-semaphore init))

@@ -12,16 +12,16 @@
                   (apply orig ,args)))))))
 
 (test-files "tests/apply"
-            "tests/arc"
+            ;"tests/arc" ; would like to enable, but it's really slow...
             "tests/assign"
             "tests/coerce"
             "tests/fn"
             "tests/if"
             "tests/io.arc"
-            ;"tests/io.arc (root)"
+            ;"tests/io.arc (root)" ; needs to be run as root
             "tests/quasiquote"
             "tests/quote"
-            ;"tests/re"
+            ;"tests/re" ; our re support is too broken right now, enable later
             "tests/strings.arc"
             "tests/(coerce foo 'fn)"
 )

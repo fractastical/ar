@@ -67,7 +67,7 @@
 
 
 (def eval-test ((run expect))
-  (let result (tostring
+  (let result (tostring:w/stderr stdout
                 (errdet:eval run))
     (if (match result expect)
           (do (when verbose
