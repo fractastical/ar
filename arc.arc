@@ -1,3 +1,12 @@
+;=============================================================================
+;  Racket
+;=============================================================================
+
+; wish I could use racket-require
+(mac rckt-require (x)
+  `(racket (racket-require (racket-prefix-in racket- ,x))))
+
+
 (def atom (x) (not (cons? x)))
 
 (def idfn (x) x)
@@ -130,7 +139,7 @@
 
 (def try-custodian (port))
 
-(racket (racket-require (racket-prefix-in racket- scheme/tcp)))
+(rckt-require scheme/tcp)
 
 (def close ports
   (each port ports
@@ -1255,11 +1264,30 @@
 
 (def len> (x n) (> (len x) n))
 
+
+;=============================================================================
+;  Input
+;=============================================================================
+
+(rckt-require scheme/path)
+
+(def dirname (x)
+  (let x (racket-path-only x)
+    (if (isnt x (racket #f))
+      (racket-path->string x))))
+
+(def basename (x (o s))
+  (if s (err "unimplemented, should follow GNU's basename")
+        (let x (racket-file-name-from-path x)
+          (if (isnt x (racket #f))
+            (racket-path->string x)))))
+
 (def load (file)
-  (w/infile f file
-    (w/uniq eof
-      (whiler e (read f eof) eof
-        (eval e)))))
+  (ifdlet curdir (dirname file)
+    (w/infile f (+ curdir (basename file))
+      (w/uniq eof
+        (whiler e (read f eof) eof
+          (eval e))))))
 
 (def positive (x)
   (and (number x) (> x 0)))

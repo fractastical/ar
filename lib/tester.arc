@@ -1,4 +1,4 @@
-(load "lib/re.arc")
+(load "re.arc")
 
 ;; options
 (= verbose nil)

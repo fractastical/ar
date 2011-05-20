@@ -338,6 +338,14 @@
 (mac dlet (name val . body)
   `(racket-parameterize (paramfor ,name) ,val (fn () ,@body)))
 
+;; I don't like the name ifdlet. Conceptually, it works like so:
+;; "if val is nil, then use current value, otherwise use dlet"
+(mac ifdlet (name val . body)
+  (w/uniq x
+    `(iflet ,x ,val
+       (dlet ,name ,x ,@body)
+       (let ,name ,name ,@body))))
+
 (mac make-w/ (name)
   (let w/name (sym (+ "w/" name))
     `(mac ,w/name (val . body)
@@ -465,6 +473,24 @@
                   (aif (readc s)
                         (next it))))))
      'string)))
+
+
+;=============================================================================
+;  Directories
+;=============================================================================
+
+(implicit srcdir srcdir)
+(implicit curdir (racket-path->string (racket-current-directory)))
+
+#|
+this is now handled by ifdlet
+
+(mac w/curdir (val . body)
+  (w/uniq x
+    `(iflet ,x ,val
+       (dlet curdir ,x ,@body)
+       (let curdir curdir ,@body))))
+|#
 
 
 ;=============================================================================

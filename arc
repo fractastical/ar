@@ -19,29 +19,29 @@
  #:args files
  (set! files-to-load files))
 
-(define srcdir*
+(define srcdir
   (path->string
    (let-values (((base _2 _3)
                  (split-path (normalize-path
                               (find-system-path 'run-file)))))
      base)))
 
-(namespace-require `(file ,(string-append srcdir* "ac.ss")))
+(namespace-require `(file ,(string-append srcdir "ac.ss")))
 
 (let ((arc (new-arc)))
-  (set arc 'srcdir* srcdir*)
+  (set arc 'srcdir srcdir)
 
   (parameterize ((current-command-line-arguments
                    (list->vector files-to-load)))
 
-    (aload arc (string-append (g srcdir*) "core.arc")
-               (string-append (g srcdir*) "base.arc")
-               (string-append (g srcdir*) "arc.arc")
-               (string-append (g srcdir*) "arc3.1/backcompat.arc")
-               (string-append (g srcdir*) "arc3.1/strings.arc"))
+    (aload arc (string-append (g srcdir) "core.arc")
+               (string-append (g srcdir) "base.arc")
+               (string-append (g srcdir) "arc.arc")
+               (string-append (g srcdir) "arc3.1/backcompat.arc")
+               (string-append (g srcdir) "arc3.1/strings.arc"))
 
     ; this should work, but says "undefined variable: _"
-    ;((g load) (string-append (g srcdir*) "arc3.1/strings.arc"))
+    ;((g load) (string-append (g srcdir) "arc3.1/strings.arc"))
 
     (cond (exec-all
             (for-each (g load) files-to-load))
@@ -49,5 +49,5 @@
             ((g load) (car files-to-load))))
 
     (when (or run-repl (null? files-to-load))
-      ((g load) (string-append (g srcdir*) "repl.arc"))
+      ((g load) (string-append (g srcdir) "repl.arc"))
       (noprint ((g repl))))))
