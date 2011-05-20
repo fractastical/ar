@@ -4,13 +4,17 @@
 (require scheme/cmdline)
 
 (define run-repl #f)
+(define exec-all #f)
 (define files-to-load '())
 
 (command-line
  #:once-each
  (("--repl")
-  "run the REPL even when specifying files"
-  (set! run-repl #t))
+    "run the REPL even when specifying files"
+    (set! run-repl #t))
+ (("-a" "--all")
+    "execute all files, rather than only the first"
+    (set! exec-all #t))
 
  #:args files
  (set! files-to-load files))
@@ -25,14 +29,25 @@
 (namespace-require `(file ,(string-append srcdir* "ac.ss")))
 
 (let ((arc (new-arc)))
-  (aload arc (string-append srcdir* "core.arc")
-             (string-append srcdir* "base.arc")
-             (string-append srcdir* "arc.arc")
-             (string-append srcdir* "arc3.1/backcompat.arc")
-             (string-append srcdir* "arc3.1/strings.arc"))
-; this should work, but says "undefined variable: _"
-;  ((get arc 'load) (string-append srcdir* "arc3.1/strings.arc"))
-  (for-each (get arc 'load) files-to-load)
-  (when (or run-repl (null? files-to-load))
-    ((get arc 'load) (string-append srcdir* "repl.arc"))
-    (noprint ((get arc 'repl)))))
+  (set arc 'srcdir* srcdir*)
+
+  (parameterize ((current-command-line-arguments
+                   (list->vector files-to-load)))
+
+    (aload arc (string-append (g srcdir*) "core.arc")
+               (string-append (g srcdir*) "base.arc")
+               (string-append (g srcdir*) "arc.arc")
+               (string-append (g srcdir*) "arc3.1/backcompat.arc")
+               (string-append (g srcdir*) "arc3.1/strings.arc"))
+
+    ; this should work, but says "undefined variable: _"
+    ;((g load) (string-append (g srcdir*) "arc3.1/strings.arc"))
+
+    (cond (exec-all
+            (for-each (g load) files-to-load))
+          ((pair? files-to-load)
+            ((g load) (car files-to-load))))
+
+    (when (or run-repl (null? files-to-load))
+      ((g load) (string-append (g srcdir*) "repl.arc"))
+      (noprint ((g repl))))))
