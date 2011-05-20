@@ -1,4 +1,4 @@
->>> (load "io.arc")
+>>> (load "../io.arc")
 nil
 
 >>> (= tcp-test-port* 50013)

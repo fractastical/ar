@@ -1379,7 +1379,7 @@ this is now handled by ifdlet
 
 ;(= script-args (racket-vector->mlist (racket-current-command-line-arguments)))
 
-(implicit script-src (car script-args))
+(implicit script-src (abspath (car script-args)))
 
 (mac w/script-dir body
   `(w/curdir (dirname ,script-src) ,@body))

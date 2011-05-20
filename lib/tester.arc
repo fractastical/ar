@@ -75,7 +75,7 @@
                 (write run)
                 (prn)
                 (prn "\n- Success:")
-                (prn expect)
+                (prn result)
                 (prn "\n" (newstring 80 #\=)))
               t)
           (do (prn "\n- Failed example:")
@@ -89,9 +89,10 @@
               nil))))
 
 (def test-file (x)
-  (w/infile file x
-    (each x (parse-string:allchars file)
-      (eval-test x))))
+  (w/curdir (dirname x)
+    (w/infile file (basename x)
+      (each x (parse-string:allchars file)
+        (eval-test x)))))
 
 (mac test-files args
   `(do ,@(map (fn (x)

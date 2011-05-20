@@ -46,7 +46,7 @@ use --repl:
 
 Run tests with:
 
-    sh tests.sh
+    ./arc run-tests
 
 Bug reports are *greatly* appreciated!
 

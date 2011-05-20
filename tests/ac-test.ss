@@ -5,6 +5,8 @@
 (require (only-in "../ac.ss"
            arc-eval new-arc ac-build-steps get g globals-implementation))
 
+(define verbose #f)
+
 (define (test-expect-error-impl source thunk expected-error-message)
   (let ((actual-error
          (with-handlers ((exn:fail? (lambda (c) (exn-message c))))
@@ -15,7 +17,8 @@
                  (string-length expected-error-message))
              (equal? (substring actual-error 0 (string-length expected-error-message))
                      expected-error-message))
-         (begin (display "ok ")
+         (when verbose
+                (display "ok ")
                 (write source)
                 (display " => ")
                 (write actual-error)
@@ -52,11 +55,12 @@
 
 (define (test-impl source-string expected actual)
   (if (equal? expected actual)
-       (begin (display "ok ")
-              (display source-string)
-              (display "=> ")
-              (write actual)
-              (newline))
+       (when verbose
+         (display "ok ")
+         (display source-string)
+         (display "=> ")
+         (write actual)
+         (newline))
        (begin
          (display "bzzt! ")
          (display source-string)

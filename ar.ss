@@ -36,6 +36,8 @@
     (add-to-hash h args)
     h))
 
+(define verbose #f)
+
 (define-syntax test
   (syntax-rules ()
     ((test expr expected)
@@ -43,7 +45,7 @@
            (cons (lambda ()
                    (let ((r expr))
                      (if (equal? r expected)
-                          (begin
+                          (when verbose
                             (display "ok ")
                             (write 'expr)
                             (display " => ")
@@ -61,7 +63,8 @@
                  ar-tests*)))))
 
 (define (run-ar-tests)
-  (display "run ar tests\n")
+  (when verbose
+    (display "run ar tests\n"))
   (for-each (lambda (test) (test)) (reverse ar-tests*))
   (void))
 
