@@ -32,11 +32,17 @@ or, if you have rlwrap:
 
 You can load Arc files from the command line:
 
-    /path/to/ar/arc foo.arc bar.arc
+    /path/to/ar/arc foo.arc
 
-or, if you want to execute your Arc programs and go into the REPL afterwards:
+It only loads the first argument. If you want to load all the files,
+use -a or --all:
 
-    /path/to/ar/arc --repl foo.arc bar.arc
+    /path/to/ar/arc -a foo.arc bar.arc qux.arc
+
+And, if you want to execute your Arc programs and go into the REPL afterwards,
+use --repl:
+
+    /path/to/ar/arc -a --repl foo.arc bar.arc qux.arc
 
 Run tests with:
 

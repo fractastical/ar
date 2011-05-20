@@ -5,7 +5,7 @@
 (provide ar-caris arc-cadr arc-car arc-cddr arc-cdr arc-is arc-isa arc-join
          arc-list arc-map1 arc-type ar-rep ar-tag combine deep-fromarc err
          exint? hash list-fromarc new-ar no? noprint r/list-toarc run-ar-tests
-         tagged? tfalse tnil toarc toscheme true? write-to-string)
+         tagged? tfalse tnil toarc toracket true? write-to-string)
 
 (define ar-tests* '())
 
@@ -108,10 +108,10 @@
          (string-copy x))
         (else x)))
 
-(define (toscheme x)
+(define (toracket x)
   (cond ((mpair? x)
-         (cons (toscheme (mcar x))
-               (toscheme (mcdr x))))
+         (cons (toracket (mcar x))
+               (toracket (mcdr x))))
         ((eq? x 'nil)
          '())
         ((string? x)
@@ -358,6 +358,7 @@
         'rep                 ar-rep
         't                   't
         'ar-toarc            toarc
+        'ar-toracket         toracket
         'type                arc-type
         'uniq                gensym
         ))

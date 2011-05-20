@@ -489,9 +489,11 @@
       ,test)))
 
 (def last (xs)
-  (if (cdr xs)
-      (last (cdr xs))
-      (car xs)))
+  (if (cons? xs)
+        (if (cdr xs)
+              (last (cdr xs))
+            (car xs))
+        (xs (- (len xs) 1))))
 
 (def rem (test seq)
   (let f (testify test)
@@ -1266,25 +1268,136 @@
 
 
 ;=============================================================================
-;  Input
+;  Filesystem paths
 ;=============================================================================
+
+(implicit srcdir srcdir)
+;(implicit curdir (racket-path->string (racket-current-directory)))
+
+(= (dynamic-parameter* 'curdir) racket-current-directory)
+;(sref dynamic-parameter* racket-current-directory 'curdir)
+(defvar curdir
+  (fn ()  (racket-path->string (racket-current-directory)))
+  (fn (v) (racket-current-directory v)))
+(make-w/ curdir)
+
+#|
+this is now handled by ifdlet
+
+(mac w/curdir (val . body)
+  (w/uniq x
+    `(iflet ,x ,val
+       (dlet curdir ,x ,@body)
+       (let curdir curdir ,@body))))
+|#
 
 (rckt-require scheme/path)
 
-(def dirname (x)
-  (let x (racket-path-only x)
-    (if (isnt x (racket #f))
-      (racket-path->string x))))
+; should dirname and basename accept nil? probably
+(def dirname ((o x))
+  (if (not x)  "./"
+               (let x (racket-path-only x)
+                 (if (aracket-false x)
+                       "./"
+                     (racket-path->string x)))))
 
-(def basename (x (o s))
-  (if s (err "unimplemented, should follow GNU's basename")
-        (let x (racket-file-name-from-path x)
-          (if (isnt x (racket #f))
-            (racket-path->string x)))))
+(def basename ((o x) (o s))
+  (if (not x)  ""
+      s        (err "unimplemented, should follow GNU's basename")
+               (let x (racket-file-name-from-path x)
+                 (if (aracket-false x)
+                       ""
+                     (racket-path->string x)))))
+
+(def todir (x)
+  (if (is (last x) #\/)
+        x
+      (+ x "/")))
+
+; Algorithm taken from Python's os.path.join (http://bugs.python.org/issue9921)
+; Ignore the previous parts if a part is absolute.
+; Insert a '/' unless the first part is empty or already ends in '/'.
+
+(def joinpath args
+  (string (ccc (fn (cc)
+    ((afn (args)
+       (let (x y) args
+         (if (not args)              nil
+             (not x)                 (self (cdr args))
+             ; wish I could use caris
+             (and y (is (y 0) #\/))  (cc (apply joinpath (cdr args)))
+                                     (cons (if (cdr args)
+                                                 (todir x)
+                                               x)
+                                           (self (cdr args))))))
+     args)))))
+
+(def abspath (x)
+  (joinpath curdir x))
+
+(def absdir (x)
+  (dirname (abspath x)))
+
+
+;=============================================================================
+;  Racket vectors
+;=============================================================================
+
+;(rckt-require scheme/mpair)
+
+(def racket-vector->mlist (x)
+  (ar-toarc (racket-vector->list x)))
+
+(def racket-mlist->vector (x)
+  (racket-list->vector (ar-toracket x)));(racket-mlist->list x)))
+
+
+;=============================================================================
+;  Scripting
+;=============================================================================
+
+(def env (x)
+  (let x (racket-getenv x)
+    (unless (aracket-false x)
+      x)))
+
+(defset env (x)
+  (w/uniq g
+    (list (list g x)
+          `(env ,g)
+          `(fn (val) (do (racket-putenv ,g val)
+                         val)))))
+
+(let cli racket-current-command-line-arguments
+  (= (dynamic-parameter* 'script-args) cli)
+
+  (defvar script-args
+    (fn ()  (racket-vector->mlist (cli)))
+    (fn (v) (cli (racket-mlist->vector v))))
+
+  (make-w/ script-args))
+
+;(= script-args (racket-vector->mlist (racket-current-command-line-arguments)))
+
+(implicit script-src (car script-args))
+
+(mac w/script-dir body
+  `(w/curdir (dirname ,script-src) ,@body))
+
+(zap cdr script-args)
+
+
+;=============================================================================
+;  Input
+;=============================================================================
 
 (def load (file)
-  (ifdlet curdir (dirname file)
-    (w/infile f (+ curdir (basename file))
+;  (prn file)
+;  (ifdlet curdir (dirname (joinpath curdir file)))
+;  (w/curdir file ;(absdir file)
+  (w/curdir (dirname file)
+;    (prn curdir)
+    (w/infile f (basename file)
       (w/uniq eof
         (whiler e (read f eof) eof
           (eval e))))))
