@@ -1,6 +1,7 @@
 #! /usr/bin/env arc
 
 (load "lib/tester.arc")
+(load "lib/parse-script-args.arc")
 
 (mac extend (name arglist test . body)
   (w/uniq args
@@ -12,6 +13,9 @@
                   (apply orig ,args)))))))
 
 (= verbose nil)
+
+(parse-script-args
+  ("-v" "--verbose" (= verbose t)))
 
 (each x script-args
   (test-file x))
