@@ -1272,17 +1272,14 @@
 ;=============================================================================
 
 (implicit srcdir srcdir)
-;(implicit curdir (racket-path->string (racket-current-directory)))
 
-(= (dynamic-parameter* 'curdir) racket-current-directory)
-;(sref dynamic-parameter* racket-current-directory 'curdir)
-(defvar curdir
-  (fn ()  (racket-path->string (racket-current-directory)))
-  (fn (v) (racket-current-directory v)))
-(make-w/ curdir)
+(make-implicit curdir
+  (racket-make-derived-parameter racket-current-directory
+    (fn (v) (racket-expand-user-path v))
+    (fn (v) (racket-path->string v))))
 
 #|
-this is now handled by ifdlet
+this is now handled by ifdlet, so I should probably remove this...
 
 (mac w/curdir (val . body)
   (w/uniq x
@@ -1340,19 +1337,6 @@ this is now handled by ifdlet
 
 
 ;=============================================================================
-;  Racket vectors
-;=============================================================================
-
-;(rckt-require scheme/mpair)
-
-(def racket-vector->mlist (x)
-  (ar-toarc (racket-vector->list x)))
-
-(def racket-mlist->vector (x)
-  (racket-list->vector (ar-toracket x)));(racket-mlist->list x)))
-
-
-;=============================================================================
 ;  Scripting
 ;=============================================================================
 
@@ -1368,16 +1352,18 @@ this is now handled by ifdlet
           `(fn (val) (do (racket-putenv ,g val)
                          val)))))
 
-(let cli racket-current-command-line-arguments
-  (= (dynamic-parameter* 'script-args) cli)
+;(rckt-require scheme/mpair)
 
-  (defvar script-args
-    (fn ()  (racket-vector->mlist (cli)))
-    (fn (v) (cli (racket-mlist->vector v))))
+(def racket-vector->mlist (x)
+  (ar-toarc (racket-vector->list x)))
 
-  (make-w/ script-args))
+(def racket-mlist->vector (x)
+  (racket-list->vector (ar-toracket x))) ;(racket-mlist->list x)))
 
-;(= script-args (racket-vector->mlist (racket-current-command-line-arguments)))
+(make-implicit script-args
+  (racket-make-derived-parameter racket-current-command-line-arguments
+    (fn (v) (racket-mlist->vector v))
+    (fn (v) (racket-vector->mlist v))))
 
 (implicit script-src (abspath (car script-args)))
 
