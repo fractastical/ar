@@ -27,7 +27,7 @@
     (system "mzscheme ac-test.ss")
 
     (test-files "apply"
-                ;"arc" ; would like to enable, but it's really slow...
+                ;"arc" ; would like to enable, but it uses up a LOT of RAM...
                 "assign"
                 "coerce"
                 "fn"

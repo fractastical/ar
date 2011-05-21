@@ -234,6 +234,7 @@
 (test (arc-apply ar-+ 'nil (toarc '((a b) (c d)))) (toarc '(a b c d)))
 (test (arc-apply ar-+ 1 2 (arc-list 3 4)) 10)|#
 
+
 ;; this assigns the special form gensyms to %%internal-
 (add-ac-build-step
   (lambda (arc)
@@ -292,6 +293,47 @@
   (let ((r/module (deep-fromarc a/module)))
     (lambda (sym)
       (dynamic-require r/module sym))))
+
+
+;; ugh, this is needed, unfortunately
+;; got a better idea?
+
+(define ar-apply '())
+
+(add-ac-build-step
+  (lambda (arc)
+    (set! ar-apply
+      (lambda (fn . args)
+        (cond ((procedure? fn)
+               (apply fn args))
+              (else
+               (apply ((g coerce) fn 'fn) args)))))))
+
+;(arc-coerce fn 'fn)
+
+#|(test (ar-apply 'nil + 1 2 3) 6)
+(test (ar-apply 'nil (arc-list 1 2 3) 1) 2)
+(test (ar-apply 'nil "abcde" 2) #\c)
+(test (ar-apply 'nil (hash 'a 1 'b 2) 'b) 2)
+(test (ar-apply 'nil (hash 'a 1 'b 2) 'x) 'nil)
+(test (ar-apply 'nil (hash 'a 1 'b 2) 'x 3) 3)|#
+
+
+(ac-def apply (fn . args)
+  (apply ar-apply fn (combine args)))
+
+
+;(test (ar-funcall0 'nil +) 0)
+
+;(test (ar-funcall1 'nil + 3) 3)
+;(test (ar-funcall1 'nil "abcd" 2) #\c)
+
+;(test (ar-funcall2 'nil + 3 4) 7)
+;(test (ar-funcall2 'nil (hash 'a 1 'b 2) 'x 3) 3)
+
+;(test (ar-funcall3 'nil + 3 4 5) 12)
+
+;(test (ar-funcall4 'nil + 3 4 5 6) 18)
 
 
 ;; ar-funcall
@@ -437,8 +479,7 @@
            (mcons ((g ac) f env)
                   ((g map1) (lambda (arg) ((g ac) arg env)) args))))))
 
-(extend ac (s env)
-  (tnil (mpair? s))
+(extend ac (s env) (tnil (mpair? s))
   ((g ac-call) (arc-car s) (arc-cdr s) env))
 
 
@@ -542,54 +583,10 @@ My failed attempt to make fn return a value. We can return to this later.
 ;; this makes apply work on macros
 ;; this should probably be defined in core.arc, though
 
-(extend coerce (x type . rest) (tnil (and (eq? type 'fn)
+#|(extend coerce (x type . rest) (tnil (and (eq? type 'fn)
                                      (tfalse (arc-isa x 'mac))))
   (lambda args
-    ((g eval) (apply (ar-rep x) args))))
-
-
-;; ugh, this is needed, unfortunately
-;; got a better idea?
-
-(define ar-apply (void))
-
-(add-ac-build-step
-  (lambda (arc)
-    (set! ar-apply
-      (lambda (fn . args)
-        (cond ((procedure? fn)
-      ;         (display (combine args))
-      ;         (newline)
-      ;         (newline)
-               (apply fn args))
-              (else
-               (apply ((g coerce) fn 'fn) args)))))))
-
-;(arc-coerce fn 'fn)
-
-#|(test (ar-apply 'nil + 1 2 3) 6)
-(test (ar-apply 'nil (arc-list 1 2 3) 1) 2)
-(test (ar-apply 'nil "abcde" 2) #\c)
-(test (ar-apply 'nil (hash 'a 1 'b 2) 'b) 2)
-(test (ar-apply 'nil (hash 'a 1 'b 2) 'x) 'nil)
-(test (ar-apply 'nil (hash 'a 1 'b 2) 'x 3) 3)|#
-
-
-(ac-def apply (fn . args)
-  (apply ar-apply fn (combine args)))
-
-
-;(test (ar-funcall0 'nil +) 0)
-
-;(test (ar-funcall1 'nil + 3) 3)
-;(test (ar-funcall1 'nil "abcd" 2) #\c)
-
-;(test (ar-funcall2 'nil + 3 4) 7)
-;(test (ar-funcall2 'nil (hash 'a 1 'b 2) 'x 3) 3)
-
-;(test (ar-funcall3 'nil + 3 4 5) 12)
-
-;(test (ar-funcall4 'nil + 3 4 5 6) 18)
+    ((g eval) (apply (ar-rep x) args))))|#
 
 
 ;; quasiquotation

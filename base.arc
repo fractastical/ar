@@ -103,16 +103,14 @@
                    (apply (fn ,arglist ,@body) ,args)
                    (apply orig ,args))))))))
 
-#|
+
 ;; makes apply work on macros
-;; this is currently defined in ac.ss
-;; maybe it should be defined here instead?
 
 (defrule coerce (and (is type 'fn)
                      (isa x 'mac))
   (fn args
     (eval (apply (rep x) args))))
-|#
+
 
 (defrule ac (caris s 'racket)
   (let x (cadr s)
