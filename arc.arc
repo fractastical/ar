@@ -41,6 +41,7 @@
 
 (def empty (seq)
   (or (not seq)
+      (is seq '||)
       (and (in (type seq) 'string 'table)
            (is (len seq) 0))))
 
@@ -345,12 +346,12 @@
 
 (def firstn (n xs)
   (if (not n)           xs
-      (and (> n 0) xs)  (cons (car xs) (firstn (- n 1) (cdr xs)))
+      (and (> n 0) xs)  (cons (car xs) (firstn (1- n) (cdr xs)))
                         nil))
 
 (def nthcdr (n xs)
   (if (not n) xs
-      (> n 0) (nthcdr (- n 1) (cdr xs))
+      (> n 0) (nthcdr (1- n) (cdr xs))
               xs))
 
 ; Generalization of pair: (tuples x) = (pair x)
@@ -461,8 +462,8 @@
 
 (mac down (v init min . body)
   (w/uniq (gi gm)
-    `(with (,v nil ,gi ,init ,gm (- ,min 1))
-       (loop (assign ,v ,gi) (> ,v ,gm) (assign ,v (- ,v 1))
+    `(with (,v nil ,gi ,init ,gm (1- ,min))
+       (loop (assign ,v ,gi) (> ,v ,gm) (assign ,v (1- ,v))
          ,@body))))
 
 (mac repeat (n . body)
@@ -493,7 +494,7 @@
         (if (cdr xs)
               (last (cdr xs))
             (car xs))
-        (xs (- (len xs) 1))))
+        (xs (1- (len xs)))))
 
 (def rem (test seq)
   (let f (testify test)
@@ -675,7 +676,7 @@
                 nil
                (f (car seq))
                 n
-               (self (cdr seq) (+ n 1))))
+               (self (cdr seq) (1+ n))))
          (nthcdr start seq)
          start)
         (recstring [if (f (seq _)) _] seq start))))
@@ -766,7 +767,7 @@
       s)))
 
 (mac forlen (var s . body)
-  `(for ,var 0 (- (len ,s) 1) ,@body))
+  `(for ,var 0 (1- (len ,s)) ,@body))
 
 (mac on (var s . body)
   (if (is var 'index)
@@ -998,7 +999,7 @@
         ((afn (n)
            (if (> n 2)
                 ; needs to evaluate L->R
-                (withs (j (/ (if (even n) n (- n 1)) 2) ; faster than round
+                (withs (j (/ (if (even n) n (1- n)) 2) ; faster than round
                         a (self j)
                         b (self (- n j)))
                   (merge less? a b))
@@ -1223,7 +1224,7 @@
 (def retrieve (n f xs)
   (if (not n)                (keep f xs)
       (or (<= n 0) (not xs)) nil
-      (f (car xs))           (cons (car xs) (retrieve (- n 1) f (cdr xs)))
+      (f (car xs))           (cons (car xs) (retrieve (1- n) f (cdr xs)))
                              (retrieve n f (cdr xs))))
 
 (def dedup (xs)

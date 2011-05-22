@@ -28,7 +28,7 @@
 (def parse-delim (text)
   (with (comma (pos #\, text)
          end (pos #\} text))
-    (list (ord:string:cut text 0 comma) (ord:string:cut text (+ comma 1) end) (cut text (+ end 1)))))
+    (list (ord:string:cut text 0 comma) (ord:string:cut text (1+ comma) end) (cut text (1+ end)))))
 
 (def find-pipe (text (o acc))
   (when text

@@ -32,7 +32,7 @@
 ;    (prn (re "^ *>"))
     (let spaces (re "(^|\n) *>>>")
 ;      (re ">>> ")
-#|    (let spaces (- (len:re "^ *>") 1)
+#|    (let spaces (1- (len:re "^ *>"))
       (re ">> ")|#
       (let rest re-input*
 ;      (let rest (instring:string re-text*)

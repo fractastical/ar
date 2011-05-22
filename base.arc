@@ -167,6 +167,14 @@
 
 
 ;=============================================================================
+;  Numbers
+;=============================================================================
+
+(def 1- (x) (- x 1))
+(def 1+ (x) (+ 1 x)) ; to prevent concatenation with strings
+
+
+;=============================================================================
 ;  Iteration
 ;=============================================================================
 
@@ -180,8 +188,8 @@
 
 (mac for (v init max . body)
   (w/uniq (gi gm)
-    `(with (,v nil ,gi ,init ,gm (+ ,max 1))
-       (loop (assign ,v ,gi) (< ,v ,gm) (assign ,v (+ ,v 1))
+    `(with (,v nil ,gi ,init ,gm (1+ ,max))
+       (loop (assign ,v ,gi) (< ,v ,gm) (assign ,v (1+ ,v))
          ,@body))))
 
 (def maptable (f table)
@@ -200,7 +208,7 @@
            (isa ,gseq 'table)
              (maptable (fn ,var ,@body)
                        ,gseq)
-             (for ,gv 0 (- (len ,gseq) 1)
+             (for ,gv 0 (1- (len ,gseq))
                (let ,var (,gseq ,gv) ,@body))))))
 
 
@@ -223,7 +231,7 @@
   ((afn (i)
      (and (< i (len s))
           (or (test i)
-              (self (+ i 1)))))
+              (self (1+ i)))))
    start))
 
 (mac compose args
@@ -262,7 +270,7 @@
             (if (is i n)
                 new
                 (do (sref new (apply f (map [_ i] seqs)) i)
-                    (self (+ i 1)))))
+                    (self (1+ i)))))
           0))
       (not (cdr seqs))
        (map1 f (car seqs))
