@@ -4,10 +4,6 @@
 (= verbose nil)
 
 
-(mac collect (x)
-  `(accum yield ,x))
-
-
 (def input->list (x)
   (collect:whiler c (readc x nil) no
     (yield c)))

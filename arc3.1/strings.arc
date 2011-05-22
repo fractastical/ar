@@ -30,27 +30,26 @@
 ; maybe promote to arc.arc, but if so include a list clause
 
 (def positions (test seq)
-  (accum a
-    (let f (testify test)
-      (forlen i seq
-        (if (f (seq i)) (a i))))))
+  (collect:let f (testify test)
+    (forlen i seq
+      (if (f (seq i)) (yield i)))))
 
 (def lines (s)
-  (accum a
+  (collect
     ((afn ((p . ps))
        (if ps
-           (do (a (rem #\return (cut s (1+ p) (car ps))))
+           (do (yield (rem #\return (cut s (1+ p) (car ps))))
                (self ps))
-           (a (cut s (1+ p)))))
+           (yield (cut s (1+ p)))))
      (cons -1 (positions #\newline s)))))
 
 (def slices (s test)
-  (accum a
+  (collect
     ((afn ((p . ps))
        (if ps
-           (do (a (cut s (1+ p) (car ps)))
+           (do (yield (cut s (1+ p) (car ps)))
                (self ps))
-           (a (cut s (1+ p)))))
+           (yield (cut s (1+ p)))))
      (cons -1 (positions test s)))))
 
 ; > (require (lib "uri-codec.ss" "net"))

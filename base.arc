@@ -432,6 +432,129 @@
 
 
 ;=============================================================================
+;  Macros
+;=============================================================================
+
+(def macex (e (o once))
+  (if (cons? e)
+       (let m (ac-macro? (car e))
+         (if m
+              (let expansion (apply m (cdr e))
+                (if (not once) (macex expansion) expansion))
+              e))
+       e))
+
+(def macex1 (e)
+  (macex e t))
+
+
+;=============================================================================
+;  Ssyntax
+;=============================================================================
+
+(def ac-ssyntax (x)
+  (and (isa x 'sym)
+       (not (in x '+ '++ '_))
+       (some [in _ #\: #\~ #\& #\. #\!] (string x))))
+
+
+;=============================================================================
+;  Setforms
+;=============================================================================
+
+; Note: if expr0 macroexpands into any expression whose car doesn't
+; have a setter, setforms assumes it's a data structure in functional
+; position.  Such bugs will be seen only when the code is executed, when
+; sref complains it can't set a reference to a function.
+
+(def setforms (expr0)
+  (let expr (macex expr0)
+    (if (isa expr 'sym)
+         (if (ac-ssyntax expr)
+             (setforms (ssexpand expr))
+             (w/uniq (g h)
+               (list (list g expr)
+                     g
+                     `(fn (,h) (assign ,expr ,h)))))
+        ; make it also work for uncompressed calls to compose
+        (and (cons? expr) (metafn (car expr)))
+         (setforms (expand-metafn-call (ssexpand (car expr)) (cdr expr)))
+        (and (cons? expr) (cons? (car expr)) (is (caar expr) 'get))
+         (setforms (list (cadr expr) (cadr (car expr))))
+         (let f (setter (car expr))
+           (if f
+               (f expr)
+               ; assumed to be data structure in fn position
+               (do (when (caris (car expr) 'fn)
+                     (warn "Inverting what looks like a function call"
+                           expr0 expr))
+                   (w/uniq (g h)
+                     (let argsyms (map [uniq] (cdr expr))
+                        (list (+ (list g (car expr))
+                                 (mappend list argsyms (cdr expr)))
+                              `(,g ,@argsyms)
+                              `(fn (,h) (sref ,g ,h ,(car argsyms))))))))))))
+
+
+;=============================================================================
+;  Continuations
+;=============================================================================
+
+(def protect (during after)
+  (racket (racket-dynamic-wind (racket-lambda () #t) during after)))
+
+(mac after (x . ys)
+  `(protect (fn () ,x) (fn () ,@ys)))
+
+
+;=============================================================================
+;  Threads
+;=============================================================================
+
+(def make-semaphore ((o init 0))
+  (racket-make-semaphore init))
+
+(def call-with-semaphore (sema func)
+  ((racket call-with-semaphore) sema (fn () (func))))
+
+(def nil->racket-false (x)
+  (if (not x) (racket "#f") x))
+
+(def make-thread-cell (v (o preserved))
+  (racket-make-thread-cell v (nil->racket-false preserved)))
+
+(def thread-cell-ref (cell)
+  (racket-thread-cell-ref cell))
+
+(def thread-cell-set (cell v)
+  ((racket racket-thread-cell-set!) cell v))
+
+(assign ar-the-sema (make-semaphore 1))
+
+(assign ar-sema-cell (make-thread-cell nil))
+
+(def atomic-invoke (f)
+  (if (thread-cell-ref ar-sema-cell)
+       (f)
+       (do (thread-cell-set ar-sema-cell t)
+           (after
+             (racket-call-with-semaphore ar-the-sema f)
+             (thread-cell-set ar-sema-cell nil)))))
+
+(mac atomic body
+  `(atomic-invoke (fn () ,@body)))
+
+(mac atlet args
+  `(atomic (let ,@args)))
+
+(mac atwith args
+  `(atomic (with ,@args)))
+
+(mac atwiths args
+  `(atomic (withs ,@args)))
+
+
+;=============================================================================
 ;  Input
 ;=============================================================================
 
@@ -447,11 +570,21 @@
 (def read ((o x stdin) (o eof nil))
   (if (isa x 'string) (readstring1 x eof) (sread x eof)))
 
+(mac push (x place)
+  (w/uniq gx
+    (let (binds val setter) (setforms place)
+      `(let ,gx ,x
+         (atwiths ,binds
+           (,setter (cons ,gx ,val)))))))
+
 (mac accum (accfn . body)
   (w/uniq gacc
     `(withs (,gacc nil ,accfn [push _ ,gacc])
        ,@body
        (rev ,gacc))))
+
+(mac collect args
+  `(accum yield ,@args))
 
 (mac xloop (withses . body)
   (let w (pair withses)
@@ -460,27 +593,28 @@
 (def readline ((o s stdin))
   (aif (readc s)
     (coerce
-     (accum a
-       (xloop (c it)
-         (if (is c #\return)
-              (if (is (peekc s) #\newline)
-                   (readc s))
-             (is c #\newline)
-              nil
-              (do (a c)
-                  (aif (readc s)
-                        (next it))))))
+      (collect (xloop (c it)
+        (if (is c #\return)
+             (if (is (peekc s) #\newline)
+                  (readc s))
+            (is c #\newline)
+             nil
+             (do (yield c)
+                 (aif (readc s)
+                       (next it))))))
      'string)))
 
+#|(def readline ((o x stdin))
+  (string (collect
+    ((afn ()
+       (whenlet c (readc x)
+         (yield c)
+         (unless (is c #\newline)
+           (self))))))))|#
 
-;=============================================================================
-;  Ssyntax
-;=============================================================================
-
-(def ac-ssyntax (x)
-  (and (isa x 'sym)
-       (not (in x '+ '++ '_))
-       (some [in _ #\: #\~ #\& #\. #\!] (string x))))
+#|(unless (or (is c #\newline)
+                     (and (is c #\return)
+                          (is (peekc x) #\newline)))|#
 
 
 ;=============================================================================

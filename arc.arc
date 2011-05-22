@@ -39,6 +39,27 @@
         (when ,gp ,@body (,gf ,test)))
       ,test)))
 
+; Repeatedly evaluates its body till it returns nil, then returns vals.
+
+(mac drain (expr (o eof nil))
+  (w/uniq (gacc gdone gres)
+    `(with (,gacc nil ,gdone nil)
+       (while (not ,gdone)
+         (let ,gres ,expr
+           (if (is ,gres ,eof)
+               (= ,gdone t)
+               (push ,gres ,gacc))))
+       (rev ,gacc))))
+
+; For the common C idiom while x = snarfdata != stopval.
+; Rename this if use it often.
+
+(mac whiler (var expr endval . body)
+  (w/uniq gf
+    `(withs (,var nil ,gf (testify ,endval))
+       (while (not (,gf (= ,var ,expr)))
+         ,@body))))
+
 (def empty (seq)
   (or (not seq)
       (is seq '||)
@@ -114,17 +135,13 @@
 (mac catch body
   `(point throw ,@body))
 
-(def protect (during after)
-  (racket (racket-dynamic-wind (racket-lambda () #t) during after)))
-
-(mac after (x . ys)
-  `(protect (fn () ,x) (fn () ,@ys)))
-
 (mac inline (x)
   `',(eval x))
 
+(rckt-require scheme/system)
+
 (def system (cmd)
-  ((inline ((racket-module-ref 'scheme/system) 'system)) cmd)
+  (racket-system cmd)
   nil)
 
 (mac caselet (var expr . args)
@@ -192,6 +209,15 @@
      (after (do ,@body) (close ,var))))
 
 (def readstring1 (s (o eof nil)) (w/instring i s (read i eof)))
+
+(def readlines (x)
+  (collect (whiler v (readline x) nil
+    (yield v))))
+
+
+;=============================================================================
+;  Ssyntax
+;=============================================================================
 
 (def ac-chars->value (x)
   (read (coerce x 'string)))
@@ -284,15 +310,6 @@
 (defrule ac (is (xcar:xcar s) 'complement)
   (ac (list 'not (cons (cadar s) (cdr s))) env))
 
-(def macex (e (o once))
-  (if (cons? e)
-       (let m (ac-macro? (car e))
-         (if m
-              (let expansion (apply m (cdr e))
-                (if (not once) (macex expansion) expansion))
-              e))
-       e))
-
 (def scar (x val)
   (sref x val 0))
 
@@ -305,48 +322,6 @@
     (map [do (write _) (disp " ")] args)
     (writec #\newline)
     nil))
-
-(def make-semaphore ((o init 0))
-  (racket-make-semaphore init))
-
-(def call-with-semaphore (sema func)
-  ((racket call-with-semaphore) sema (fn () (func))))
-
-(def nil->racket-false (x)
-  (if (not x) (racket "#f") x))
-
-(def make-thread-cell (v (o preserved))
-  (racket-make-thread-cell v (nil->racket-false preserved)))
-
-(def thread-cell-ref (cell)
-  (racket-thread-cell-ref cell))
-
-(def thread-cell-set (cell v)
-  ((racket racket-thread-cell-set!) cell v))
-
-(assign ar-the-sema (make-semaphore 1))
-
-(assign ar-sema-cell (make-thread-cell nil))
-
-(def atomic-invoke (f)
-  (if (thread-cell-ref ar-sema-cell)
-       (f)
-       (do (thread-cell-set ar-sema-cell t)
-           (after
-             (racket-call-with-semaphore ar-the-sema f)
-             (thread-cell-set ar-sema-cell nil)))))
-
-(mac atomic body
-  `(atomic-invoke (fn () ,@body)))
-
-(mac atlet args
-  `(atomic (let ,@args)))
-
-(mac atwith args
-  `(atomic (with ,@args)))
-
-(mac atwiths args
-  `(atomic (withs ,@args)))
 
 (def firstn (n xs)
   (if (not n)           xs
@@ -413,39 +388,6 @@
 
 (def ssexpand (x)
   (if (isa x 'sym) (ac-expand-ssyntax x) x))
-
-; Note: if expr0 macroexpands into any expression whose car doesn't
-; have a setter, setforms assumes it's a data structure in functional
-; position.  Such bugs will be seen only when the code is executed, when
-; sref complains it can't set a reference to a function.
-
-(def setforms (expr0)
-  (let expr (macex expr0)
-    (if (isa expr 'sym)
-         (if (ac-ssyntax expr)
-             (setforms (ssexpand expr))
-             (w/uniq (g h)
-               (list (list g expr)
-                     g
-                     `(fn (,h) (assign ,expr ,h)))))
-        ; make it also work for uncompressed calls to compose
-        (and (cons? expr) (metafn (car expr)))
-         (setforms (expand-metafn-call (ssexpand (car expr)) (cdr expr)))
-        (and (cons? expr) (cons? (car expr)) (is (caar expr) 'get))
-         (setforms (list (cadr expr) (cadr (car expr))))
-         (let f (setter (car expr))
-           (if f
-               (f expr)
-               ; assumed to be data structure in fn position
-               (do (when (caris (car expr) 'fn)
-                     (warn "Inverting what looks like a function call"
-                           expr0 expr))
-                   (w/uniq (g h)
-                     (let argsyms (map [uniq] (cdr expr))
-                        (list (+ (list g (car expr))
-                                 (mappend list argsyms (cdr expr)))
-                              `(,g ,@argsyms)
-                              `(fn (,h) (sref ,g ,h ,(car argsyms))))))))))))
 
 (def metafn (x)
   (or (ac-ssyntax x)
@@ -527,13 +469,6 @@
         (if fx
             (cons fx (trues f (cdr xs)))
             (trues f (cdr xs))))))
-
-(mac push (x place)
-  (w/uniq gx
-    (let (binds val setter) (setforms place)
-      `(let ,gx ,x
-         (atwiths ,binds
-           (,setter (cons ,gx ,val)))))))
 
 (mac swap (place1 place2)
   (w/uniq (g1 g2)
@@ -636,27 +571,6 @@
       (not (cdr args))
        (car args)
       `(let it ,(car args) (and it (aand ,@(cdr args))))))
-
-; Repeatedly evaluates its body till it returns nil, then returns vals.
-
-(mac drain (expr (o eof nil))
-  (w/uniq (gacc gdone gres)
-    `(with (,gacc nil ,gdone nil)
-       (while (not ,gdone)
-         (let ,gres ,expr
-           (if (is ,gres ,eof)
-               (= ,gdone t)
-               (push ,gres ,gacc))))
-       (rev ,gacc))))
-
-; For the common C idiom while x = snarfdata != stopval.
-; Rename this if use it often.
-
-(mac whiler (var expr endval . body)
-  (w/uniq gf
-    `(withs (,var nil ,gf (testify ,endval))
-       (while (not (,gf (= ,var ,expr)))
-         ,@body))))
 
 (def consif (x y) (if x (cons x y) y))
 
@@ -903,13 +817,13 @@
   table)
 
 (def keys (h)
-  (accum a (each (k v) h (a k))))
+  (collect:each (k v) h (yield k)))
 
 (def vals (h)
-  (accum a (each (k v) h (a v))))
+  (collect:each (k v) h (yield v)))
 
 (def tablist (h)
-  (accum a (maptable (fn args (a args)) h)))
+  (collect:maptable (fn args (yield args)) h))
 
 (def listtab (al)
   (let h (table)
@@ -1421,6 +1335,26 @@ this is now handled by ifdlet, so I should probably remove this...
       (w/uniq eof
         (whiler e (read f eof) eof
           (eval e))))))
+
+; should pipe-from call (cont 'wait)?
+(def pipe-from (cmd)
+  (let (in out id err cont) (ar-toarc:racket-process cmd)
+    ; Racket docs say I need to close all 3 ports explicitly. Obviously I
+    ; can't close the input port, since that's what we're returning, but
+    ; I wonder if it's really necessary to close the output and error ports...
+    (close out)
+    (close err)
+    in))
+
+#|
+doesn't work:
+
+(def pipe-to (cmd)
+  (let (in out id err cont) (ar-toarc:racket-process cmd)
+    (close in)
+    (close err)
+    out))
+|#
 
 (def positive (x)
   (and (number x) (> x 0)))

@@ -14,18 +14,17 @@
                     `(= (',shortopts ,(opt 1)) ,f))))
 
 (def parse-all (args)
-  (accum yield
-    (each x args
-      (if (is-:x 0)
-            (if (is-:x 1)
-                  (iflet x (longopts (cut x 2))
+  (collect:each x args
+    (if (is-:x 0)
+          (if (is-:x 1)
+                (iflet x (longopts (cut x 2))
+                  (x)
+                  (yield x))
+                (each x (cut x 1)
+                  (iflet x (shortopts x)
                     (x)
-                    (yield x))
-                  (each x (cut x 1)
-                    (iflet x (shortopts x)
-                      (x)
-                      (yield (+ "-" x)))))
-            (yield x)))))
+                    (yield (+ "-" x)))))
+          (yield x))))
 
 (mac parse-script-args args
   `(do ,@(mappend (fn (x)

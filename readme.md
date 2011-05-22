@@ -95,6 +95,9 @@ Todo
   * reinsert-sorted and insortnew
   * memo and defmemo
   * prall, prs
+  * readlines
+  * pipe-from
+  * load (don't forget to test that it handles subdirectories correctly)
   * templates
   * cache, defcache
   * until

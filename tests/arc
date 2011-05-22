@@ -697,6 +697,9 @@ nil
 >>> (accum a (each c "abc" (a c)))
 (#\a #\b #\c)
 
+>>> (collect:each c "abc" (yield c))
+(#\a #\b #\c)
+
 
 ; todo test for whilet
 
