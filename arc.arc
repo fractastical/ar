@@ -45,6 +45,9 @@
       (and (in (type seq) 'string 'table)
            (is (len seq) 0))))
 
+(def none (test seq)
+  (not (some test seq)))
+
 (def all (test seq)
   ((complement some) (complement (testify test)) seq))
 
@@ -297,10 +300,11 @@
   ((racket racket-set-mcdr!) x val))
 
 (def warn (msg . args)
-  (disp (+ "Warning: " msg " "))
-  (map [do (write _) (disp " ")] args)
-  (writec #\newline)
-  nil)
+  (w/stdout stderr
+    (disp (+ "Warning: " msg " "))
+    (map [do (write _) (disp " ")] args)
+    (writec #\newline)
+    nil))
 
 (def make-semaphore ((o init 0))
   (racket-make-semaphore init))
