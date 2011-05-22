@@ -1275,7 +1275,10 @@
 
 (make-implicit curdir
   (racket-make-derived-parameter racket-current-directory
-    (fn (v) (racket-expand-user-path v))
+    (fn (v) (zap string v)
+            (if (empty v)
+                  (racket-current-directory)
+                  (racket-expand-user-path v)))
     (fn (v) (racket-path->string v))))
 
 #|
@@ -1288,49 +1291,74 @@ this is now handled by ifdlet, so I should probably remove this...
        (let curdir curdir ,@body))))
 |#
 
+(def expandpath (x)
+  (zap string x)
+  (if (empty x)
+        x
+      (racket-path->string:racket-expand-user-path x)))
+
 (rckt-require scheme/path)
 
-; should dirname and basename accept nil? probably
-(def dirname ((o x))
-  (if (not x)  "./"
-               (let x (racket-path-only x)
-                 (if (aracket-false x)
-                       "./"
-                     (racket-path->string x)))))
+(def make-path->string (converter)
+  (fn (x)
+    (zap string x)
 
-(def basename ((o x) (o s))
-  (if (not x)  ""
-      s        (err "unimplemented, should follow GNU's basename")
-               (let x (racket-file-name-from-path x)
-                 (if (aracket-false x)
-                       ""
-                     (racket-path->string x)))))
+    (unless (empty x)
+      (zap converter x)
+      (unless (aracket-false x)
+        (racket-path->string x)))))
+
+(= dirname  (make-path->string racket-path-only:expandpath))
+(= basename (make-path->string racket-file-name-from-path:expandpath))
+
+; should probably be moved somewhere else, maybe next to len?
+(def len- (x y)
+  (- (len x) (len y)))
+
+; (stripext "foo.bar" ".bar") returns "foo"
+(def stripext (x y)
+  (zap string x)
+  (zap string y)
+  (let (l r) (split x (max (len- x y) 0)) ; should split accept negatives?
+    (if (is r y)
+          l
+          x)))
+
+
+; Algorithm taken from Python's os.path.join (http://bugs.python.org/issue9921)
+; Ignore the previous parts if a part is absolute.
+; Insert a '/' unless the first part is empty or already ends in '/'.
 
 (def todir (x)
   (if (is (last x) #\/)
         x
       (+ x "/")))
 
-; Algorithm taken from Python's os.path.join (http://bugs.python.org/issue9921)
-; Ignore the previous parts if a part is absolute.
-; Insert a '/' unless the first part is empty or already ends in '/'.
-
 (def joinpath args
   (string (ccc (fn (cc)
     ((afn (args)
        (let (x y) args
-         (if (not args)              nil
-             (not x)                 (self (cdr args))
-             ; wish I could use caris
-             (and y (is (y 0) #\/))  (cc (apply joinpath (cdr args)))
-                                     (cons (if (cdr args)
-                                                 (todir x)
-                                               x)
-                                           (self (cdr args))))))
+         (if (not args)
+               nil
+             (not x)
+               (self (cdr args))
+             (and y (is ((expandpath y) 0) #\/)) ; wish I could use caris
+                                                 ; (caris (expandpath y) #\/)
+               (cc (apply joinpath (cdr args)))
+             (cons (let x (expandpath x)
+                     (if (cdr args)
+                           (todir x)
+                         x))
+                   (self (cdr args))))))
      args)))))
+
 
 (def abspath (x)
   (joinpath curdir x))
+
+#|(def abspath (x)
+  (w/curdir (dirname x)
+    (+ curdir (basename x))))|#
 
 (def absdir (x)
   (dirname (abspath x)))
@@ -1365,7 +1393,8 @@ this is now handled by ifdlet, so I should probably remove this...
     (fn (v) (racket-mlist->vector v))
     (fn (v) (racket-vector->mlist v))))
 
-(implicit script-src (abspath (car script-args)))
+(let x (car script-args)
+  (implicit script-src (if x (abspath x))))
 
 (mac w/script-dir body
   `(w/curdir (dirname ,script-src) ,@body))

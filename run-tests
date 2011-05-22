@@ -33,7 +33,7 @@
                 "fn"
                 "if"
                 "io.arc"
-                "joinpath"
+                "Paths"
                 "quasiquote"
                 "quote"
                 ;"re" ; our re support is too broken right now, enable later

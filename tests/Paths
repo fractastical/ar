@@ -1,0 +1,408 @@
+>>> (= (env "HOME") "/home")
+"/home"
+
+>>> (= curdir "/curdir")
+"/curdir"
+
+
+==============================================================================
+
+
+>>> curdir
+"/curdir/"
+
+>>> (w/curdir "" curdir)
+"/curdir/"
+
+>>> curdir
+"/curdir/"
+
+>>> (w/curdir nil curdir)
+"/curdir/"
+
+>>> (w/curdir "foo" curdir)
+"/curdir/foo/"
+
+>>> (w/curdir "foo/" curdir)
+"/curdir/foo/"
+
+>>> (w/curdir "foo/bar" curdir)
+"/curdir/foo/bar/"
+
+>>> (w/curdir "foo/bar/" curdir)
+"/curdir/foo/bar/"
+
+>>> (w/curdir "/foo" curdir)
+"/foo/"
+
+>>> (w/curdir "/foo/bar" curdir)
+"/foo/bar/"
+
+>>> (w/curdir 0 curdir)
+"/curdir/0/"
+
+>>> (w/curdir '|| curdir)
+"/curdir/"
+
+>>> (w/curdir #\~ curdir)
+"/home/"
+
+>>> (w/curdir "~" curdir)
+"/home/"
+
+>>> (w/curdir "~/foo" curdir)
+"/home/foo/"
+
+>>> (w/curdir "~foo/bar" curdir)
+error: expand-user-path: bad username in path: "~foo/bar"
+
+>>> (w/curdir "~/foo/bar" curdir)
+"/home/foo/bar/"
+
+>>> (w/curdir "~/foo/bar/" curdir)
+"/home/foo/bar/"
+
+>>> (w/curdir '~/foo/bar/ curdir)
+"/home/foo/bar/"
+
+
+==============================================================================
+
+
+>>> (expandpath "foo/bar")
+"foo/bar"
+
+>>> (expandpath "/foo/bar")
+"/foo/bar"
+
+>>> (expandpath 0)
+"0"
+
+>>> (expandpath nil)
+""
+
+>>> (expandpath "")
+""
+
+>>> (expandpath #\~)
+"/home/"
+
+>>> (expandpath "~")
+"/home/"
+
+>>> (expandpath "~foo/bar")
+error: expand-user-path: bad username in path: "~foo/bar"
+
+>>> (expandpath "~/foo")
+"/home/foo"
+
+>>> (expandpath "~/foo/bar")
+"/home/foo/bar"
+
+>>> (expandpath "~/foo/~/bar")
+"/home/foo/~/bar"
+
+>>> (expandpath '~/foo/~/bar)
+"/home/foo/~/bar"
+
+
+==============================================================================
+
+
+>>> (joinpath "abc/de/" "/fg/x.php")
+"/fg/x.php"
+
+>>> (joinpath "abc/de" "fg/x.php")
+"abc/de/fg/x.php"
+
+>>> (joinpath "abc/de/" "fg/x.php")
+"abc/de/fg/x.php"
+
+>>> (joinpath "abc/de/" "fg/x.php")
+"abc/de/fg/x.php"
+
+
+>>> (joinpath "foo" "bar")
+"foo/bar"
+
+>>> (joinpath "foo/" "bar")
+"foo/bar"
+
+>>> (joinpath "/foo" "bar")
+"/foo/bar"
+
+>>> (joinpath "foo" "/bar")
+"/bar"
+
+>>> (joinpath "foo/" "/bar")
+"/bar"
+
+
+>>> (joinpath "/foo" "~/bar")
+"/home/bar"
+
+>>> (joinpath "/foo" "~/bar" "qux")
+"/home/bar/qux"
+
+>>> (joinpath "/foo" '~/bar #\q #\u #\x 0)
+"/home/bar/q/u/x/0"
+
+
+==============================================================================
+
+
+>>> (dirname)
+error: #<procedure>: expects 1 argument, given 0
+
+>>> (dirname nil)
+nil
+
+>>> (dirname "")
+nil
+
+>>> (dirname "foo")
+nil
+
+>>> (dirname "foo/")
+"foo/"
+
+>>> (dirname "foo/bar")
+"foo/"
+
+>>> (dirname "foo/bar/")
+"foo/bar/"
+
+>>> (dirname "foo/bar/qux")
+"foo/bar/"
+
+>>> (dirname "foo/bar/qux/")
+"foo/bar/qux/"
+
+>>> (dirname 0)
+nil
+
+>>> (dirname '||)
+nil
+
+>>> (dirname #\~)
+"/home/"
+
+>>> (dirname "~")
+"/home/"
+
+>>> (dirname "~foo/bar/qux")
+error: expand-user-path: bad username in path: "~foo/bar/qux"
+
+>>> (dirname "~/foo/bar/qux")
+"/home/foo/bar/"
+
+>>> (dirname '~/foo/bar/qux)
+"/home/foo/bar/"
+
+>>> (dirname '~/foo/bar/qux nil)
+error: #<procedure>: expects 1 argument, given 2: ~/foo/bar/qux nil
+
+
+==============================================================================
+
+
+>>> (basename)
+error: #<procedure>: expects 1 argument, given 0
+
+>>> (basename nil)
+nil
+
+>>> (basename "")
+nil
+
+>>> (basename "foo")
+"foo"
+
+>>> (basename "foo/")
+nil
+
+>>> (basename "foo/bar")
+"bar"
+
+>>> (basename "foo/bar/")
+nil
+
+>>> (basename "foo/bar/qux")
+"qux"
+
+>>> (basename "foo/bar/qux/")
+nil
+
+>>> (basename 0)
+"0"
+
+>>> (basename '||)
+nil
+
+>>> (basename #\~)
+nil
+
+>>> (basename "~")
+nil
+
+>>> (basename "~foo/bar/qux")
+error: expand-user-path: bad username in path: "~foo/bar/qux"
+
+>>> (basename "~/foo/bar/qux")
+"qux"
+
+>>> (basename '~/foo/bar/qux)
+"qux"
+
+>>> (stripext (basename '~/foo/bar/qux) nil)
+"qux"
+
+
+>>> (basename "~/foo/bar/qux.foo")
+"qux.foo"
+
+>>> (stripext (basename "~/foo/bar/qux") ".foo")
+"qux"
+
+>>> (stripext (basename "~/foo/bar/qux.foo") ".foo")
+"qux"
+
+>>> (stripext (basename "~/foo/bar/qux.foo") ".foob")
+"qux.foo"
+
+>>> (stripext (basename "~/foo/bar/qux.foob") ".foo")
+"qux.foob"
+
+
+>>> (stripext (basename "~/foo/bar/quxfoo") "foo")
+"qux"
+
+>>> (stripext (basename "~/foo/bar/quxfoo") "uxfoo")
+"q"
+
+>>> (stripext (basename "~/foo/bar/quxfoo") "quxfo")
+"quxfoo"
+
+>>> (stripext (basename "~/foo/bar/quxfoo") "quxfoo")
+""
+
+>>> (stripext (basename "~/foo/bar/quxfoo") "quxfoob")
+"quxfoo"
+
+>>> (stripext (basename "~/foo/bar/quxfoo") "qquxfoo")
+"quxfoo"
+
+
+>>> (basename "foo" "bar")
+error: #<procedure>: expects 1 argument, given 2: "foo" "bar"
+
+
+==============================================================================
+
+
+>>> (stripext)
+error: procedure g...: expects 2 arguments, given 0
+
+>>> (stripext "foobar")
+error: procedure g...: expects 2 arguments, given 1: "foobar"
+
+>>> (stripext "foobar" 0)
+"foobar"
+
+>>> (stripext "foobar" "")
+"foobar"
+
+>>> (stripext "foobar" nil)
+"foobar"
+
+>>> (stripext "foobar" #\r)
+"fooba"
+
+>>> (stripext "foobar" '||)
+"foobar"
+
+>>> (stripext "foobar" "bar")
+"foo"
+
+>>> (stripext "foobar" 'bar)
+"foo"
+
+>>> (stripext 'foobar "bar")
+"foo"
+
+>>> (stripext "" "bar")
+""
+
+>>> (stripext nil "bar")
+""
+
+>>> (stripext #\r "r")
+""
+
+>>> (stripext #\r nil)
+"r"
+
+>>> (stripext #\r #\r)
+""
+
+>>> (stripext '|| "bar")
+""
+
+>>> (stripext "foobar" "bar" "qux")
+error: procedure g...: expects 2 arguments, given 3: "foobar" "bar" "qux"
+
+
+==============================================================================
+
+
+>>> (abspath "foo")
+"/curdir/foo"
+
+>>> (abspath "foo/bar")
+"/curdir/foo/bar"
+
+>>> (abspath "/foo/bar")
+"/foo/bar"
+
+>>> (abspath "/foo/bar/")
+"/foo/bar/"
+
+>>> (abspath "~")
+"/home/"
+
+>>> (abspath "~/foobar")
+"/home/foobar"
+
+>>> (abspath "~/foobar/qux")
+"/home/foobar/qux"
+
+>>> (abspath '~/foobar/qux)
+"/home/foobar/qux"
+
+
+==============================================================================
+
+
+>>> (absdir "foo")
+"/curdir/"
+
+>>> (absdir "foo/bar")
+"/curdir/foo/"
+
+>>> (absdir "/foo/bar")
+"/foo/"
+
+>>> (absdir "/foo/bar/")
+"/foo/bar/"
+
+>>> (absdir "~")
+"/home/"
+
+>>> (absdir "~/foobar")
+"/home/"
+
+>>> (absdir "~/foobar/qux")
+"/home/foobar/"
+
+>>> (absdir '~/foobar/qux)
+"/home/foobar/"

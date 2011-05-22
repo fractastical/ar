@@ -34,6 +34,9 @@
   (parameterize ((current-command-line-arguments
                    (list->vector files-to-load)))
 
+    (when exec-all
+      (current-command-line-arguments #()))
+
     (aload arc (string-append (g srcdir) "core.arc")
                (string-append (g srcdir) "base.arc")
                (string-append (g srcdir) "arc.arc")
