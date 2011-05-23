@@ -656,7 +656,7 @@
        (rev ,ga))))
 
 (def aracket-false (x)
-  (is x (racket "#f")))
+  (is x racket-#f))
 
 (def aracket-true (x)
   (not (aracket-false x)))
@@ -1200,15 +1200,6 @@
                   (racket-expand-user-path v)))
     (fn (v) (racket-path->string v))))
 
-#|
-this is now handled by ifdlet, so I should probably remove this...
-
-(mac w/curdir (val . body)
-  (w/uniq x
-    `(iflet ,x ,val
-       (dlet curdir ,x ,@body)
-       (let curdir curdir ,@body))))
-|#
 
 (def expandpath (x)
   (zap string x)
@@ -1325,26 +1316,35 @@ this is now handled by ifdlet, so I should probably remove this...
 ;  Input
 ;=============================================================================
 
-(def load (file)
-;  (prn file)
-;  (ifdlet curdir (dirname (joinpath curdir file)))
-;  (w/curdir file ;(absdir file)
+(def load-curdir (file)
+  (w/infile f file
+    (w/uniq eof
+      (whiler e (read f eof) eof
+        (eval e)))))
+
+(def make-w/curdir (f)
+  (fn (file . rest)
+    (w/curdir (dirname file)
+      (apply f (basename file) rest))))
+
+(= load (make-w/curdir load-curdir))
+
+#|(def load (file)
   (w/curdir (dirname file)
-;    (prn curdir)
-    (w/infile f (basename file)
-      (w/uniq eof
-        (whiler e (read f eof) eof
-          (eval e))))))
+    (load-curdir (basename file))))|#
 
 ; should pipe-from call (cont 'wait)?
 (def pipe-from (cmd)
-  (let (in out id err cont) (ar-toarc:racket-process cmd)
-    ; Racket docs say I need to close all 3 ports explicitly. Obviously I
-    ; can't close the input port, since that's what we're returning, but
-    ; I wonder if it's really necessary to close the output and error ports...
+  (let (in out id err cont) (ar-toarc:racket-process/ports racket-#f
+                                                           racket-#f
+                                                           stderr
+                                                           cmd)
+    ; Racket docs say I need to close all 3 ports explicitly
     (close out)
-    (close err)
     in))
+
+;>>> (pipe-from "echo hi 1>&2")
+;hi
 
 #|
 doesn't work:
@@ -1560,8 +1560,7 @@ doesn't work:
       0
       (/ (count test xs) (len xs))))
 
-(def quit ()
-  (racket-exit))
+(= quit racket-exit)
 
 (def find (test seq)
   (let f (testify test)

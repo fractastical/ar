@@ -4,7 +4,7 @@
 (mac pref (x y)
   `(= ,x (+ ,y ,x)))
 
-#|(defrule ac (racket-eq? s (racket #f))
+#|(defrule ac (racket-eq? s racket-#f)
   nil)|#
 
 #|(defrule ac (racket-bytes? s)
@@ -16,7 +16,7 @@
       (pref re "^"))
     (= next t)
     (let x (racket-regexp-match re str)
-      (if (isnt x (racket #f))
+      (if (isnt x racket-#f)
             (racket->string x)
             (cont nil)))))
 

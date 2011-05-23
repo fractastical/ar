@@ -98,6 +98,8 @@ Todo
   * readlines
   * pipe-from
   * load (don't forget to test that it handles subdirectories correctly)
+  * quit
+  * catcherr
   * templates
   * cache, defcache
   * until

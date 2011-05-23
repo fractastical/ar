@@ -46,11 +46,13 @@
     ; this should work, but says "undefined variable: _"
     ;((g load) (string-append (g srcdir) "arc3.1/strings.arc"))
 
-    (cond (exec-all
-            (for-each (g load) files-to-load))
-          ((pair? files-to-load)
-            ((g load) (car files-to-load))))
+    (let ((load (g load-curdir)))
 
-    (when (or run-repl (null? files-to-load))
-      ((g load) (string-append (g srcdir) "repl.arc"))
-      (noprint ((g repl))))))
+      (cond (exec-all
+              (for-each load files-to-load))
+            ((pair? files-to-load)
+              (load (car files-to-load))))
+
+      (when (or run-repl (null? files-to-load))
+        ((g load) (string-append (g srcdir) "repl.arc"))
+        (noprint ((g repl)))))))

@@ -13,6 +13,10 @@
   `(on-err (fn (c) nil)
            (fn () ,expr)))
 
+(mac catcherr (expr)
+  `(on-err (fn (c) (details c))
+           (fn () ,expr nil)))
+
 
 ;=============================================================================
 ;  Variable binding
@@ -517,8 +521,10 @@
 (def call-with-semaphore (sema func)
   ((racket call-with-semaphore) sema (fn () (func))))
 
+(assign racket-#f (racket "#f"))
+
 (def nil->racket-false (x)
-  (if (not x) (racket "#f") x))
+  (if (not x) racket-#f x))
 
 (def make-thread-cell (v (o preserved))
   (racket-make-thread-cell v (nil->racket-false preserved)))
