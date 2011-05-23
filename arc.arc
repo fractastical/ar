@@ -1,4 +1,19 @@
 ;=============================================================================
+;  Filters
+;=============================================================================
+
+(def none (test seq)
+  (not (some test seq)))
+
+(def all (test seq)
+  ((complement some) (complement (testify test)) seq))
+
+(def mem (test seq)
+  (let f (testify test)
+    (reclist [if (f (car _)) _] seq)))
+
+
+;=============================================================================
 ;  Racket
 ;=============================================================================
 
@@ -11,12 +26,15 @@
 
 (def idfn (x) x)
 
-(def assoc (key al)
+(def assoc-ref (key al)
   (if (atom al)
        nil
       (and (cons? (car al)) (is (caar al) key))
-       (car al)
-      (assoc key (cdr al))))
+       al
+      (assoc-ref key (cdr al))))
+
+(def assoc (key al)
+  (car (assoc-ref key al)))
 
 (def alref (al key) (cadr (assoc key al)))
 
@@ -66,16 +84,6 @@
       (and (in (type seq) 'string 'table)
            (is (len seq) 0))))
 
-(def none (test seq)
-  (not (some test seq)))
-
-(def all (test seq)
-  ((complement some) (complement (testify test)) seq))
-
-(def mem (test seq)
-  (let f (testify test)
-    (reclist [if (f (car _)) _] seq)))
-
 
 (def int (x (o b 10))
   (coerce x 'int b))
@@ -98,31 +106,6 @@
          (write ,gx)
          (disp #\newline))
        ,gx)))
-
-(def ac-symbol->chars (x)
-  (coerce (coerce x 'string) 'cons))
-
-(def ac-tokens (test source token acc keepsep?)
-  (if (not source)
-       (rev (if (cons? token)
-                 (cons (rev token) acc)
-                 acc))
-      (test (car source))
-       (ac-tokens test
-                  (cdr source)
-                  '()
-                  (let rec (if (not token)
-                                acc
-                                (cons (rev token) acc))
-                    (if keepsep?
-                         (cons (car source) rec)
-                         rec))
-                  keepsep?)
-       (ac-tokens test
-                  (cdr source)
-                  (cons (car source) token)
-                  acc
-                  keepsep?)))
 
 (assign-fn ccc (k) racket-call-with-current-continuation)
 
@@ -186,33 +169,39 @@
 ;  Input
 ;=============================================================================
 
-(let expander
-     (fn (f var name body)
-       `(let ,var (,f ,name)
-          (after (do ,@body) (close ,var))))
+(let expander (fn (f var name body)
+                (w/uniq x
+                  `(let ,x (,f ,name)
+                     (let ,var ,x
+                       (after (do ,@body)
+                              (close ,x))))))
 
-  (mac w/infile (var name . body)
-    (expander 'infile var name body))
+  (mac make-w/close (n (o m))
+    `(mac ,(sym (+ "w/" n)) (var port . body)
+       (,expander ',(or m n) var port body))))
 
-  (mac w/outfile (var name . body)
-    (expander 'outfile var name body))
+(make-w/close infile)
+(make-w/close outfile)
+(make-w/close instring)
+(make-w/close socket open-socket)
+(make-w/close pipe-from)
 
-  (mac w/instring (var str . body)
-    (expander 'instring var str body))
-
-  (mac w/socket (var port . body)
-    (expander 'open-socket var port body))
-  )
-
+; still too much repetition
 (mac w/appendfile (var name . body)
-  `(let ,var (outfile ,name 'append)
-     (after (do ,@body) (close ,var))))
+  (w/uniq x
+    `(let ,x (outfile ,name 'append)
+       (let ,var ,x
+         (after (do ,@body)
+                (close ,x))))))
 
 (def readstring1 (s (o eof nil)) (w/instring i s (read i eof)))
 
-(def readlines (x)
+#|(def readlines (x)
   (collect (whiler v (readline x) nil
-    (yield v))))
+    (yield v))))|#
+
+(def readlines (x)
+  (drain (readline x)))
 
 
 ;=============================================================================
@@ -221,6 +210,31 @@
 
 (def ac-chars->value (x)
   (read (coerce x 'string)))
+
+(def ac-symbol->chars (x)
+  (coerce (coerce x 'string) 'cons))
+
+(def ac-tokens (test source token acc keepsep?)
+  (if (not source)
+       (rev (if (cons? token)
+                 (cons (rev token) acc)
+                 acc))
+      (test (car source))
+       (ac-tokens test
+                  (cdr source)
+                  '()
+                  (let rec (if (not token)
+                                acc
+                                (cons (rev token) acc))
+                    (if keepsep?
+                         (cons (car source) rec)
+                         rec))
+                  keepsep?)
+       (ac-tokens test
+                  (cdr source)
+                  (cons (car source) token)
+                  acc
+                  keepsep?)))
 
 (def ac-expand-compose (sym)
   (let elts (map1 (fn (tok)
@@ -310,6 +324,8 @@
 (defrule ac (is (xcar:xcar s) 'complement)
   (ac (list 'not (cons (cadar s) (cdr s))) env))
 
+
+
 (def scar (x val)
   (sref x val 0))
 
@@ -385,6 +401,18 @@
     (list (list g x)
           `(cddr ,g)
           `(fn (val) (scdr (cdr ,g) val)))))
+
+(defset assoc (y x)
+  (w/uniq g
+    (list (list g x)
+          `(assoc ,y ,g)
+          `(fn (val) (scar (assoc-ref ,y ,g) val)))))
+
+(defset alref (x y)
+  (w/uniq g
+    (list (list g x)
+          `(alref ,g ,y)
+          `(fn (val) (scar (cdr:assoc ,y ,g) val)))))
 
 (def ssexpand (x)
   (if (isa x 'sym) (ac-expand-ssyntax x) x))
@@ -1277,6 +1305,53 @@
   (dirname (abspath x)))
 
 
+(def dir ((o x) (o f))
+  (if (empty x) (= x ".")) ; (or= x ".") ?
+
+  (zap expandpath x)
+
+  (unless (dir-exists x)
+    (if (file-exists x) (err:+ "not a directory: " x)
+                        (err:+ "directory does not exist: " x)))
+
+  (w/pipe-from x (+ "ls -Ap --group-directories-first \"" x "\"")
+    (zap readlines x)
+    (if f (keep f x)
+            x)))
+#|
+  (let x (readlines:pipe-from:+ "ls -Ap --group-directories-first \"" x "\"")
+    (if f (keep f x) x)))|#
+
+#|
+
+Comparison:
+
+(keep hidden-file (dir))
+(dir nil hidden-file)
+
+
+(keep hidden-file (dir "foo/bar"))
+(dir "foo/bar" hidden-file)
+
+|#
+
+
+(def dirall ((o x) (o f))
+  (w/curdir x
+    ((afn (d)
+       (mappend (fn (x)
+                  (if (dirname x)
+                        (self (+ d x))
+                        (list (+ d x))))
+                (dir d f)))
+     nil)))
+
+
+(def hidden-file (x)
+  (is (x 0) #\.))
+;  (if (is (x 0) #\.) x))
+
+
 ;=============================================================================
 ;  Scripting
 ;=============================================================================
@@ -1320,7 +1395,7 @@
 ;=============================================================================
 
 (def load-curdir (file)
-  (w/infile f file
+  (w/infile f (expandpath file)
     (w/uniq eof
       (whiler e (read f eof) eof
         (eval e)))))
@@ -1346,7 +1421,7 @@
     (close out)
     in))
 
-;>>> (pipe-from "echo hi 1>&2")
+;>>> (w/pipe-from x "echo hi 1>&2" x)
 ;hi
 
 #|

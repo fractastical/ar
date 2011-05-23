@@ -98,10 +98,14 @@ Todo
   * readlines
   * pipe-from
   * load (don't forget to test that it handles subdirectories correctly)
+  * load-curdir (don't forget to test ~ expansion)
   * quit
   * srcdir and w/srcdir
   * curdir and w/curdir
   * catcherr
+  * assoc-ref
+  * make-w/close
+  * setters for assoc and alref, such as using (= (alref foo 'bar) 'qux)
   * templates
   * cache, defcache
   * until
@@ -119,6 +123,7 @@ Todo
   * socket-accept
   * setuid
   * dir
+  * dirall
   * rmfile
   * client-ip
 

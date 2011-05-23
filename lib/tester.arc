@@ -3,11 +3,12 @@
 ;; options
 (= verbose nil)
 
-
+#|
 (def input->list (x)
-  (collect:whiler c (readc x nil) no
-    (yield c)))
-
+  (drain (readc x)))
+;  (collect:whiler c (readc x nil) no
+;    (yield c)))
+|#
 
 (def writeuntil (str x)
   (whenlet c (readc str)
