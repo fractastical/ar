@@ -99,6 +99,8 @@ Todo
   * pipe-from
   * load (don't forget to test that it handles subdirectories correctly)
   * quit
+  * srcdir and w/srcdir
+  * curdir and w/curdir
   * catcherr
   * templates
   * cache, defcache

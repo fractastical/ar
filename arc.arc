@@ -1190,7 +1190,10 @@
 ;  Filesystem paths
 ;=============================================================================
 
-(implicit srcdir srcdir)
+(dynamic srcdir srcdir)
+
+(mac w/srcdir body
+  `(w/curdir ,srcdir ,@body))
 
 (make-implicit curdir
   (racket-make-derived-parameter racket-current-directory
