@@ -78,6 +78,12 @@
         (if (< i 16) (writec #\0))
         (pr (coerce i 'string 16))))))
 
+
+(def xml-encode (s)
+  (multisubst '(("&" "&amp;")
+                ("<" "&lt;")) s))
+
+
 (mac litmatch (pat string (o start 0))
   (w/uniq (gstring gstart)
     `(with (,gstring ,string ,gstart ,start)
