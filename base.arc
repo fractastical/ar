@@ -568,10 +568,11 @@
   (racket (racket-if x (racket-quote t) (racket-quote nil))))
 
 (def sread (p eof)
-  (let v (racket-read p)
-    (if (racket-true (racket-eof-object? v))
-         eof
-         (ar-toarc v))))
+  (parameterize racket-current-readtable arc-readtable*
+    (let v (racket-read p)
+      (if (racket-true (racket-eof-object? v))
+           eof
+           (ar-toarc v)))))
 
 (def read ((o x stdin) (o eof nil))
   (if (isa x 'string) (readstring1 x eof) (sread x eof)))

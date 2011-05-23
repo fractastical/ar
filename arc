@@ -39,20 +39,21 @@
 
     (aload arc (string-append (g srcdir) "core.arc")
                (string-append (g srcdir) "base.arc")
-               (string-append (g srcdir) "arc.arc")
-               (string-append (g srcdir) "arc3.1/backcompat.arc")
-               (string-append (g srcdir) "arc3.1/strings.arc"))
+               (string-append (g srcdir) "arc.arc"))
 
-    ; this should work, but says "undefined variable: _"
-    ;((g load) (string-append (g srcdir) "arc3.1/strings.arc"))
+    (let ((load        (g load))
+          (load-curdir (g load-curdir)))
 
-    (let ((load (g load-curdir)))
+      (parameterize ((current-directory (g srcdir)))
+        (load "arc3.1/backcompat.arc")
+        (load "arc3.1/strings.arc"))
 
       (cond (exec-all
               (for-each load files-to-load))
             ((pair? files-to-load)
-              (load (car files-to-load))))
+              (load-curdir (car files-to-load))))
 
       (when (or run-repl (null? files-to-load))
-        ((g load) (string-append (g srcdir) "repl.arc"))
+        (parameterize ((current-directory (g srcdir)))
+          (load "repl.arc"))
         (noprint ((g repl)))))))
