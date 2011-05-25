@@ -1,6 +1,6 @@
 ;; tests that need to be run as root
 
->>> (load "../io.arc")
+>>> (load "../lib/io.arc")
 nil
 
 >>> (def euid ()
