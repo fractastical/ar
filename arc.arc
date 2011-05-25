@@ -143,8 +143,6 @@
 
 (def try-custodian (port))
 
-(rckt-require scheme/tcp)
-
 (def close ports
   (each port ports
     (case (type port)
@@ -1396,7 +1394,8 @@ Comparison:
           `(fn (val) (do (racket-putenv ,g val)
                          val)))))
 
-;(rckt-require scheme/mpair)
+; should probably change to use mpair->list rather than ar-toracket and
+; list->mpair rather than ar-toarc
 
 (def racket-vector->mlist (x)
   (ar-toarc (racket-vector->list x)))

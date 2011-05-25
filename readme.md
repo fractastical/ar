@@ -45,7 +45,7 @@ use --repl:
     /path/to/ar/arc -a --repl foo.arc bar.arc qux.arc
 
 You can also write shell scripts in Arc.
-For example, if the file "hello" contained:
+For example, if the file "hello" contains:
 
     #! /path/to/ar/arc
     (prn "hello there")
@@ -53,7 +53,7 @@ For example, if the file "hello" contained:
 you could run this script with:
 
     $ chmod +x hello
-    $ ./hello    
+    $ ./hello
 
 if you have ar on your path, you can also use env to avoid hard coding
 the path to ar:
@@ -66,6 +66,7 @@ You can access the command line arguments with script-args:
     #! /usr/bin/env arc
     (prn script-args)
 
+
     $ ./hello foo bar qux
     (foo bar qux)
 
@@ -74,6 +75,7 @@ So, assuming the "hello" script is located at /usr/local/bin:
 
     #! /usr/bin/env arc
     (prn script-src)
+
 
     $ /usr/local/bin/hello
     /usr/local/bin/hello
@@ -88,6 +90,7 @@ w/srcdir to load files relative to ar's directory:
     (w/srcdir
       (load "lib/re.arc"))
 
+
     $ /usr/local/bin/hello  # this loads /usr/local/lib/bar.arc
                             # and        /path/to/ar/lib/re.arc
 
@@ -96,19 +99,20 @@ change the current directory, and use w/curdir to temporarily change
 the current directory.
 
 curdir also understands ~ in path names, so you can use ~/.local/bin
-to change the current directory to $HOME/.local/bin, for instance.
+to change the current directory to $HOME/.local/bin, for example.
 
 load uses w/curdir, so it too understands ~ in path names, and loading
 a file in a subdirectory works correctly:
 
-  ; lib/foo.arc
-  (load "bar.arc")
+    ; lib/foo.arc
+    (load "bar.arc")
 
-  ; lib/bar.arc
-  (prn "hi!")
+    ; lib/bar.arc
+    (prn "hi!")
 
-  arc> (load "lib/foo.arc")
-  "hi!"
+
+    arc> (load "lib/foo.arc")
+    "hi!"
 
 Run tests with:
 
@@ -120,6 +124,8 @@ Bug reports are *greatly* appreciated!
 Todo
 ----
 
+* Move sread into ac.ss, then use sread rather than ar-read (don't
+forget to delete ar-read after the move is completed)
 * The code currently requires Racket, though a compatibility mode for
   PLT Scheme would be useful.
 * clean up messy code in io.arc
