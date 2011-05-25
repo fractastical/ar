@@ -21,6 +21,8 @@
   (test-file x))
 
 (unless script-args
+  (system "sudo ./arc run-tests \"tests/io.arc (root)\"")
+
   (w/curdir "tests"
     ;(system "set -e -v")
     (system "mzscheme ar-test.ss")
@@ -37,7 +39,6 @@
                 "quasiquote"
                 "quote"
                 ;"re" ; our re support is too broken right now, enable later
+                "Sets"
                 "strings.arc"
-                "(coerce foo 'fn)"))
-
-  (system "sudo ./arc run-tests \"tests/io.arc (root)\""))
+                "(coerce foo 'fn)")))

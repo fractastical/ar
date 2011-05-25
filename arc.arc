@@ -1009,9 +1009,42 @@
 (mac time10 (expr)
   `(time (repeat 10 ,expr)))
 
+
+;=============================================================================
+;  Sets
+;=============================================================================
+
+(def dedup (xs)
+  (with (h (table) acc nil)
+    (each x xs
+      (unless (h x)
+        (push x acc)
+        (set (h x))))
+    (rev acc)))
+
 (def union (f xs ys)
-  (+ xs (rem (fn (y) (some [f _ y] xs))
-             ys)))
+  (dedup:+ xs ys))
+
+(def intersect (f xs ys)
+  (dedup:keep (fn (y) (some [f _ y] ys)) xs))
+
+(def set-diff (f xs ys)
+  (dedup:keep (fn (y) (none [f _ y] ys)) xs))
+
+;; this is symmetric difference
+;; could probably be faster, but this is the definition from Wikipedia
+;; http://en.wikipedia.org/wiki/Set_theory#Basic_concepts
+(def diff (f xs ys)
+  (set-diff f (union f xs ys) (intersect f xs ys)))
+
+#|
+alternate version; is it any faster?
+
+(def diff (f xs ys)
+  (dedup:+ (keep (fn (x) (none [f _ x] ys)) xs)
+           (keep (fn (y) (none [f _ y] xs)) ys)))
+|#
+
 
 (def carif (x) (if (atom x) x (car x)))
 
@@ -1173,14 +1206,6 @@
       (f (car xs))           (cons (car xs) (retrieve (1- n) f (cdr xs)))
                              (retrieve n f (cdr xs))))
 
-(def dedup (xs)
-  (with (h (table) acc nil)
-    (each x xs
-      (unless (h x)
-        (push x acc)
-        (set (h x))))
-    (rev acc)))
-
 (def single (x) (and (cons? x) (not (cdr x))))
 
 (def intersperse (x ys)
@@ -1337,14 +1362,17 @@ Comparison:
 
 
 (def dirall ((o x) (o f))
-  (w/curdir x
-    ((afn (d)
-       (mappend (fn (x)
-                  (if (dirname x)
-                        (self (+ d x))
-                        (list (+ d x))))
-                (dir d f)))
-     nil)))
+  #|(let f (fn (x) (or (dirname x)
+                     (if f (f x) t)))|#
+    (w/curdir x
+      ((afn (d)
+         (mappend (fn (x)
+                    (if (dirname x)
+                          (self (+ d x))
+                          (list (+ d x))))
+                  (dir d f)))
+       nil)))
+;)
 
 
 (def hidden-file (x)

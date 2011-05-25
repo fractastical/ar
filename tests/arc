@@ -1357,9 +1357,6 @@ abc
       (tostring (time (+ 8 90))))
 "time: 1 msec.\n"
 
->>> (union is '(a b c d e) '(x y c z))
-(a b c d e x y z)
-
 
 ; todo test templates
 
