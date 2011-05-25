@@ -25,7 +25,6 @@
 
   (w/curdir "tests"
     ;(system "set -e -v")
-    (system "mzscheme ar-test.ss")
     (system "mzscheme ac-test.ss")
 
     (test-files "apply"

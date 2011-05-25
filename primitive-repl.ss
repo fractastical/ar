@@ -9,15 +9,15 @@
 (require "ac.ss")
 
 (let ((arc (new-arc)))
-  (aload arc "core.arc"
-             "base.arc"
-             "arc.arc")
+  ((g ar-load) "core.arc"
+               "base.arc"
+               "arc.arc")
   (let loop ()
     (display "arc> ")
-    (let ((v (arc-read arc (current-input-port))))
+    (let ((v ((g ar-read) (current-input-port))))
       (unless (eof-object? v)
         (let ((expr (toarc v)))
           (let ((val ((get arc 'eval) expr)))
-            (write (deep-fromarc val))
+            (write (ar-deep-fromarc val))
             (newline)))
         (loop)))))

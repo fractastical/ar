@@ -313,6 +313,12 @@
 ;  Special variable binding
 ;=============================================================================
 
+(def primitive-parameterize (param val f)
+  (racket (racket-parameterize ((param val)) (f))))
+
+(mac parameterize (param val . body)
+  `(primitive-parameterize ,param ,val (fn () ,@body)))
+
 (assign dynamic-parameter* (table))
 (assign ac-defined-vars* (table))
 
@@ -346,7 +352,7 @@
   `(dynamic-parameter* ',name))
 
 (mac dlet (name val . body)
-  `(racket-parameterize (paramfor ,name) ,val (fn () ,@body)))
+  `(primitive-parameterize (paramfor ,name) ,val (fn () ,@body)))
 
 (mac make-w/ (name)
   (let w/name (sym (+ "w/" name))
@@ -356,9 +362,6 @@
 (mac make-implicit (name param)
   `(do (make-dynamic ,name ,param)
        (make-w/ ,name)))
-
-(mac parameterize (param val . body)
-  `(racket-parameterize ,param ,val (fn () ,@body)))
 
 (mac dynamic (name (o init))
   `(make-dynamic ,name (parameter ,init)))
@@ -371,9 +374,9 @@
 ;  Printing
 ;=============================================================================
 
-(make-implicit stdin  racket-stdin)
-(make-implicit stdout racket-stdout)
-(make-implicit stderr racket-stderr)
+(make-implicit stdin  racket-current-input-port)
+(make-implicit stdout racket-current-output-port)
+(make-implicit stderr racket-current-error-port)
 
 (def print (primitive x port)
   (primitive x port))

@@ -5,9 +5,9 @@
   (annotate 'mac
     (fn (var val)
       `(do (if (bound ',var)
-               (do (racket-disp "*** redefining " (racket-stderr))
-                   (racket-disp ',var (racket-stderr))
-                   (racket-disp #\newline (racket-stderr))))
+               (do (racket-disp "*** redefining " (racket-current-error-port))
+                   (racket-disp ',var (racket-current-error-port))
+                   (racket-disp #\newline (racket-current-error-port))))
            (assign ,var ,val)))))
 
 (assign assign-fn

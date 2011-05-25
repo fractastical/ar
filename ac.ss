@@ -1,51 +1,30 @@
 #lang scheme
 
 (require scheme/mpair)
-(require "ar.ss")
+(require mzlib/defmacro)
 
-(provide (all-from-out "ar.ss") (all-defined-out))
+(provide (all-defined-out))
 
-
-(define internal-name-hash
-  (hash 'assign     (gensym)
-        'fn         (gensym)
-        'if         (gensym)
-        'quasiquote (gensym)
-        'quote      (gensym)))
-
-(define (internal-name x)
-  (hash-ref internal-name-hash x))
-
-
-(define default-globals-implementation 'namespace)
-
-(define (globals-implementation arc)
-  (hash-ref arc 'globals-implementation* default-globals-implementation))
-
-;; note that these don't need to be particularly fast
+;; note these are slow
 
 (define (get arc varname)
-  (case (globals-implementation arc)
-    ((table) (hash-ref arc varname))
-    ((namespace) (namespace-variable-value varname #t #f
-                   (hash-ref arc 'racket-namespace*)))))
+  (namespace-variable-value
+   varname
+   #t
+   #f
+   (hash-ref arc 'racket-namespace*)))
 
 (define (get-default arc varname default)
-  (case (globals-implementation arc)
-    ((table) (hash-ref arc varname default))
-    ((namespace) (namespace-variable-value
-                  varname
-                  #t
-                  default
-                  (hash-ref arc 'racket-namespace*)))))
+  (namespace-variable-value
+    varname
+    #t
+    default
+    (hash-ref arc 'racket-namespace*)))
 
 (define (set arc varname value)
-  (case (globals-implementation arc)
-    ((table) (hash-set! arc varname value))
-    ((namespace)
-     (namespace-set-variable-value! varname value
-                   #t
-                   (hash-ref arc 'racket-namespace*)))))
+  (namespace-set-variable-value! varname value
+    #t
+    (hash-ref arc 'racket-namespace*)))
 
 
 ;; Arc compiler steps
@@ -71,16 +50,15 @@
 (define (make-arc-racket-namespace)
   (let ((ns (make-base-empty-namespace)))
     (parameterize ((current-namespace ns))
-      (namespace-require '(only scheme/base #%app #%datum #%top))
-      (namespace-require '(prefix racket- scheme/base)))
+      (namespace-require '(only racket/base #%app #%datum #%top))
+      (namespace-require '(prefix racket- racket/base))
+      (namespace-require '(prefix racket- racket/mpair))
+      (namespace-require '(prefix racket- racket/tcp)))
     ns))
 
-(define (new-arc (options (hash)))
-  (let ((arc (hash)))
+(define (new-arc (options (make-hash)))
+  (let ((arc (make-hash)))
     (hash-set! arc 'racket-namespace* (make-arc-racket-namespace))
-    (hash-for-each (new-ar)
-      (lambda (k v)
-        (set arc k v)))
     (for-each (lambda (pair)
                 (let ((step (car pair)))
                   (step arc)))
@@ -88,11 +66,32 @@
     arc))
 
 
+;; toarc
+
+(define (toarc x)
+  (cond ((pair? x)
+         (mcons (toarc (car x))
+                (toarc (cdr x))))
+        ((null? x)
+         'nil)
+        ((string? x)
+         (string-copy x))
+        (else x)))
+
+
+;; racket-eval
+
+(define (racket-eval arc form)
+  (parameterize ((current-readtable (get-default arc 'arc-readtable* (lambda () #f)))
+                 (compile-allow-set!-undefined #t))
+    (eval form (hash-ref arc 'racket-namespace*))))
+
+
 ;; sig
 
 (add-ac-build-step
  (lambda (arc)
-   (set arc 'sig (hash))))
+   (set arc 'sig (make-hash))))
 
 (define-syntax g
   (lambda (stx)
@@ -101,19 +100,12 @@
        (with-syntax ((arc (datum->syntax #'v 'arc)))
          #'(get arc 'v))))))
 
-
-(define (new-ac-fn f)
-  (lambda (arc name signature fn)
-    (hash-set! (get arc 'sig) name (toarc signature))
-    (set arc name (f fn))))
-
-(define ac-def-fn (new-ac-fn (lambda (x) x)))
-(define ac-mac-fn (new-ac-fn (lambda (x) (ar-tag 'mac x))))
-
+(define (ac-def-fn arc name signature fn)
+  (hash-set! (get arc 'sig) name (toarc signature))
+  (set arc name fn))
 
 (add-ac-build-step
  (lambda (arc)
-   (ac-def-fn arc 'new-arc '((o options)) new-arc)
    (ac-def-fn arc 'namespace-get '(namespace varname) get)
    (ac-def-fn arc 'namespace-set '(namespace varname value)
      (lambda (namespace varname value)
@@ -130,16 +122,6 @@
                (ac-def-fn arc 'name 'args (lambda args body ...)))
              `(ac-def ,'name ,'args)))))))
 
-(define-syntax ac-mac
-  (lambda (stx)
-    (syntax-case stx ()
-      ((ac-mac name args body ...)
-       (with-syntax ((arc (datum->syntax #'name 'arc)))
-         #'(add-ac-build-step
-             (lambda (arc)
-               (ac-mac-fn arc 'name 'args (lambda args body ...)))
-             `(ac-mac ,'name ,'args)))))))
-
 (define-syntax ac-def-sig
   (lambda (stx)
     (syntax-case stx ()
@@ -151,260 +133,573 @@
                 (lambda racket-args body ...)))
             `(ac-def-sig ,'name ,'racket-args)))))))
 
+
+;; ar-def
+
+(defmacro ar-def (name signature . body)
+  `(add-ac-build-step
+    (lambda (arc)
+      (hash-set! (get arc 'sig) ',name (toarc ',signature))
+      ,@(map (lambda (form)
+               `(racket-eval arc ',form))
+             body))
+    '(ar-def ,name)))
+
+
+;; primitives
+
+(add-ac-build-step
+  (lambda (arc)
+    (hash-set! (g sig) '-         (toarc 'args))
+    (hash-set! (g sig) '/         (toarc 'args))
+    (hash-set! (g sig) '*         (toarc 'args))
+    (hash-set! (g sig) 'cons      (toarc '(a b)))
+    (hash-set! (g sig) 'inside    (toarc '(s)))
+    (hash-set! (g sig) 'instring  (toarc '(str)))
+    (hash-set! (g sig) 'outstring (toarc '()))
+    (hash-set! (g sig) 'uniq      (toarc '()))
+    (racket-eval arc
+      `(racket-begin
+        (racket-define -         racket--)
+        (racket-define /         racket-/)
+        (racket-define *         racket-*)
+        (racket-define cons      racket-mcons)
+        (racket-define inside    racket-get-output-string)
+        (racket-define instring  racket-open-input-string)
+        (racket-define nil       (racket-quote nil))
+        (racket-define outstring racket-open-output-string)
+        (racket-define t         (racket-quote t))
+        (racket-define uniq      racket-gensym)))))
+
+
+;; r/list-toarc
+
+(define (r/list-toarc x)
+  (cond ((pair? x)
+         (mcons (car x) (r/list-toarc (cdr x))))
+        ((null? x)
+         'nil)
+        (else x)))
+
+(ar-def ar-r/list-toarc (x)
+  (racket-define (ar-r/list-toarc x)
+    (racket-cond
+     ((racket-pair? x)
+      (racket-mcons (racket-car x) (ar-r/list-toarc (racket-cdr x))))
+     ((racket-null? x)
+      (racket-quote nil))
+     (racket-else x))))
+
+
+;; list
+
+(define (arc-list . rest)
+  (r/list-toarc rest))
+
+(ar-def list args
+  (racket-define (list . args)
+    (ar-r/list-toarc args)))
+
+
+;; ar-list-fromarc
+
+(ar-def ar-list-fromarc (x)
+  (racket-define (ar-list-fromarc x)
+    (racket-cond
+     ((racket-mpair? x)
+      (racket-cons (racket-mcar x) (ar-list-fromarc (racket-mcdr x))))
+     ((racket-eq? x (racket-quote nil))
+      (racket-quote ()))
+     (racket-else x))))
+
+
+;; ar-toarc
+
+(add-ac-build-step
+ (lambda (arc)
+   (ac-def-fn arc 'ar-toarc '(x) toarc))
+ '(ar-toarc))
+
+
+;; ar-deep-fromarc
+
+; todo I think we just need some better way of representing a Racket
+; null in the Arc compiler.
+
+(define (strict-deep-fromarc x)
+  (cond ((eq? x 'nil)
+         '())
+        ((mpair? x)
+         (cons (strict-deep-fromarc (mcar x))
+               (strict-deep-fromarc (mcdr x))))
+        (else
+         x)))
+
+(define (ar-deep-fromarc x)
+  (cond ((and (mpair? x) (eq? (mcar x) 'racket-list))
+         (strict-deep-fromarc (mcar (mcdr x))))
+
+        ;; nil in the car position isn't a list terminator, and so can
+        ;; be left alone.
+        ((mpair? x)
+         (cons (let ((a (mcar x)))
+                 (if (eq? a 'nil) 'nil (ar-deep-fromarc a)))
+               (let ((b (mcdr x)))
+                 (if (eq? b 'nil) '() (ar-deep-fromarc b)))))
+
+        (else
+         x)))
+
+(add-ac-build-step
+ (lambda (arc)
+   (ac-def-fn arc 'ar-deep-fromarc '(x) ar-deep-fromarc))
+ '(ar-deep-fromarc))
+
+
+;; err
+
+(ar-def err args
+  (racket-define err racket-error))
+
+
+;; car, cdr
+
+(ar-def car (x)
+  (racket-define (car x)
+    (racket-if (racket-eq? x (racket-quote nil))
+                (racket-quote nil)
+                (racket-mcar x))))
+
+(ar-def cdr (x)
+  (racket-define (cdr x)
+    (racket-if (racket-eq? x (racket-quote nil))
+                (racket-quote nil)
+                (racket-mcdr x))))
+
+
+;; cadr, cddr
+
+(ar-def cadr (x)
+  (racket-define (cadr x)
+    (car (cdr x))))
+
+(ar-def cddr (x)
+  (racket-define (cddr x)
+    (cdr (cdr x))))
+
+
+;; type
+
+(ar-def ar-exint (x)
+  (racket-define (ar-exint x)
+    (racket-and (racket-integer? x) (racket-exact? x))))
+
+(ar-def ar-tagged (x)
+  (racket-define (ar-tagged x)
+    (racket-and (racket-vector? x)
+                (racket-eq? (racket-vector-ref x 0) (racket-quote tagged)))))
+
+(ar-def rep (x)
+  (racket-define (rep x)
+    (racket-if (ar-tagged x)
+                (racket-vector-ref x 2)
+                x)))
+
+(ar-def type (x)
+  (racket-define (type x)
+    (racket-cond
+     ((ar-tagged x)             (racket-vector-ref x 1))
+     ((racket-mpair? x)         (racket-quote cons))
+     ((racket-symbol? x)        (racket-quote sym))
+     ((racket-parameter? x)     (racket-quote parameter))
+     ((racket-procedure? x)     (racket-quote fn))
+     ((racket-char? x)          (racket-quote char))
+     ((racket-string? x)        (racket-quote string))
+     ((ar-exint x)              (racket-quote int))
+     ((racket-number? x)        (racket-quote num))
+     ((racket-hash? x)          (racket-quote table))
+     ((racket-output-port? x)   (racket-quote output))
+     ((racket-input-port? x)    (racket-quote input))
+     ((racket-tcp-listener? x)  (racket-quote socket))
+     ((racket-exn? x)           (racket-quote exception))
+     ((racket-thread? x)        (racket-quote thread))
+     ((racket-thread-cell? x)   (racket-quote thread-cell))
+     ((racket-semaphore? x)     (racket-quote semaphore))
+     (racket-else               (racket-quote unknown)))))
+
+
+;; ar-tnil
+
+(ar-def ar-tnil (x)
+  (racket-define (ar-tnil x)
+    (racket-if x (racket-quote t) (racket-quote nil))))
+
+
+;; ar-no
+
+(ar-def ar-no (x)
+  (racket-define (ar-no x)
+    (racket-eq? x (racket-quote nil))))
+
+
+;; ar-true
+
+(ar-def ar-true (x)
+  (racket-define (ar-true x)
+    (racket-not (ar-no x))))
+
+
+;; map1
+
+(ar-def map1 (f xs)
+  (racket-define (map1 f xs)
+    (racket-if (ar-no xs)
+                (racket-quote nil)
+                (cons (f (car xs)) (map1 f (cdr xs))))))
+
+
 ;; coerce
 
-(define (iround x) (inexact->exact (round x)))
+(ar-def ar-iround (x)
+  (racket-define (ar-iround x)
+    (racket-inexact->exact (racket-round x))))
 
-(ac-def coerce (x type . rest)
-  (cond
-    ((tagged? x) (err "Can't coerce annotated object"))
-    ((eqv? type (arc-type x)) x)
-    ((char? x)      (case type
-                      ((int)     (char->integer x))
-                      ((string)  (string x))
-                      ((sym)     (string->symbol (string x)))
-                      (else      (err "Can't coerce" x type))))
-    ((exint? x)     (case type
-                      ((num)     x)
-                      ((char)    (integer->char x))
-                      ((string)  (apply number->string x rest))
-                      (else      (err "Can't coerce" x type))))
-    ((number? x)    (case type
-                      ((int)     (iround x))
-                      ((char)    (integer->char (iround x)))
-                      ((string)  (apply number->string x rest))
-                      (else      (err "Can't coerce" x type))))
-    ((string? x)    (case type
-                      ((sym)     (string->symbol x))
-                      ((cons)    ((g r/list-toarc) (string->list x)))
-                      ((num)     (or (apply string->number x rest)
-                                     (err "Can't coerce" x type)))
-                      ((int)     (let ((n (apply string->number x rest)))
-                                   (if n
-                                       (iround n)
-                                       (err "Can't coerce" x type))))
-                      ((fn)      (lambda (k)
-                                   (string-ref x k)))
-                      (else      (err "Can't coerce" x type))))
-    ((mpair? x)     (case type
-                      ((string)  (apply string-append
-                                        (list-fromarc
-                                         (arc-map1 (lambda (y) ((g coerce) y 'string)) x))))
-                      ((fn)      (lambda (k)
-                                   (mlist-ref x k)))
-                      (else      (err "Can't coerce" x type))))
-    ((eq? x 'nil)   (case type
-                      ((string)  "")
-                      ((cons)    'nil)
-                      (else      (err "Can't coerce" x type))))
-    ((symbol? x)    (case type
-                      ((string)  (symbol->string x))
-                      (else      (err "Can't coerce" x type))))
-    ((hash? x)      (case type
-                      ((fn)      (case-lambda
-                                   ((k)   (hash-ref x k 'nil))
-                                   ((k d) (hash-ref x k d))))))
-    (else           (err "Can't coerce" x type))))
+(ar-def coerce (x totype . args)
+  (racket-define (coerce x totype . args)
+    (racket-cond
+      ((ar-tagged x)
+       (err "Can't coerce annotated object"))
+      ((racket-eqv? totype (type x))
+       x)
+      ((racket-char? x)
+       (racket-case totype
+         ((int)       (racket-char->integer x))
+         ((string)    (racket-string x))
+         ((sym)       (racket-string->symbol (racket-string x)))
+         (racket-else (err "Can't coerce" x type))))
+      ((ar-exint x)
+       (racket-case totype
+         ((num)       x)
+         ((char)      (racket-integer->char x))
+         ((string)    (racket-apply racket-number->string x args))
+         (racket-else (err "Can't coerce" x type))))
+      ((racket-number? x)
+       (racket-case totype
+         ((int)       (ar-iround x))
+         ((char)      (racket-integer->char (ar-iround x)))
+         ((string)    (racket-apply racket-number->string x args))
+         (racket-else (err "Can't coerce" x type))))
+      ((racket-string? x)
+       (racket-case totype
+         ((sym)       (racket-string->symbol x))
+         ((cons)      (ar-r/list-toarc (racket-string->list x)))
+         ((num)       (racket-or (racket-apply racket-string->number x args)
+                                 (err "Can't coerce" x totype)))
+         ((int)       (racket-let ((n (racket-apply racket-string->number x args)))
+                        (racket-if n
+                                    (ar-iround n)
+                                    (err "Can't coerce" x totype))))
+         (racket-else (err "Can't coerce" x totype))))
+      ((racket-mpair? x)
+       (racket-case totype
+         ((string)    (racket-apply racket-string-append
+                                    (ar-list-fromarc
+                                     (map1 (racket-lambda (y)
+                                             (coerce y (racket-quote string)))
+                                           x))))
+         (racket-else (err "Can't coerce" x totype))))
+      ((racket-eq? x (racket-quote nil))
+       (racket-case totype
+         ((string)    "")
+         ((cons)      (racket-quote nil))
+         (racket-else (err "Can't coerce" x type))))
+      ((racket-symbol? x)
+       (racket-case totype
+         ((string)    (racket-symbol->string x))
+         (racket-else (err "Can't coerce" x type))))
+      (racket-else x))))
+
+
+;; annotate
+
+(ar-def annotate (totype rep)
+  (racket-define (annotate totype rep)
+    (racket-cond
+     ((racket-eqv? (type rep) totype) rep)
+     (racket-else (racket-vector (racket-quote tagged) totype rep)))))
+
+
+;; is
+
+(ar-def ar-pairwise (pred lst)
+  (racket-define (ar-pairwise pred lst)
+    (racket-cond
+      ((racket-null? lst) (racket-quote t))
+      ((racket-null? (racket-cdr lst)) (racket-quote t))
+      ((racket-not (racket-eqv? (pred (racket-car lst) (racket-cadr lst))
+                                (racket-quote nil)))
+       (ar-pairwise pred (racket-cdr lst)))
+      (racket-else (racket-quote nil)))))
+  
+(ar-def is2 (a b)
+  (racket-define (is2 a b)
+    (ar-tnil
+     (racket-or (racket-eqv? a b)
+                (racket-and (racket-string? a)
+                            (racket-string? b)
+                            (racket-string=? a b))))))
+
+(ar-def is args
+  (racket-define (is . args)
+    (ar-pairwise is2 (ar-list-fromarc args))))
+
+
+;; caris
+
+(ar-def caris (x val)
+  (racket-define (caris x val)
+    (ar-tnil
+     (racket-and (racket-mpair? x)
+                 (ar-true (is (car x) val))))))
+
+
+;; <
+
+(ar-def <2 (x y)
+  (racket-define (<2 x y)
+    (ar-tnil
+     (racket-cond
+      ((racket-and (racket-number? x) (racket-number? y)) (racket-< x y))
+      ((racket-and (racket-string? x) (racket-string? y)) (racket-string<? x y))
+      ((racket-and (racket-symbol? x) (racket-symbol? y))
+       (racket-string<? (racket-symbol->string x)
+                        (racket-symbol->string y)))
+      ((racket-and (racket-char? x) (racket-char? y)) (racket-char<? x y))
+      (racket-else (err "Can't <" x y))))))
+
+(ar-def < args
+  (racket-define (< . args)
+    (ar-pairwise <2 (ar-list-fromarc args))))
+
+(ar-def >2 (x y)
+  (racket-define (>2 x y)
+    (ar-tnil
+     (racket-cond
+      ((racket-and (racket-number? x) (racket-number? y)) (racket-> x y))
+      ((racket-and (racket-string? x) (racket-string? y)) (racket-string>? x y))
+      ((racket-and (racket-symbol? x) (racket-symbol? y))
+       (racket-string>? (racket-symbol->string x) (racket-symbol->string y)))
+      ((racket-and (racket-char? x) (racket-char? y)) (racket-char>? x y))
+      (racket-else (err "Can't >" x y))))))
+
+(ar-def > args
+  (racket-define (> . args)
+    (ar-pairwise >2 (ar-list-fromarc args))))
+
+
+;; len
+
+(ar-def list-len (x)
+  (racket-define (list-len x)
+    (racket-cond
+     ((ar-no x)         0)
+     ((racket-mpair? x) (racket-+ 1 (list-len (racket-mcdr x))))
+     (racket-else       (err "len expects a proper list")))))
+
+(ar-def len (x)
+  (racket-define (len x)
+    (racket-cond
+     ((racket-string? x) (racket-string-length x))
+     ((racket-hash? x)   (racket-hash-count x))
+     (racket-else        (list-len x)))))
+
+
+;; join
+
+(ar-def join args
+  (racket-define (join . args)
+    (ar-r/list-toarc
+     (racket-apply racket-append
+                   (racket-map ar-list-fromarc (ar-list-fromarc args))))))
 
 
 ;; +
 
-(define (arc-list? x) (or (no? x) (mpair? x)))
+(ar-def ar-alist (x)
+  (racket-define (ar-alist x)
+    (racket-or (ar-no x) (racket-mpair? x))))
 
-(ac-def + args
-  (cond ((null? args)
-         0)
-        ((or (char? (car args)) (string? (car args)))
-         (apply string-append
-                (map (lambda (a) ((g coerce) a 'string)) args)))
-        ((arc-list? (car args))
-         (apply arc-join args))
-        (else
-         (apply + args))))
-
-#|(test (ar-+) 0)
-(test (ar-+ #\a "b" 'c 3) "abc3")
-(test (ar-+ "a" 'b #\c) "abc")
-(test (ar-+ 'nil (arc-list 1 2 3)) (arc-list 1 2 3))
-(test (ar-+ (arc-list 1 2) (arc-list 3)) (arc-list 1 2 3))
-(test (ar-+ 1 2 3) 6)
-
-
-(test (arc-apply ar-+) 0)
-(test (arc-apply ar-+ 'nil (toarc '((a b) (c d)))) (toarc '(a b c d)))
-(test (arc-apply ar-+ 1 2 (arc-list 3 4)) 10)|#
-
-
-;; this assigns the special form gensyms to %%internal-
-(add-ac-build-step
-  (lambda (arc)
-    (hash-for-each internal-name-hash
-      (lambda (k v)
-        (set arc ((g coerce) ((g +) "%%internal-" k) 'sym) v)))))
-
-(ac-mac assign (n v)
-  (toarc `(,(internal-name 'assign) ,n ,v)))
-
-(ac-mac fn (parms . body)
-  (toarc `(,(internal-name 'fn) ,parms ,@body)))
-
-(ac-mac if args
-  (toarc `(,(internal-name 'if) ,@args)))
-
-(ac-mac quasiquote (x)
-  (toarc `(,(internal-name 'quasiquote) ,x)))
-
-(ac-mac quote (x)
-  (toarc `(,(internal-name 'quote) ,x)))
+(ar-def + args
+  (racket-define (+ . args)
+    (racket-cond
+     ((racket-null? args)
+      0)
+     ((racket-or (racket-char? (racket-car args)) (racket-string? (racket-car args)))
+      (racket-apply racket-string-append
+                    (racket-map (racket-lambda (a)
+                                  (coerce a (racket-quote string)))
+                                args)))
+     ((ar-alist (racket-car args))
+      (racket-apply join args))
+     (racket-else
+      (racket-apply racket-+ args)))))
 
 
 ;; peekc
 
-(ac-def-sig peekc ((port (current-input-port))) ((o port stdin))
-  (let ((c (peek-char port)))
-    (if (eof-object? c) 'nil c)))
+(ar-def peekc ((o port stdin))
+  (racket-define (peekc (port (racket-current-input-port)))
+    (racket-let ((c (racket-peek-char port)))
+      (racket-if (racket-eof-object? c) (racket-quote nil) c))))
 
 
 ;; readc
 
-(ac-def-sig readc ((port (current-input-port)) (eof 'nil))
-                  ((o port stdin) (o eof nil))
-  (let ((c (read-char port)))
-    (if (eof-object? c) eof c)))
+(ar-def readc ((o port stdin) (o eof nil))
+  (racket-define (readc (port (racket-current-input-port))
+                        (eof (racket-quote nil)))
+    (racket-let ((c (racket-read-char port)))
+      (racket-if (racket-eof-object? c) eof c))))
 
 
 ;; writec
 
-(ac-def-sig writec (c (port (current-output-port)))
-                   (c (o port stdout))
-  (write-char c port))
-
-
-;; racket-parameterize
-
-(ac-def racket-parameterize (parameter value body)
-  (parameterize ((parameter value))
-    (body)))
+(ar-def writec (c (o port stdout))
+  (racket-define (writec c (port (racket-current-output-port)))
+    (racket-write-char c port)))
 
 
 ;; racket-module-ref
 
-(ac-def racket-module-ref (a/module)
-  (let ((r/module (deep-fromarc a/module)))
-    (lambda (sym)
-      (dynamic-require r/module sym))))
+(ar-def racket-module-ref (a/module)
+  (racket-define (racket-module-ref a/module)
+    (racket-let ((r/module (ar-deep-fromarc a/module)))
+      (racket-lambda (sym)
+        (racket-dynamic-require r/module sym)))))
 
 
-;; ugh, this is needed, unfortunately
-;; got a better idea?
+;; ar-apply
 
-(define ar-apply '())
+(ar-def ar-apply-cons (fn . racket-arg-list)
+  (racket-define (ar-apply-cons fn . racket-arg-list)
+    (racket-mlist-ref fn (racket-car racket-arg-list))))
 
-(add-ac-build-step
-  (lambda (arc)
-    (set! ar-apply
-      (lambda (fn . args)
-        (cond ((procedure? fn)
-               (apply fn args))
-              (else
-               (apply ((g coerce) fn 'fn) args)))))))
+(ar-def ar-apply-string (fn . racket-arg-list)
+  (racket-define (ar-apply-string fn . racket-arg-list)
+    (racket-string-ref fn (racket-car racket-arg-list))))
 
-;(arc-coerce fn 'fn)
+(ar-def ar-apply-hash (fn . racket-arg-list)
+  (racket-define (ar-apply-hash fn . racket-arg-list)  
+    (racket-hash-ref fn
+      (racket-car racket-arg-list)
+      (racket-let ((default (racket-if (racket-pair? (racket-cdr racket-arg-list))
+                                        (racket-car (racket-cdr racket-arg-list))
+                                        (racket-quote nil))))
+        (racket-lambda () default)))))
 
-#|(test (ar-apply 'nil + 1 2 3) 6)
-(test (ar-apply 'nil (arc-list 1 2 3) 1) 2)
-(test (ar-apply 'nil "abcde" 2) #\c)
-(test (ar-apply 'nil (hash 'a 1 'b 2) 'b) 2)
-(test (ar-apply 'nil (hash 'a 1 'b 2) 'x) 'nil)
-(test (ar-apply 'nil (hash 'a 1 'b 2) 'x 3) 3)|#
-
-
-(ac-def apply (fn . args)
-  (apply ar-apply fn (combine args)))
-
-
-;(test (ar-funcall0 'nil +) 0)
-
-;(test (ar-funcall1 'nil + 3) 3)
-;(test (ar-funcall1 'nil "abcd" 2) #\c)
-
-;(test (ar-funcall2 'nil + 3 4) 7)
-;(test (ar-funcall2 'nil (hash 'a 1 'b 2) 'x 3) 3)
-
-;(test (ar-funcall3 'nil + 3 4 5) 12)
-
-;(test (ar-funcall4 'nil + 3 4 5 6) 18)
+(ar-def ar-apply (fn . racket-arg-list)
+  (racket-define (ar-apply fn . racket-arg-list)
+    (racket-cond
+     ((racket-procedure? fn)
+      (racket-apply fn racket-arg-list))
+     ((racket-mpair? fn)
+      (racket-apply ar-apply-cons fn racket-arg-list))
+     ((racket-string? fn)
+      (racket-apply ar-apply-string fn racket-arg-list))
+     ((racket-hash? fn)
+      (racket-apply ar-apply-hash fn racket-arg-list))
+     (racket-else
+      (err "Function call on inappropriate object" fn racket-arg-list)))))
 
 
 ;; ar-funcall
 
-(ac-def ar-funcall0 (fn)
-  (if (procedure? fn)
-      (fn)
-      (ar-apply fn)))
+(ar-def ar-funcall0 (fn)
+  (racket-define (ar-funcall0 fn)
+    (racket-if (racket-procedure? fn)
+                (fn)
+                (ar-apply fn))))
 
-(ac-def ar-funcall1 (fn arg1)
-  (if (procedure? fn)
-      (fn arg1)
-      (ar-apply fn arg1)))
+(ar-def ar-funcall1 (fn arg1)
+  (racket-define (ar-funcall1 fn arg1)
+    (racket-if (racket-procedure? fn)
+                 (fn arg1)
+                 (ar-apply fn arg1))))
 
-(ac-def ar-funcall2 (fn arg1 arg2)
-  (if (procedure? fn)
-      (fn arg1 arg2)
-      (ar-apply fn arg1 arg2)))
+(ar-def ar-funcall2 (fn arg1 arg2)
+  (racket-define (ar-funcall2 fn arg1 arg2)
+    (racket-if (racket-procedure? fn)
+                (fn arg1 arg2)
+                (ar-apply fn arg1 arg2))))
 
-(ac-def ar-funcall3 (fn arg1 arg2 arg3)
-  (if (procedure? fn)
-      (fn arg1 arg2 arg3)
-      (ar-apply fn arg1 arg2 arg3)))
+(ar-def ar-funcall3 (fn arg1 arg2 arg3)
+  (racket-define (ar-funcall3 fn arg1 arg2 arg3)
+    (racket-if (racket-procedure? fn)
+                (fn arg1 arg2 arg3)
+                (ar-apply fn arg1 arg2 arg3))))
 
-(ac-def ar-funcall4 (fn arg1 arg2 arg3 arg4)
-  (if (procedure? fn)
-      (fn arg1 arg2 arg3 arg4)
-      (ar-apply fn arg1 arg2 arg3 arg4)))
+(ar-def ar-funcall4 (fn arg1 arg2 arg3 arg4)
+  (racket-define (ar-funcall4 fn arg1 arg2 arg3 arg4)
+    (racket-if (racket-procedure? fn)
+                (fn arg1 arg2 arg3 arg4)
+                (ar-apply fn arg1 arg2 arg3 arg4))))
+
+
+;; apply
+
+(ar-def ar-combine-args (as)
+  (racket-define (ar-combine-args as)
+    (racket-let next ((as as) (accum (racket-list)))
+      (racket-cond
+       ((racket-null? as)
+        accum)
+       ((racket-null? (racket-cdr as))
+        (racket-append accum (ar-list-fromarc (racket-car as))))
+       (racket-else
+        (next (racket-cdr as) (racket-append accum (racket-list (racket-car as)))))))))
+
+(ar-def apply (fn . args)
+  (racket-define (apply fn . args)
+    (racket-apply ar-apply fn (ar-combine-args args))))
 
 
 ;; The Arc compiler!
 
-(ac-def ac (s env)
-  ((g err) "Bad object in expression" s))
+(ar-def ac (s env)
+  (racket-define (ac s env)
+    (err "Bad object in expression" s)))
 
 ; ...which is extended to do more below :-)
 
 
 ; Extending the Arc compiler
 
-(define (extend-impl name test body source)
-  (add-ac-build-step
-   (lambda (arc)
-     (let ((previous (get arc name)))
-       (set arc name
-         (lambda args
-           (let ((result (apply test arc args)))
-             (if (true? result)
-                  (apply body arc result args)
-                  (apply previous args)))))))
-   source))
+(ac-def ar-extend-impl (name test body)
+  (let ((previous (get arc name)))
+    (set arc name
+      (lambda args
+        (let ((result (apply test arc args)))
+          (if ((g ar-true) result)
+               (apply body arc result args)
+               (apply previous args)))))))
 
-(define-syntax extend
-  (lambda (stx)
-    (syntax-case stx ()
-      ((extend name args test body ...)
-       (with-syntax ((arc (datum->syntax #'args 'arc))
-                     (it  (datum->syntax #'args 'it)))
-         #'(extend-impl 'name
-            (lambda (arc . args) test)
-            (lambda (arc it . args) body ...)
-            `(extend ,'name ,'args ,'test)))))))
+(defmacro extend (name args test . body)
+  `(add-ac-build-step
+     (lambda (arc)
+       ((g ar-extend-impl) ',name
+        (lambda (arc . ,args) ,test)
+        (lambda (arc it . ,args) ,@body)))
+     '(extend ,name ,args ,test)))
 
 
 ;; literal
 
 (ac-def ac-literal? (x)
-  (tnil (or (char? x)
-            (string? x)
-            (number? x)
-            (procedure? x))))
+  ((g ar-tnil)
+   (or (char? x)
+       (string? x)
+       (number? x)
+       (procedure? x))))
 
 (extend ac (s env)
   ((g ac-literal?) s)
@@ -415,13 +710,14 @@
 
 ;; variables
 
-(define (mem v lst)
-  (tnil (and (mpair? lst)
-             (or (eqv? v (mcar lst))
-                 (true? (mem v (mcdr lst)))))))
+(ac-def ar-mem (v lst)
+  ((g ar-tnil)
+   (and (mpair? lst)
+        (or (eqv? v (mcar lst))
+            ((g ar-true) ((g ar-mem) v (mcdr lst)))))))
 
 (ac-def ac-lex? (v env)
-  (mem v env))
+  ((g ar-mem) v env))
 
 (define (global-ref-err arc v)
   (let ((message (string-append "undefined global variable: "
@@ -429,27 +725,16 @@
     (lambda ()
       ((g err) message))))
 
-; An Arc global variable reference to "foo" such as in (+ foo 3) compiles into
-; the Racket expression
-; (#<procedure:hash-ref> #<hash:globals*> 'foo #<procedure:global-ref-err>)
-; ...and thus performs no lookups in Racket's namespace (don't know
-; yet if it makes a difference).
-
 (ac-def ac-global (v)
-  (case (globals-implementation arc)
-    ((table) (arc-list hash-ref
-                       arc
-                       (arc-list 'racket-quote v)
-                       (global-ref-err arc v)))
-    ((namespace) v)))
+  v)
 
 (ac-def ac-var-ref (s env)
-  (if (true? ((g ac-lex?) s env))
+  (if ((g ar-true) ((g ac-lex?) s env))
        s
        ((g ac-global) s)))
 
 (extend ac (s env)
-  (tnil (symbol? s))
+  ((g ar-tnil) (symbol? s))
   ((g ac-var-ref) s env))
 
 
@@ -466,7 +751,7 @@
    ;; have to use ar-apply
    ((and (mpair? f) (eq? (mcar f) 'fn))
     (mcons ((g ac) f env)
-           ((g ac-args) (arc-cadr f) args env)))
+           ((g ac-args) ((g cadr) f) args env)))
 
    (else
     (mcons (case ((g len) args)
@@ -475,12 +760,13 @@
              ((2) (g ar-funcall2))
              ((3) (g ar-funcall3))
              ((4) (g ar-funcall4))
-             (else ar-apply))
+             (else (g ar-apply)))
            (mcons ((g ac) f env)
                   ((g map1) (lambda (arg) ((g ac) arg env)) args))))))
 
-(extend ac (s env) (tnil (mpair? s))
-  ((g ac-call) (arc-car s) (arc-cdr s) env))
+(extend ac (s env)
+  ((g ar-tnil) (mpair? s))
+  ((g ac-call) ((g car) s) ((g cdr) s) env))
 
 
 ;; quote
@@ -489,8 +775,8 @@
 ; compiler unscathed.  This trick uses rocketnia's method: Racket
 ; doesn't copy function values.
 
-(extend ac (s env) ((g caris) s (internal-name 'quote))
-  (let ((v (arc-cadr s)))
+(extend ac (s env) ((g caris) s 'quote)
+  (let ((v ((g cadr) s)))
     ((g list) ((g list) 'racket-quote (lambda () v)))))
 
 
@@ -500,20 +786,20 @@
 ; later.
 
 (ac-def ac-body (body env)
-  (arc-map1 (lambda (x) ((g ac) x env)) body))
+  ((g map1) (lambda (x) ((g ac) x env)) body))
 
 (ac-def ac-body* (body env)
-  (if (no? body)
-      ((g list) '(racket-quote nil))
-      ((g ac-body) body env)))
+  (if ((g ar-no) body)
+       ((g list) '(racket-quote nil))
+       ((g ac-body) body env)))
 
 (ac-def ac-body*x (args body env)
-  ((g ac-body*) body (arc-join ((g ac-arglist) args) env)))
+  ((g ac-body*) body ((g join) ((g ac-arglist) args) env)))
 
 (ac-def ac-arglist (a)
-  (cond ((no? a) 'nil)
+  (cond (((g ar-no) a) 'nil)
         ((symbol? a) (arc-list a))
-        ((and (symbol? (mcdr a)) (not (no? (mcdr a))))
+        ((and (symbol? (mcdr a)) (not ((g ar-no) (mcdr a))))
          (arc-list (mcar a) (mcdr a)))
         (else (mcons (mcar a) ((g ac-arglist) (mcdr a))))))
 
@@ -526,7 +812,7 @@
          'nil)))
 
 (ac-def ac-fn (args body env)
-  (if (true? ((g dotted-list?) args))
+  (if ((g ar-true) ((g dotted-list?) args))
        ((g ac-fn-rest) args body env)
        (mcons 'racket-lambda
               ;; TODO I think it would be better to have an explicit
@@ -534,59 +820,19 @@
               (mcons (arc-list 'racket-list args)
                      ((g ac-body*x) args body env)))))
 
-(extend ac (s env) ((g caris) s (internal-name 'fn))
-  ((g ac-fn) (arc-cadr s) (arc-cddr s) env))
+(extend ac (s env)
+  ((g caris) s 'fn)
+  ((g ac-fn) ((g cadr) s) ((g cddr) s) env))
 
-#|
-My failed attempt to make fn return a value. We can return to this later.
-
-(add-ac-build-step
-  (lambda (arc)
-    (ac-mac-fn arc 'fn '(parms . body)
-      (lambda (parms . body)
-        (display (toracket parms))
-        (display " ")
-        (display (toracket (toarc body)))
-        (newline)
-        (newline)
-        (set! parms (toarc parms))
-        (set! body  (toarc body))
-;        (display (toracket ((g ac-fn) (toarc parms) (toarc body) current-env)))
-        (display (eval `(lambda ,(toracket parms) ,(toracket ((g ac-body*x) parms body current-env)))))
-        (newline)
-        (newline)
-;        'nil
-        `',(eval `(lambda ,(toracket parms) ,(toracket ((g ac-body*x) parms body current-env))))
-;        `',(toracket ((g ac-fn) (toarc parms) (toarc body) current-env))
-
-        (let ((env current-env))
-          (mcons 'quote ((g ac) ((g ac-fn) (toarc parms) (toarc body) env) env)))
-;        (mcons 'quote (toarc `(,(g ac-fn) ,(toarc parms) ,(toarc body) ,current-env)))
-;        (mcons 'quote ((g ac-fn) (toarc parms) (toarc body) current-env))
-;        (eval `(mcons 'quote (lambda ,parms ,((g ac-body*x) (toarc parms) (toarc body) current-env))))
-;        ((g ac-fn) (toarc parms) (toarc body) current-env))
-        ))))
-|#
 
 ;; eval
 
 (define (arc-eval arc form)
-  (parameterize ((current-readtable (get-default arc 'arc-readtable* (lambda () #f)))
-                 (compile-allow-set!-undefined #t))
-    (eval (deep-fromarc ((get arc 'ac) form 'nil))
-          (hash-ref arc 'racket-namespace*))))
+  (racket-eval arc ((g ar-deep-fromarc) ((get arc 'ac) form 'nil))))
+          
 
 (ac-def eval (form (other-arc 'nil))
-  (arc-eval (if (true? other-arc) other-arc arc) form))
-
-
-;; this makes apply work on macros
-;; this should probably be defined in core.arc, though
-
-#|(extend coerce (x type . rest) (tnil (and (eq? type 'fn)
-                                     (tfalse (arc-isa x 'mac))))
-  (lambda args
-    ((g eval) (apply (ar-rep x) args))))|#
+  (arc-eval (if ((g ar-true) other-arc) other-arc arc) form))
 
 
 ;; quasiquotation
@@ -604,12 +850,12 @@ My failed attempt to make fn return a value. We can return to this later.
 ; different expansion algorithm.
 
 (ac-def qq-expand (x)
-  (cond ((true? (ar-caris x 'unquote))
-         (arc-cadr x))
-        ((true? (ar-caris x 'unquote-splicing))
+  (cond (((g ar-true) ((g caris) x 'unquote))
+         ((g cadr) x))
+        (((g ar-true) ((g caris) x 'unquote-splicing))
          (error "illegal use of ,@ in non-list quasiquote expansion"))
-        ((true? (ar-caris x 'quasiquote))
-         ((g qq-expand) ((g qq-expand) (arc-cadr x))))
+        (((g ar-true) ((g caris) x 'quasiquote))
+         ((g qq-expand) ((g qq-expand) ((g cadr) x))))
         ((mpair? x)
          ((g qq-expand-pair) x))
         (else
@@ -621,86 +867,83 @@ My failed attempt to make fn return a value. We can return to this later.
             ((g qq-expand) (mcdr x))))
 
 (ac-def qq-expand-list (x)
-  (cond ((true? (ar-caris x 'unquote))
-         (arc-list 'list (arc-cadr x)))
-        ((true? (ar-caris x 'unquote-splicing))
-         (arc-cadr x))
-        ((true? (ar-caris x 'quasiquote))
-         ((g qq-expand-list) ((g qq-expand) (arc-cadr x))))
+  (cond (((g ar-true) ((g caris) x 'unquote))
+         (arc-list 'list ((g cadr) x)))
+        (((g ar-true) ((g caris) x 'unquote-splicing))
+         ((g cadr) x))
+        (((g ar-true) ((g caris) x 'quasiquote))
+         ((g qq-expand-list) ((g qq-expand) ((g cadr) x))))
         ((mpair? x)
          (arc-list 'list ((g qq-expand-pair) x)))
         (else
          (arc-list 'quote (list x)))))
 
-(extend ac (s env) ((g caris) s (internal-name 'quasiquote))
-  (let ((expansion ((g qq-expand) (arc-cadr s))))
+(extend ac (s env)
+  ((g caris) s 'quasiquote)
+  (let ((expansion ((g qq-expand) ((g cadr) s))))
     ((g ac) expansion env)))
 
 
 ;; if
 
 (ac-def ac-if (args env)
-  (cond ((no? args)
+  (cond (((g ar-no) args)
          '(racket-quote nil))
-        ((no? ((g cdr) args))
+        (((g ar-no) ((g cdr) args))
          ((g ac) ((g car) args) env))
         (else
          (arc-list 'racket-if
-                   (arc-list true? ((g ac) ((g car) args) env))
-                   ((g ac) (arc-cadr args) env)
-                   ((g ac-if) (arc-cddr args) env)))))
+                   (arc-list (g ar-true) ((g ac) ((g car) args) env))
+                   ((g ac) ((g cadr) args) env)
+                   ((g ac-if) ((g cddr) args) env)))))
 
-(extend ac (s env) ((g caris) s (internal-name 'if))
+(extend ac (s env)
+  ((g caris) s 'if)
   ((g ac-if) ((g cdr) s) env))
 
 
 ;; assign
 
 (ac-def ac-global-assign (a b)
-  (case (globals-implementation arc)
-    ((table) (arc-list hash-set! arc (arc-list 'racket-quote a) b))
-    ((namespace) (arc-list 'racket-set! a b))))
+  (arc-list 'racket-set! a b))
 
 (ac-def ac-assign1 (a b1 env)
   (unless (symbol? a)
-    (err "First arg to assign must be a symbol" a))
+    ((g err) "First arg to assign must be a symbol" a))
   (let ((result (gensym)))
     (arc-list 'racket-let
               (arc-list (arc-list result ((g ac) b1 env)))
-              (if (true? ((g ac-lex?) a env))
+              (if ((g ar-true) ((g ac-lex?) a env))
                    (arc-list 'racket-set! a result)
                    ((g ac-global-assign) a result))
               result)))
 
 (ac-def ac-assignn (x env)
-  (if (no? x)
+  (if ((g ar-no) x)
       'nil
       ;; todo: Arc 3.1 calls ac-macex here
-      (mcons ((g ac-assign1) (arc-car x) (arc-cadr x) env)
-             ((g ac-assignn) (arc-cddr x) env))))
+      (mcons ((g ac-assign1) ((g car) x) ((g cadr) x) env)
+             ((g ac-assignn) ((g cddr) x) env))))
 
 (ac-def ac-assign (x env)
   (mcons 'racket-begin
          ((g ac-assignn) x env)))
 
-(extend ac (s env) (ar-caris s (internal-name 'assign))
-  ((g ac-assign) (arc-cdr s) env))
+(extend ac (s env)
+  ((g caris) s 'assign)
+  ((g ac-assign) ((g cdr) s) env))
 
 
 ;; macro
 
-(define (mac? x)
-  (and (tagged? x)
-       (eq? (arc-type x) 'mac)))
-
 (ac-def ac-macro? (fn)
-  (cond ((mac? fn)
-         (ar-rep fn))
+  (cond ((eq? ((g type) fn) 'mac)
+         ((g rep) fn))
         ((symbol? fn)
          (let ((v (get-default arc fn (lambda () 'nil))))
-           (if (mac? v)
-               (ar-rep v)
-               'nil)))
+           (if (eq? ((g type) v) 'mac)
+                ((g rep) v)
+                'nil)))
         (else
          'nil)))
 
@@ -710,7 +953,7 @@ My failed attempt to make fn return a value. We can return to this later.
       x2)))
 
 (extend ac-call (fn args env)
-  (if (true? ((g ac-lex?) fn env))
+  (if ((g ar-true) ((g ac-lex?) fn env))
        'nil
        ((g ac-macro?) fn))
   ((g ac-mac-call) it args env))
@@ -724,11 +967,11 @@ My failed attempt to make fn return a value. We can return to this later.
         ((mpair? x)
          ((g ac-rest-param) (mcdr x)))
         (else
-         (error "not a dotted list"))))
+         ((g err) "not a dotted list"))))
 
 (ac-def ac-args-without-rest (x)
   (cond ((mpair? x)
-         (arc-join (arc-list (arc-car x)) ((g ac-args-without-rest) (mcdr x))))
+         ((g join) (arc-list ((g car) x)) ((g ac-args-without-rest) (mcdr x))))
         (else
          'nil)))
 
@@ -739,10 +982,11 @@ My failed attempt to make fn return a value. We can return to this later.
  (lambda (arc)
    (set arc 'ac-fn-rest-impl
      (arc-eval arc
-      (toarc '(fn (args r/rest rest body env)
-                `(racket-lambda ,(join args r/rest)
-                   (racket-let ((,rest (,r/list-toarc ,r/rest)))
-                     ,@(ac-body*x (join args (list rest)) body env)))) )))))
+      ((g ar-toarc)
+       '(fn (args r/rest rest body env)
+          `(racket-lambda ,(join args r/rest)
+             (racket-let ((,rest (,ar-r/list-toarc ,r/rest)))
+               ,@(ac-body*x (join args (list rest)) body env)))) )))))
 
 (ac-def ac-fn-rest (args body env)
   ((g ac-fn-rest-impl)
@@ -757,7 +1001,8 @@ My failed attempt to make fn return a value. We can return to this later.
 
 (ac-def bound (name)
   (let ((undef (list 'undef)))
-    (tnil (not (eq? (get-default arc name (lambda () undef)) undef)))))
+    ((g ar-tnil)
+     (not (eq? (get-default arc name (lambda () undef)) undef)))))
 
 
 ;; disp, write
@@ -782,7 +1027,7 @@ My failed attempt to make fn return a value. We can return to this later.
 ;; table
 
 (ac-def table ((init #f))
-  (let ((h (hash)))
+  (let ((h (make-hash)))
     (when init (init h))
     h))
 
@@ -799,7 +1044,7 @@ My failed attempt to make fn return a value. We can return to this later.
         ((mpair? com)
          (set-mcar! (mlist-tail com ind) val))
         (else
-         (err "Can't set reference" com ind val)))
+         ((g err) "Can't set reference" com ind val)))
   val)
 
 
@@ -834,23 +1079,29 @@ My failed attempt to make fn return a value. We can return to this later.
   (parameterize ((current-readtable (g racket-readtable*)))
     (read (open-input-string str))))
 
-(define (arc-read arc input)
-  (parameterize ((current-readtable (g arc-readtable*)))
-    (read input)))
+(ar-def ar-read (input)
+  (racket-define (ar-read input)
+    (racket-parameterize ((racket-current-readtable arc-readtable*))
+      (racket-read input))))
 
-(define (aload1 arc p)
-  (let ((x (arc-read arc p)))
-    (if (eof-object? x)
-         'nil
-         (begin (arc-eval arc (toarc x))
-                (aload1 arc p)))))
+(ar-def ar-aload1 (p)
+  (racket-define (ar-aload1 p)
+    (racket-let ((x (ar-read p)))
+      (racket-if (racket-eof-object? x)
+                  (racket-quote nil)
+                  (racket-begin
+                   (eval (ar-toarc x))
+                   (ar-aload1 p))))))
 
-(define (aload arc . filenames)
-  (for-each (lambda (filename)
-              (call-with-input-file filename (lambda (p) (aload1 arc p))))
-            filenames))
+(ar-def ar-load filenames
+  (racket-define (ar-load . filenames)
+    (racket-for-each
+     (racket-lambda (filename)
+       (racket-call-with-input-file filename
+         (racket-lambda (p) (ar-aload1 p))))
+     filenames)
+    nil))
 
 (add-ac-build-step
  (lambda (arc)
-   (ac-def-fn arc 'aload '(namespace . filenames) aload)
    (ac-def-fn arc 'this-namespace '() (lambda () arc))))

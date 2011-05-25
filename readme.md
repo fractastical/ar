@@ -44,6 +44,72 @@ use --repl:
 
     /path/to/ar/arc -a --repl foo.arc bar.arc qux.arc
 
+You can also write shell scripts in Arc.
+For example, if the file "hello" contained:
+
+    #! /path/to/ar/arc
+    (prn "hello there")
+
+you could run this script with:
+
+    $ chmod +x hello
+    $ ./hello    
+
+if you have ar on your path, you can also use env to avoid hard coding
+the path to ar:
+
+    #! /usr/bin/env arc
+    (prn "hello there")
+
+You can access the command line arguments with script-args:
+
+    #! /usr/bin/env arc
+    (prn script-args)
+
+    $ ./hello foo bar qux
+    (foo bar qux)
+
+The absolute path to the script is located in script-src.
+So, assuming the "hello" script is located at /usr/local/bin:
+
+    #! /usr/bin/env arc
+    (prn script-src)
+
+    $ /usr/local/bin/hello
+    /usr/local/bin/hello
+
+You can use w/script-src to load files relative to your script, and
+w/srcdir to load files relative to ar's directory:
+
+    #! /usr/bin/env arc
+    (w/script-src
+      (load "../lib/bar.arc"))
+
+    (w/srcdir
+      (load "lib/re.arc"))
+
+    $ /usr/local/bin/hello  # this loads /usr/local/lib/bar.arc
+                            # and        /path/to/ar/lib/re.arc
+
+You can access the current directory with curdir, assign to it to
+change the current directory, and use w/curdir to temporarily change
+the current directory.
+
+curdir also understands ~ in path names, so you can use ~/.local/bin
+to change the current directory to $HOME/.local/bin, for instance.
+
+load uses w/curdir, so it too understands ~ in path names, and loading
+a file in a subdirectory works correctly:
+
+  ; lib/foo.arc
+  (load "bar.arc")
+
+  ; lib/bar.arc
+  (prn "hi!")
+
+  arc> (load "lib/foo.arc")
+  "hi!"
+
 Run tests with:
 
     ./arc run-tests
@@ -245,13 +311,6 @@ Changes
   and applying join to the pieces will result in the original list.
 
 
-* global variables can be stored in an Arc table instead of in a Racket namespace
-
-  This has been turned off by default though, as it did turn out to be
-  slower than using a Racket namespace for global variables as Arc 3.1
-  does.
-
-
 * global variables are represented in Racket's namespace with their plain name
 
   In Arc 3.1, global variable are stored in Racket's namespace with a
@@ -328,6 +387,25 @@ Changes
 
   thus any list can be coerce'd to a "cons", even though the empty
   list isn't actually represented by a cons cell.
+
+
+* embedding other runtimes based on ar
+
+  Multiple runtimes can loaded and run within the same memory space.
+  Each runtime has its own set of global variables, and can have a
+  different set of definitions loaded.  Thus the other runtimes can be
+  a hacked version of ar, or have some other language than Arc loaded.
+
+         arc> (load "embed.arc")
+         nil
+         arc> (= a (new-arc))
+         #<procedure>
+         arc> a!+
+         #<procedure:+>
+         arc> (a!ar-load "arc.arc")
+         nil
+         arc> (a!eval '(map odd '(1 2 3 4 5 6)))
+         (t nil t nil t nil)
 
 
 Contributors

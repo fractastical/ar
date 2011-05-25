@@ -37,14 +37,14 @@
     (when exec-all
       (current-command-line-arguments #()))
 
-    (aload arc (string-append (g srcdir) "core.arc")
-               (string-append (g srcdir) "base.arc")
-               (string-append (g srcdir) "arc.arc"))
-
-    (let ((load        (g load))
+    (let ((aload       (g ar-load))
+          (load        (g load))
           (load-curdir (g load-curdir)))
 
       (parameterize ((current-directory (g srcdir)))
+        (aload "core.arc"
+               "base.arc"
+               "arc.arc")
         (load "arc3.1/backcompat.arc")
         (load "arc3.1/strings.arc"))
 
@@ -55,5 +55,6 @@
 
       (when (or run-repl (null? files-to-load))
         (parameterize ((current-directory (g srcdir)))
-          (load "repl.arc"))
-        (noprint ((g repl)))))))
+          (load "repl.arc")
+          ((g repl)))
+        (void)))))
