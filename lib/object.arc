@@ -100,7 +100,9 @@
 (extend print (p x port) (object? x)
   (isnt/fail x (get-attribute x 'print)
     (disp (x) port)
-    (print-object x port)))
+    (isnt/fail type (get-attribute x 'type)
+      (orig p x port)
+      (print-object x port))))
 
 (extend len (x) (object? x)
   (isnt/fail len (get-attribute x 'len)
