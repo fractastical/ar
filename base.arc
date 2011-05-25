@@ -97,21 +97,23 @@
 ;  Extending
 ;=============================================================================
 
+(mac extend (name arglist test . body)
+  (w/uniq args
+    `(let orig ,name
+       (assign ,name
+          (fn ,args
+            (aif (apply (fn ,arglist ,test) ,args)
+                  (apply (fn ,arglist ,@body) ,args)
+                  (apply orig ,args)))))))
+
 (mac defrule (name test . body)
-  (let arglist (sig name)
-    (w/uniq args
-      `(let orig ,name
-         (assign ,name
-           (fn ,args
-             (aif (apply (fn ,arglist ,test) ,args)
-                   (apply (fn ,arglist ,@body) ,args)
-                   (apply orig ,args))))))))
+  `(extend ,name ,(sig name) ,test ,@body))
 
 
 ;; makes apply work on macros
 
-(defrule coerce (and (is type 'fn)
-                     (isa x 'mac))
+(extend coerce (x type . r) (and (is type 'fn)
+                                 (isa x 'mac))
   (fn args
     (eval (apply (rep x) args))))
 
@@ -571,11 +573,10 @@
   (racket (racket-if x (racket-quote t) (racket-quote nil))))
 
 (def sread (p eof)
-  (parameterize racket-current-readtable arc-readtable*
-    (let v (racket-read p)
-      (if (racket-true (racket-eof-object? v))
-           eof
-           (ar-toarc v)))))
+  (let v (ar-read p)
+    (if (racket-true (racket-eof-object? v))
+         eof
+         (ar-toarc v))))
 
 (def read ((o x stdin) (o eof nil))
   (if (isa x 'string) (readstring1 x eof) (sread x eof)))
