@@ -29,8 +29,6 @@
 (def not (x) (is x nil))
 
 (def caar (xs) (car (car xs)))
-(def cadr (xs) (car (cdr xs)))
-(def cddr (xs) (cdr (cdr xs)))
 
 (assign-fn pair (xs (o f list))
   (fn args
