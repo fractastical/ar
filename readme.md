@@ -125,7 +125,9 @@ Todo
 ----
 
 * Move sread into ac.ss, then use sread rather than ar-read (don't
-forget to delete ar-read after the move is completed)
+  forget to delete ar-read after the move is completed)
+* Remove dir from io.arc, since it's now defined in arc.arc. Should
+  write some tests before removing it, though.
 * The code currently requires Racket, though a compatibility mode for
   PLT Scheme would be useful.
 * clean up messy code in io.arc
