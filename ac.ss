@@ -50,10 +50,10 @@
 (define (make-arc-racket-namespace)
   (let ((ns (make-base-empty-namespace)))
     (parameterize ((current-namespace ns))
-      (namespace-require '(only racket/base #%app #%datum #%top))
-      (namespace-require '(prefix racket- racket/base))
-      (namespace-require '(prefix racket- racket/mpair))
-      (namespace-require '(prefix racket- racket/tcp)))
+      (namespace-require '(only scheme/base #%app #%datum #%top))
+      (namespace-require '(prefix racket- scheme/base))
+      (namespace-require '(prefix racket- scheme/mpair))
+      (namespace-require '(prefix racket- scheme/tcp)))
     ns))
 
 (define (new-arc (options (make-hash)))
@@ -79,11 +79,23 @@
         (else x)))
 
 
+;; toracket
+
+(define (toracket x)
+  (cond ((mpair? x)
+         (cons (toracket (mcar x))
+               (toracket (mcdr x))))
+        ((eq? x 'nil)
+         '())
+        ((string? x)
+         (string-copy x))
+        (else x)))
+
+
 ;; racket-eval
 
 (define (racket-eval arc form)
-  (parameterize ((current-readtable (get-default arc 'arc-readtable* (lambda () #f)))
-                 (compile-allow-set!-undefined #t))
+  (parameterize ((compile-allow-set!-undefined #t))
     (eval form (hash-ref arc 'racket-namespace*))))
 
 
@@ -144,6 +156,16 @@
                `(racket-eval arc ',form))
              body))
     '(ar-def ,name)))
+
+
+;; ac-mac
+
+(defmacro ac-mac (name args . body)
+  `(add-ac-build-step
+     (lambda (arc)
+       (ac-def-fn arc ',name ',args ((g annotate) 'mac
+                                      (lambda ,args (toarc ,@body)))))
+     '(ac-mac ,name)))
 
 
 ;; primitives
@@ -219,6 +241,14 @@
  (lambda (arc)
    (ac-def-fn arc 'ar-toarc '(x) toarc))
  '(ar-toarc))
+
+
+;; ar-toracket
+
+(add-ac-build-step
+ (lambda (arc)
+   (ac-def-fn arc 'ar-toracket '(x) toracket))
+ '(ar-toracket))
 
 
 ;; ar-deep-fromarc
@@ -399,6 +429,8 @@
                         (racket-if n
                                     (ar-iround n)
                                     (err "Can't coerce" x totype))))
+         ((fn)        (racket-lambda (k)
+                        (racket-string-ref x k)))
          (racket-else (err "Can't coerce" x totype))))
       ((racket-mpair? x)
        (racket-case totype
@@ -407,6 +439,8 @@
                                      (map1 (racket-lambda (y)
                                              (coerce y (racket-quote string)))
                                            x))))
+         ((fn)        (racket-lambda (k)
+                        (racket-mlist-ref x k)))
          (racket-else (err "Can't coerce" x totype))))
       ((racket-eq? x (racket-quote nil))
        (racket-case totype
@@ -417,6 +451,11 @@
        (racket-case totype
          ((string)    (racket-symbol->string x))
          (racket-else (err "Can't coerce" x type))))
+      ((racket-hash? x)
+       (racket-case totype
+         ((fn)        (racket-case-lambda
+                        ((k)   (racket-hash-ref x k nil))
+                        ((k d) (racket-hash-ref x k d))))))
       (racket-else x))))
 
 
@@ -440,7 +479,7 @@
                                 (racket-quote nil)))
        (ar-pairwise pred (racket-cdr lst)))
       (racket-else (racket-quote nil)))))
-  
+
 (ar-def is2 (a b)
   (racket-define (is2 a b)
     (ar-tnil
@@ -580,36 +619,13 @@
 
 ;; ar-apply
 
-(ar-def ar-apply-cons (fn . racket-arg-list)
-  (racket-define (ar-apply-cons fn . racket-arg-list)
-    (racket-mlist-ref fn (racket-car racket-arg-list))))
-
-(ar-def ar-apply-string (fn . racket-arg-list)
-  (racket-define (ar-apply-string fn . racket-arg-list)
-    (racket-string-ref fn (racket-car racket-arg-list))))
-
-(ar-def ar-apply-hash (fn . racket-arg-list)
-  (racket-define (ar-apply-hash fn . racket-arg-list)  
-    (racket-hash-ref fn
-      (racket-car racket-arg-list)
-      (racket-let ((default (racket-if (racket-pair? (racket-cdr racket-arg-list))
-                                        (racket-car (racket-cdr racket-arg-list))
-                                        (racket-quote nil))))
-        (racket-lambda () default)))))
-
 (ar-def ar-apply (fn . racket-arg-list)
   (racket-define (ar-apply fn . racket-arg-list)
     (racket-cond
      ((racket-procedure? fn)
       (racket-apply fn racket-arg-list))
-     ((racket-mpair? fn)
-      (racket-apply ar-apply-cons fn racket-arg-list))
-     ((racket-string? fn)
-      (racket-apply ar-apply-string fn racket-arg-list))
-     ((racket-hash? fn)
-      (racket-apply ar-apply-hash fn racket-arg-list))
      (racket-else
-      (err "Function call on inappropriate object" fn racket-arg-list)))))
+      (racket-apply (coerce fn (racket-quote fn)) racket-arg-list)))))
 
 
 ;; ar-funcall
@@ -749,7 +765,15 @@
    ;; if we're about to call a literal fn such as ((fn (a b) ...) 1 2)
    ;; then we know we can just call it in Racket and we don't
    ;; have to use ar-apply
-   ((and (mpair? f) (eq? (mcar f) 'fn))
+   ((and (mpair? f) (eq? (mcar f) %%internal-fn)) ; not sure whether this
+                                                  ; should be %%internal-fn
+                                                  ; or 'fn
+                                                  ;
+                                                  ; maybe this should be
+                                                  ; removed, since fn is a
+                                                  ; macro, so doesn't it
+                                                  ; bypass this section of
+                                                  ; code?
     (mcons ((g ac) f env)
            ((g ac-args) ((g cadr) f) args env)))
 
@@ -769,13 +793,45 @@
   ((g ac-call) ((g car) s) ((g cdr) s) env))
 
 
+;; use gensyms for special forms to allow shadowing/overwriting
+
+(define %%internal-assign     (gensym))
+(define %%internal-fn         (gensym))
+(define %%internal-if         (gensym))
+(define %%internal-quasiquote (gensym))
+(define %%internal-quote      (gensym))
+
+(add-ac-build-step
+ (lambda (arc)
+   (set arc '%%internal-assign     %%internal-assign)
+   (set arc '%%internal-fn         %%internal-fn)
+   (set arc '%%internal-if         %%internal-if)
+   (set arc '%%internal-quasiquote %%internal-quasiquote)
+   (set arc '%%internal-quote      %%internal-quote)))
+
+(ac-mac assign (n v)
+  `(,%%internal-assign ,n ,v))
+
+(ac-mac fn (parms . body)
+  `(,%%internal-fn ,parms ,@body))
+
+(ac-mac if args
+  `(,%%internal-if ,@args))
+
+(ac-mac quasiquote (x)
+  `(,%%internal-quasiquote ,x))
+
+(ac-mac quote (x)
+  `(,%%internal-quote ,x))
+
+
 ;; quote
 
 ; The goal here is to get the quoted value tunneled through Racket's
 ; compiler unscathed.  This trick uses rocketnia's method: Racket
 ; doesn't copy function values.
 
-(extend ac (s env) ((g caris) s 'quote)
+(extend ac (s env) ((g caris) s %%internal-quote)
   (let ((v ((g cadr) s)))
     ((g list) ((g list) 'racket-quote (lambda () v)))))
 
@@ -820,8 +876,7 @@
               (mcons (arc-list 'racket-list args)
                      ((g ac-body*x) args body env)))))
 
-(extend ac (s env)
-  ((g caris) s 'fn)
+(extend ac (s env) ((g caris) s %%internal-fn)
   ((g ac-fn) ((g cadr) s) ((g cddr) s) env))
 
 
@@ -829,7 +884,7 @@
 
 (define (arc-eval arc form)
   (racket-eval arc ((g ar-deep-fromarc) ((get arc 'ac) form 'nil))))
-          
+
 
 (ac-def eval (form (other-arc 'nil))
   (arc-eval (if ((g ar-true) other-arc) other-arc arc) form))
@@ -878,8 +933,7 @@
         (else
          (arc-list 'quote (list x)))))
 
-(extend ac (s env)
-  ((g caris) s 'quasiquote)
+(extend ac (s env) ((g caris) s %%internal-quasiquote)
   (let ((expansion ((g qq-expand) ((g cadr) s))))
     ((g ac) expansion env)))
 
@@ -897,8 +951,7 @@
                    ((g ac) ((g cadr) args) env)
                    ((g ac-if) ((g cddr) args) env)))))
 
-(extend ac (s env)
-  ((g caris) s 'if)
+(extend ac (s env) ((g caris) s %%internal-if)
   ((g ac-if) ((g cdr) s) env))
 
 
@@ -929,8 +982,7 @@
   (mcons 'racket-begin
          ((g ac-assignn) x env)))
 
-(extend ac (s env)
-  ((g caris) s 'assign)
+(extend ac (s env) ((g caris) s %%internal-assign)
   ((g ac-assign) ((g cdr) s) env))
 
 
