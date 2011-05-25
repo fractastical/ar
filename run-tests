@@ -3,25 +3,22 @@
 (load "lib/tester.arc")
 (load "lib/parse-script-args.arc")
 
-(mac extend (name arglist test . body)
-  (w/uniq args
-    `(let orig ,name
-       (= ,name
-          (fn ,args
-            (aif (apply (fn ,arglist ,test) ,args)
-                  (apply (fn ,arglist ,@body) ,args)
-                  (apply orig ,args)))))))
-
 (= verbose nil)
 
 (parse-script-args
   ("-v" "--verbose" (= verbose t)))
 
-(each x script-args
-  (test-file x))
+#|(each x script-args
+  (test-file x))|#
+
+(map test-file script-args)
+
+(def test-files-sudo args
+  (system:string "sudo ./arc run-tests" (map [+ " \"tests/" _ "\""] args)))
 
 (unless script-args
-  (system "sudo ./arc run-tests \"tests/io.arc (root)\"")
+  (test-files-sudo "arc (root)"
+                   "io.arc (root)") ; must be last
 
   (w/curdir "tests"
     ;(system "set -e -v")

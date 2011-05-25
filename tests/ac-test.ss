@@ -2,8 +2,10 @@
 
 (require mzlib/defmacro)
 
-(require (only-in "ac.ss"
+(require (only-in "../ac.ss"
            arc-eval new-arc ac-build-steps get g))
+
+(define verbose #f)
 
 (define (pair xs)
   (cond ((null? xs)
@@ -21,8 +23,6 @@
   (let ((h (make-hash)))
     (add-to-hash h args)
     h))
-
-(define verbose #f)
 
 (define (test-expect-error-impl source thunk expected-error-message)
   (let ((actual-error
@@ -174,8 +174,10 @@
   (step ac-build-steps '()))
 
 (define (after-impl pattern thunk)
-  (newline)
-  (write pattern) (newline)
+  (when verbose
+    (newline)
+    (write pattern)
+    (newline))
   (parameterize ((build-steps (take (lambda (s) (begins s pattern)))))
     (thunk)))
 
@@ -473,7 +475,7 @@
        (arc-test ( `,(+ 1 2)         ) 3)
        (arc-test ( `(,(+ 1 2))       ) ((g list) 3))
        (arc-test ( `(1 2 ,(+ 1 2) 4) ) ((g list) 1 2 3 4))
-       
+
        (arc-test ( (eval ``3)         ) 3)
        (arc-test ( (eval ``,,3)       ) 3)
        (arc-test ( (eval ``,,(+ 1 2)) ) 3)

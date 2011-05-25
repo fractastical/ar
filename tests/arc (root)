@@ -1,0 +1,45 @@
+>>> (assign td "/tmp/SR0hwhic5P")
+"/tmp/SR0hwhic5P"
+
+>>> (def clean ()
+      (system (string "rm -rf " td))
+      (system (string "mkdir " td)))
+#<procedure...>
+
+
+>>> (let f (string td "/foo")
+      (clean)
+      (w/outfile s f (disp "hi" s))
+      (tostring (system (string "cat " f))))
+"hi"
+
+
+>>> (let f (string td "/foo")
+      (clean)
+      (w/outfile s f (disp "hello" s))
+      (w/appendfile s f (disp " there" s))
+      (tostring (system (string "cat " f))))
+"hello there"
+
+
+>>> (let f (string td "/foo")
+      (clean)
+      (w/outfile s f
+        (w/stdout s (disp "xyzzy")))
+      (tostring (system (string "cat " f))))
+"xyzzy"
+
+
+>>> (do (clean)
+        (system (string "echo abc >" (string td "/foo")))
+        (mvfile (string td "/foo") (string td "/bar"))
+        (filechars (string td "/bar")))
+"abc\n"
+
+
+>>> (let f (string td "/foo.arc")
+      (clean)
+      (writefile '(def MWiyhWKuZG (x) (* x 5)) f)
+      (load f)
+      (MWiyhWKuZG 6))
+30
