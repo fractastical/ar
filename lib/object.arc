@@ -169,3 +169,7 @@
                 `(set-attribute ,x ',k ,v))
               (pair args))
        (annotate 'object ,x))))
+
+(mac w/object (name . args)
+  `(letr ,name (object ,@args)
+     ,name))
