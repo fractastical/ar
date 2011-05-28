@@ -30,14 +30,18 @@
 
 (implicit fail)
 
+(mac fail? (x)
+  `(w/fail (uniq)
+     (is ,x fail)))
+
 (mac isnt/fail (var val then . else)
-  (w/uniq x
-    `(w/fail (uniq)
-       (let ,x ,val
-         (if (is ,x fail)
-           (do ,@else)
-           (let ,var ,x
-             ,then))))))
+  (w/uniq (x y)
+    `(let (,x ,y) (w/fail (uniq)
+                    (list ,val fail))
+       (if (is ,x ,y)
+         (do ,@else)
+         (let ,var ,x
+           ,then)))))
 
 
 ;=============================================================================
@@ -55,13 +59,28 @@
   (racket (racket-hash-remove! (rep tab) key))
   nil)
 
-
 (defset get-attribute (x k)
   (w/uniq g
     (list (list g x)
           `(get-attribute ,x ',g)
           `(fn (val) (set-attribute ,g ,k val)))))
 
+
+;=============================================================================
+;  Objects
+;=============================================================================
+
+(implicit self)
+
+#|
+(if (no y) x y)
+(if y y x)
+(or y x)
+|#
+
+(def call-w/self (x f . args)
+  (w/self (or self x) ; (if (object? self) self x)
+    (apply f args)))
 
 (def obj-attr (x n)
   (when (object? x)
@@ -82,6 +101,19 @@
     x
     'table))
 
+(extend isa (x y) (object? x)
+                  #|(and (object? x)
+                       (no:isa (type x) 'sym))|#
+  (zap type x)
+  (if (isa x 'sym)
+        (is x y)
+      (some y x)))
+  #|(when (isa x 'sym)
+    (zap list x))|#
+  #|(some y (if (isa x 'sym)
+                (list x)
+                x)))|#
+
 #|
 (extend type (x) (object? x)
   (isnt/fail x (get-attribute x 'type)
@@ -98,18 +130,19 @@
 (def str< (x y)
   (< (string x) (string y)))
 
-(def pretty-print-table (name tab)
+(def pretty-print-table (name tab (o f tab))
   (pr "(" name)
   (withs (k (sort str< (keys tab))
           s (1+ (len name))
           m (maxstrlen k))
 
     ((afn ((x . y))
-       (pr " " x (padding x m) " " (tab x))
-       (when y
-         (prn)
-         (pr:newstring s #\space)
-         (self y)))
+       (when x
+         (pr " " x (padding x m) " " (f x))
+         (when y
+           (prn)
+           (pr:newstring s #\space)
+           (self y))))
      k))
   (pr ")"))
 
@@ -120,9 +153,19 @@
       (prn (tab x))
       (pr:newstring s #\space))|#
 
-(def print-object (tab port)
+(def print-object (x port)
+  #|(when (fail? x<-keys)
+    (= x (listtab:collect:each (k v) x
+           (yield:list k (x k))))
+    (prn x))|#
+
   (w/stdout port
-    (pretty-print-table "object" tab)))
+    (pretty-print-table "object"
+                        x
+                        (if (fail? x<-keys)
+                              (fn (k)
+                                (get-attribute x k))
+                               x))))
 
 #|  (each (k v) x
     (disp " " port)
@@ -132,27 +175,25 @@
     (disp "\n       " port))|#
 
 (extend print (p x port) (object? x)
-  (isnt/fail x (get-attribute x 'print)
-    (disp (x) port)
+  (isnt/fail print (get-attribute x 'print)
+    (disp (call-w/self x print) port)
     (isnt/fail type (get-attribute x 'type)
       (orig p x port)
       (print-object x port))))
 
 (extend len (x) (object? x)
   (isnt/fail len (get-attribute x 'len)
-    (len)
+    (call-w/self x len)
     (isnt/fail keys (get-attribute x 'keys)
-      (len (keys))
+      (len (call-w/self x keys))
       (len (rep x)))))
 
 (extend maptable (f tab) (object? tab)
-  (let old fail
-    (isnt/fail keys (get-attribute tab 'keys)
-      (w/fail old
-        (each k (keys)
+  (isnt/fail keys (get-attribute tab 'keys)
+    (do (each k (call-w/self tab keys)
           (f k (tab k)))
         tab)
-      (orig f (rep tab)))))
+    (orig f (rep tab))))
 
 
 #|(def ar-apply (x . args)
@@ -168,12 +209,14 @@
     (apply (rep x) args)))|#
 
 
+;; inefficient
 (extend coerce (x type . r) (and (is type 'fn)
                                  (object? x))
-  (isnt/fail x (get-attribute x 'call)
-    x
-    (fn (k (o d fail))
-      (get-attribute x k d))))
+  (isnt/fail call (get-attribute x 'call)
+    (fn args
+      (apply call-w/self x call args))
+    (fn args
+      (apply get-attribute x args))))
     ;(orig (rep x) type)))
 
   #|
@@ -186,14 +229,44 @@
   |#
 
 (extend sref (x v k) (object? x)
-  (isnt/fail x (get-attribute x 'set)
-    (x k v)
+  (isnt/fail set (get-attribute x 'set)
+    (call-w/self x set k v)
     (set-attribute x k v)))
 
 
-(def del (x)
-  ; unimplemented
-  )
+(= del-rules* (table))
+
+(mac defdel (name parms . body)
+  `(= (del-rules* ',name) (fn ,parms ,@body)))
+
+(def dref (x k)
+  (case (type x)
+    table (racket (racket-hash-remove! x k))
+          (err "cannot delete " x))
+  nil)
+
+(mac del (x)
+  (when (ac-ssyntax x)
+    (zap ac-expand-ssyntax x))
+
+  (if #|(ac-ssyntax x)
+        `(del ,(ac-expand-ssyntax x))|#
+      (acons x)
+        (iflet d (del-rules* (car x))
+          (apply d (cdr x))
+          `(dref ,@x))
+      (err "unimplemented")))
+#|  (case (car x)
+    get-attribute `(del-attribute ,@(cdr x))
+                   (err "unimplemented")))|#
+
+(extend dref (x k) (object? x)
+  (isnt/fail del (get-attribute x 'del)
+    (call-w/self x del k)
+    (del-attribute x k)))
+
+(defdel get-attribute (x y)
+  `(del-attribute ,x ,y))
 
 
 (mac object args
@@ -203,7 +276,3 @@
                 `(set-attribute ,x ',k ,v))
               (pair args))
        (annotate 'object ,x))))
-
-(mac w/object (name . args)
-  `(letr ,name (object ,@args)
-     ,name))

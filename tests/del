@@ -1,0 +1,81 @@
+>>> a
+error: reference to undefined identifier: a
+
+>>> (= a nil)
+nil
+
+>>> a
+nil
+
+>>> (del a)
+nil
+
+>>> a
+error: reference to undefined identifier: a
+
+
+>>> (let a nil
+      a)
+nil
+
+>>> (let a nil
+      (del a)
+      a)
+error: reference to undefined identifier: a
+
+
+==============================================================================
+
+
+>>> (= foo (obj a 1 b 2))
+#hash((a . 1)
+      (b . 2))
+
+
+>>> (keys foo)
+(a b)
+
+>>> (foo 'a)
+1
+
+>>> (foo 'b)
+2
+
+
+>>> (del (foo 'a))
+nil
+
+>>> (keys foo)
+(b)
+
+>>> (foo 'a)
+nil
+
+>>> (foo 'a (uniq))
+g...
+
+>>> (foo 'b)
+2
+
+
+>>> (del (foo 'b))
+nil
+
+>>> (keys foo)
+nil
+
+>>> (foo 'a)
+nil
+
+>>> (foo 'a (uniq))
+g...
+
+>>> (foo 'b)
+nil
+
+>>> (foo 'b (uniq))
+g...
+
+
+>>> foo
+#hash()
