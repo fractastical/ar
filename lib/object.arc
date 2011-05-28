@@ -72,6 +72,14 @@
 
 (implicit self)
 
+(mac object args
+  (w/uniq x
+    `(let ,x (table)
+       ,@(map (fn ((k v))
+                `(set-attribute ,x ',k ,v))
+              (pair args))
+       (annotate 'object ,x))))
+
 #|
 (if (no y) x y)
 (if y y x)
@@ -92,22 +100,37 @@
 ;(extend not (x) (is x fail) t)
 
 
-(let orig type
+(with (type type
+       is   is)
+
   (def object? (x)
-    (is (orig x) 'object)))
+    (is (type x) 'object)))
+
+
+(def make-multi-is (x)
+  (object ;type  nil
+          keys  (fn ()  x)
+          is    (fn (y) (some y x))
+          print (fn ()  (string "#<is [" (intersperse #\space x ) "]>"))))
 
 (extend type (x) (object? x)
   (isnt/fail x (get-attribute x 'type)
-    x
+    (if (isa x 'sym)
+          x
+          (make-multi-is x))
     'table))
 
-(extend isa (x y) (object? x)
-                  #|(and (object? x)
+
+(extend is (x y) (obj-attr x 'is)
+  (call-w/self x it y))
+
+#|(and (object? x)
                        (no:isa (type x) 'sym))|#
+#|(extend isa (x y) (object? x)
   (zap type x)
   (if (isa x 'sym)
         (is x y)
-      (some y x)))
+      (some y x)))|#
   #|(when (isa x 'sym)
     (zap list x))|#
   #|(some y (if (isa x 'sym)
@@ -267,12 +290,3 @@
 
 (defdel get-attribute (x y)
   `(del-attribute ,x ,y))
-
-
-(mac object args
-  (w/uniq x
-    `(let ,x (table)
-       ,@(map (fn ((k v))
-                `(set-attribute ,x ',k ,v))
-              (pair args))
-       (annotate 'object ,x))))

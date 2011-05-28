@@ -21,7 +21,7 @@ table
 cons
 
 >>> (type (object type '(cons table)))
-(cons table)
+#<is [cons table]>
 
 
 >>> (isa (object) 'table)
