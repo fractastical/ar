@@ -1,3 +1,33 @@
+;=============================================================================
+;  Ssyntax
+;=============================================================================
+
+(def object-ssyntax? (x)
+  (and (isa x 'sym)
+       (posmatch "<-" (string x))))
+
+(extend ac-ssyntax (x) (object-ssyntax? x) t)
+
+#|(let orig ac-ssyntax
+  (= ac-ssyntax (fn (x)
+                  (or (object-ssyntax? x)
+                      (orig x)))))|#
+
+(def ac-expand-object (x)
+  (let pos (object-ssyntax? x)
+    (zap string x)
+    (with (l (cut x 0 pos)
+           r (cut x (+ pos 2)))
+      `(get-attribute ,(sym l) ',(sym r)))))
+
+(defrule ac-expand-ssyntax (object-ssyntax? sym)
+  (ac-expand-object sym))
+
+
+;=============================================================================
+;  fail
+;=============================================================================
+
 (implicit fail)
 
 (mac isnt/fail (var val then . else)
@@ -9,6 +39,10 @@
            (let ,var ,x
              ,then))))))
 
+
+;=============================================================================
+;  Attributes
+;=============================================================================
 
 (def get-attribute (tab key (o default fail))
   (racket-hash-ref (rep tab) key default))
