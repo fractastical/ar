@@ -27,6 +27,9 @@ cons
 >>> (isa (object) 'table)
 t
 
+>>> (isa (object) 'object)
+t
+
 >>> (isa (object type 'cons) 'cons)
 t
 

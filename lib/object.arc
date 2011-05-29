@@ -113,16 +113,27 @@
           is    (fn (y) (some y x))
           print (fn ()  (string "#<is [" (intersperse #\space x ) "]>"))))
 
+#|(def object? (x)
+  (is (type x) 'object))
+|#
+
 (extend type (x) (object? x)
   (isnt/fail x (get-attribute x 'type)
     (if (isa x 'sym)
           x
           (make-multi-is x))
-    'table))
+    ;'table
+    (make-multi-is '(table object))
+    ))
 
 
-(extend is (x y) (obj-attr x 'is)
-  (call-w/self x it y))
+
+; tests for multi-argument is
+; (is 'cons (make-multi-is '(cons table)) (make-multi-is '(table cons)))
+; (is (make-multi-is '(cons table)) 'cons (make-multi-is '(table cons)))
+; (is (make-multi-is '(cons table)) (make-multi-is '(table cons)) 'cons)
+(extend is (x . rest) (obj-attr x 'is)
+  (apply call-w/self x it rest))
 
 #|(and (object? x)
                        (no:isa (type x) 'sym))|#
@@ -232,7 +243,7 @@
     (apply (rep x) args)))|#
 
 
-;; inefficient
+;; inefficient, use defcall later
 (extend coerce (x type . r) (and (is type 'fn)
                                  (object? x))
   (isnt/fail call (get-attribute x 'call)
@@ -257,16 +268,21 @@
     (set-attribute x k v)))
 
 
+;=============================================================================
+;  Deletion
+;=============================================================================
+
 (= del-rules* (table))
 
 (mac defdel (name parms . body)
   `(= (del-rules* ',name) (fn ,parms ,@body)))
 
-(def dref (x k)
+(def dref (x l (o r) (o s 1))
   (case (type x)
-    table (racket (racket-hash-remove! x k))
-          (err "cannot delete " x))
-  nil)
+    table (racket (racket-hash-remove! x l))
+    cons  (join (cut x 0 l)
+                (cut x (or r (1+ l))))
+          (err "cannot delete" x)))
 
 (mac del (x)
   (when (ac-ssyntax x)
@@ -277,11 +293,22 @@
       (acons x)
         (iflet d (del-rules* (car x))
           (apply d (cdr x))
-          `(dref ,@x))
+          `(do1 ,x
+                (zap dref ,@x)))
       (err "unimplemented")))
 #|  (case (car x)
     get-attribute `(del-attribute ,@(cdr x))
                    (err "unimplemented")))|#
+
+(defdel car (x)
+  `(do1 (car ,x)
+        (zap cdr ,x)))
+
+(defdel cdr (x)
+  `(do1 (cdr ,x)
+        (scdr ,x nil)))
+
+
 
 (extend dref (x k) (object? x)
   (isnt/fail del (get-attribute x 'del)

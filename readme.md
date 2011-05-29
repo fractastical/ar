@@ -5,7 +5,7 @@ Goals of ar include:
 
 * Make Arc (even more!) hackable, enabling people to create their
   own personal programming language -- beyond what can be done just
-  with with macros.
+  with macros.
 
 * Provide a complete implementation of Arc 3.1, as one of the
   available languages based on ar.
@@ -124,6 +124,8 @@ Bug reports are *greatly* appreciated!
 Todo
 ----
 
+* Move del from lib/object.arc to arc.arc (or base.arc)
+* Rename letr to let=
 * Move sread into ac.ss, then use sread rather than ar-read (don't
   forget to delete ar-read after the move is completed)
 * Remove dir from io.arc, since it's now defined in arc.arc. Should
