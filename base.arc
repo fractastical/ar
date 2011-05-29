@@ -502,7 +502,7 @@
                         (list (+ (list g (car expr))
                                  (mappend list argsyms (cdr expr)))
                               `(,g ,@argsyms)
-                              `(fn (,h) (sref ,g ,h ,(car argsyms))))))))))))
+                              `(fn (,h) (sref ,g ,h ,@argsyms)))))))))))
 
 
 ;=============================================================================

@@ -1,0 +1,339 @@
+>>> (load "../lib/slices.arc")
+nil
+
+
+==============================================================================
+
+
+>>> (= foo '(1 2 3 4 5 6 7 8 9))
+(1 2 3 4 5 6 7 8 9)
+
+
+>>> (foo nil)
+error: Can't < nil 0
+
+
+>>> (foo 0 1)
+(1)
+
+>>> (foo 0 2)
+(1 2)
+
+
+>>> (foo 2)
+3
+
+>>> (foo 2 nil)
+(3 4 5 6 7 8 9)
+
+
+>>> (foo 0)
+1
+
+>>> (foo 0 nil)
+(1 2 3 4 5 6 7 8 9)
+
+>>> (foo nil nil)
+(1 2 3 4 5 6 7 8 9)
+
+
+>>> (foo 2 -1)
+(3 4 5 6 7 8)
+
+>>> (foo 2 -2)
+(3 4 5 6 7)
+
+
+>>> (foo -1)
+9
+
+>>> (foo -2)
+8
+
+
+>>> (foo -1 2)
+error: start index must be smaller than the end index
+
+>>> (foo 2 -1)
+(3 4 5 6 7 8)
+
+
+>>> (foo -1 -5)
+error: start index must be smaller than the end index
+
+>>> (foo -5 -1)
+(5 6 7 8)
+
+
+>>> (foo 3 5)
+(4 5)
+
+
+==============================================================================
+
+
+>>> (= foo '(1 2 3 4))
+(1 2 3 4)
+
+
+>>> (= (foo 0 1) '(5))
+(5)
+
+>>> foo
+(5 2 3 4)
+
+
+>>> (= (foo 0 1) '(6 7 8))
+(6 7 8)
+
+>>> foo
+(6 7 8 2 3 4)
+
+
+>>> (= (foo 0 3) '(9))
+(9)
+
+>>> foo
+(9 2 3 4)
+
+
+>>> (= (foo 0 1) '(6 7 8))
+(6 7 8)
+
+>>> foo
+(6 7 8 2 3 4)
+
+
+>>> (= (foo 0 3) nil)
+nil
+
+>>> foo
+(2 3 4)
+
+
+>>> (= (foo 2 3) '(5 6 7 8))
+(5 6 7 8)
+
+>>> foo
+(2 3 5 6 7 8)
+
+
+>>> (= (foo 1 5) '(1 9 10 20 30))
+(1 9 10 20 30)
+
+>>> foo
+(2 1 9 10 20 30 8)
+
+
+>>> (= (foo 2 6) nil)
+nil
+
+>>> foo
+(2 1 8)
+
+
+>>> (= (foo 1 -1) '(3 4 5 6))
+(3 4 5 6)
+
+>>> foo
+(2 3 4 5 6 8)
+
+
+>>> (= (foo 1 -2) nil)
+nil
+
+>>> foo
+(2 6 8)
+
+
+>>> (= (foo 0 nil) '(1 2 3 4 5 6 7 8 9))
+(1 2 3 4 5 6 7 8 9)
+
+>>> foo
+(1 2 3 4 5 6 7 8 9)
+
+
+>>> (= (foo 0 nil) '(2 1 8))
+(2 1 8)
+
+>>> foo
+(2 1 8)
+
+
+>>> (= (foo 1 nil) '(3 4 5 6))
+(3 4 5 6)
+
+>>> foo
+(2 3 4 5 6)
+
+
+>>> (= cdr-foo (cdr foo))
+(3 4 5 6)
+
+>>> (= (foo 1 nil) '(1 0))
+(1 0)
+
+>>> foo
+(2 1 0)
+
+>>> cdr-foo
+(1 0)
+
+
+>>> (= (foo 1 88483413813110505959238) '(3 4 5 6 7))
+(3 4 5 6 7)
+
+>>> foo
+(2 3 4 5 6 7)
+
+>>> cdr-foo
+(3 4 5 6 7)
+
+
+>>> (= (foo 0 nil) '(2 3 4 5 6 7))
+(2 3 4 5 6 7)
+
+>>> foo
+(2 3 4 5 6 7)
+
+
+>>> (= (foo -1 -5) nil)
+error: start index must be smaller than the end index
+
+>>> (= (foo -5 -1) nil)
+nil
+
+>>> foo
+(2 7)
+
+
+>>> (= (foo 0 nil) '(2 3 4 5 6 7))
+(2 3 4 5 6 7)
+
+>>> foo
+(2 3 4 5 6 7)
+
+
+>>> (= (foo -5 nil) nil)
+nil
+
+>>> foo
+(2)
+
+
+
+>>> (= (foo 0 nil) '(1 2 3 4 5 6 7))
+(1 2 3 4 5 6 7)
+
+>>> foo
+(1 2 3 4 5 6 7)
+
+
+>>> (= (foo -3 2) nil)
+error: start index must be smaller than the end index
+
+>>> (= (foo 2 -2) nil)
+nil
+
+>>> foo
+(1 2 6 7)
+
+
+>>> (= (foo 0 nil) '(1 2 3 4 5 6 7))
+(1 2 3 4 5 6 7)
+
+>>> foo
+(1 2 3 4 5 6 7)
+
+
+>>> (= (foo 5 2) nil)
+error: start index must be smaller than the end index
+
+>>> foo
+(1 2 3 4 5 6 7)
+
+
+>>> (= (foo nil nil) '(0 nil 5 10 15 20 nil))
+(0 nil 5 10 15 20 nil)
+
+>>> foo
+(0 nil 5 10 15 20 nil)
+
+
+>>> (= (foo nil nil) nil)
+error: cannot set the entire list to nil
+
+>>> (= (foo 0 nil) nil)
+error: cannot set the entire list to nil
+
+>>> (= (foo 0 4249290137792) nil)
+error: cannot set the entire list to nil
+
+>>> foo
+(0 nil 5 10 15 20 nil)
+
+
+>>> (= (foo 1 2) nil)
+nil
+
+>>> foo
+(0 5 10 15 20 nil)
+
+
+>>> (= (foo -1 nil) nil)
+nil
+
+>>> foo
+(0 5 10 15 20)
+
+
+>>> (= (foo 0 -1) nil)
+nil
+
+>>> foo
+(20)
+
+
+==============================================================================
+
+
+>>> (= (foo 0 nil) '(nil))
+(nil)
+
+>>> foo
+(nil)
+
+
+>>> (= (foo 0 1) nil)
+error: cannot set the entire list to nil
+
+>>> foo
+(nil)
+
+
+>>> (= (foo 0 1) '(nil nil))
+(nil nil)
+
+>>> foo
+(nil nil)
+
+
+>>> (= (foo 1 2) nil)
+nil
+
+>>> foo
+(nil)
+
+
+>>> (= (foo 0 nil) '(nil nil))
+(nil nil)
+
+>>> foo
+(nil nil)
+
+
+>>> (= (foo 0 1) nil)
+nil
+
+>>> foo
+(nil)

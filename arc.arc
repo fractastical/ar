@@ -328,7 +328,8 @@
   (sref x val 0))
 
 (def scdr (x val)
-  ((racket racket-set-mcdr!) x val))
+  ((racket racket-set-mcdr!) x val)
+  val)
 
 (def warn (msg . args)
   (w/stdout stderr
@@ -343,9 +344,9 @@
                         nil))
 
 (def nthcdr (n xs)
-  (if (not n) xs
-      (> n 0) (nthcdr (1- n) (cdr xs))
-              xs))
+  (and xs (if (not n)  xs
+              (> n 0)  (nthcdr (1- n) (cdr xs))
+                       xs)))
 
 ; Generalization of pair: (tuples x) = (pair x)
 
@@ -992,7 +993,7 @@
   (list (cut seq 0 pos) (cut seq pos)))
 
 (implicit msec racket-current-milliseconds)
-(= (sig 'msec nil))
+(= (sig 'msec) nil)
 
 (mac time (expr)
   (w/uniq (t1 t2)
@@ -1095,7 +1096,7 @@ alternate version; is it any faster?
 (def number (n) (in (type n) 'int 'num))
 
 (implicit seconds racket-current-seconds)
-(= (sig 'seconds nil))
+(= (sig 'seconds) nil)
 
 (def since (t1) (- (seconds) t1))
 
