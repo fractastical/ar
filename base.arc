@@ -436,7 +436,7 @@
 
 (defrule print (isa x 'table)
   (disp "#hash(" port)
-  (printwith-table primitive x (sort < (keys x)) port)
+  (printwith-table primitive x (keys x) port) ; (sort < (keys x))
   (disp ")" port))
 
 
@@ -526,6 +526,7 @@
 (def call-with-semaphore (sema func)
   ((racket call-with-semaphore) sema (fn () (func))))
 
+(assign racket-#t (racket "#t"))
 (assign racket-#f (racket "#f"))
 
 (def nil->racket-false (x)

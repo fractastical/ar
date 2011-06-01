@@ -52,7 +52,7 @@
       (cond (exec-all
               (for-each load files-to-load))
             ((pair? files-to-load)
-              (load-curdir (car files-to-load))))
+              (load (car files-to-load))))
 
       (when (or run-repl (null? files-to-load))
         (parameterize ((current-directory (g srcdir)))
