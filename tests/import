@@ -195,7 +195,7 @@ error: reference to undefined identifier: ppr
 
 
 >>> (sort < (keys pprint))
-
+(bodops* lpar oneline* ppr ppr-call ppr-progn pprest rpar sp write-spaced)
 
 
 >>> (tostring (pprint!ppr "foobar"))
@@ -310,3 +310,15 @@ error: reference to undefined identifier: qux
 
 >>> (eval 'qux)
 error: reference to undefined identifier: qux
+
+
+==============================================================================
+
+
+>>> (do (= foo (new-namespace))
+        (eval '(= bar (fn () qux)) foo)
+        (prn foo!bar)
+        (= foo!qux "hiya")
+        (foo!bar))
+#<procedure>
+"hiya"u

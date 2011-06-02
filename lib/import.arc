@@ -1,5 +1,6 @@
 (load "object.arc")
 
+; look into replacing these with ar equivalents
 (def racket-get (name k (o d fail))
   (racket-namespace-variable-value
     k
@@ -71,6 +72,7 @@
     val
     (err "undefined variable:" k)))
 
+; look into replacing this with an ar equivalent
 (mac racket-q (x)
   `(racket (racket-quasiquote
              (racket-quote
