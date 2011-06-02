@@ -81,8 +81,7 @@
 (def empty (seq)
   (or (not seq)
       (is seq '||)
-      (and (in (type seq) 'string 'table)
-           (is (len seq) 0))))
+      (is (len seq) 0)))
 
 
 (def int (x (o b 10))
@@ -344,9 +343,13 @@
                         nil))
 
 (def nthcdr (n xs)
-  (and xs (if (not n)  xs
-              (> n 0)  (nthcdr (1- n) (cdr xs))
-                       xs)))
+  (if (not n)           xs
+      (and (> n 0) xs)  (nthcdr (1- n) (cdr xs))
+                        xs))
+
+(def lastcdr (xs)
+  (nthcdr (1- (len xs)) xs))
+
 
 ; Generalization of pair: (tuples x) = (pair x)
 
