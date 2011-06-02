@@ -802,12 +802,12 @@
 (define %%internal-quote      (gensym))
 
 (add-ac-build-step
- (lambda (arc)
-   (set arc '%%internal-assign     %%internal-assign)
-   (set arc '%%internal-fn         %%internal-fn)
-   (set arc '%%internal-if         %%internal-if)
-   (set arc '%%internal-quasiquote %%internal-quasiquote)
-   (set arc '%%internal-quote      %%internal-quote)))
+  (lambda (arc)
+    (set arc '%%internal-assign     %%internal-assign)
+    (set arc '%%internal-fn         %%internal-fn)
+    (set arc '%%internal-if         %%internal-if)
+    (set arc '%%internal-quasiquote %%internal-quasiquote)
+    (set arc '%%internal-quote      %%internal-quote)))
 
 (ac-mac assign (n v)
   `(,%%internal-assign ,n ,v))

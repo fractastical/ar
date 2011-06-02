@@ -277,12 +277,20 @@
 (mac defdel (name parms . body)
   `(= (del-rules* ',name) (fn ,parms ,@body)))
 
-(def dref (x l (o r) (o s 1))
-  (case (type x)
-    table (racket (racket-hash-remove! x l))
-    cons  (join (cut x 0 l)
-                (cut x (or r (1+ l))))
-          (err "cannot delete" x)))
+(let fail (uniq)
+  (def dref (x l (o r fail) (o s fail))
+    ;(prn x)
+    (case (type x)
+      table (do (racket (racket-hash-remove! x l))
+                x)
+      cons  (do (if (and (is r fail)
+                         (is s fail))
+                    (= (x l (1+ l)) nil)
+                    (= (x l r s) nil))
+                #|(join (cut x 0 l)
+                      (cut x (or r (1+ l))))|#
+                x)
+            (err "cannot delete" x))))
 
 (mac del (x)
   (when (ac-ssyntax x)
@@ -291,29 +299,28 @@
   (if #|(ac-ssyntax x)
         `(del ,(ac-expand-ssyntax x))|#
       (acons x)
-        (iflet d (del-rules* (car x))
-          (apply d (cdr x))
-          `(do1 ,x
-                (zap dref ,@x)))
+        `(do1 ,x
+              ,(iflet d (del-rules* (car x))
+                 (apply d (cdr x))
+                 `(zap dref ,@x)))
       (err "unimplemented")))
 #|  (case (car x)
     get-attribute `(del-attribute ,@(cdr x))
                    (err "unimplemented")))|#
 
 (defdel car (x)
-  `(do1 (car ,x)
-        (zap cdr ,x)))
+  `(zap cdr ,x))
 
 (defdel cdr (x)
-  `(do1 (cdr ,x)
-        (scdr ,x nil)))
+  `(scdr ,x nil))
 
 
 
-(extend dref (x k) (object? x)
+(extend dref (x k . rest) (object? x)
   (isnt/fail del (get-attribute x 'del)
-    (call-w/self x del k)
-    (del-attribute x k)))
+    (apply call-w/self x del k rest)
+    (del-attribute x k))
+  x)
 
 (defdel get-attribute (x y)
   `(del-attribute ,x ,y))

@@ -12,7 +12,7 @@ nil
 
 
 >>> (type (object))
-table
+#<is [table object]>
 
 >>> (type (object type 'table))
 table
@@ -273,7 +273,7 @@ nil
 
 
 >>> (del foo<-set)
-nil
+#<procedure>
 
 >>> (= (foo 'x) 26)
 26
@@ -301,10 +301,10 @@ nil
 
 
 >>> (macex1 '(del foo<-x))
-(del-attribute foo (quote x))
+(do1 (get-attribute foo (quote x)) (del-attribute foo (quote x)))
 
 >>> (macex1 '(del (get-attribute foo 'x)))
-(del-attribute foo (quote x))
+(do1 (get-attribute foo (quote x)) (del-attribute foo (quote x)))
 
 
 >>> (= foo (object a   1
@@ -326,19 +326,19 @@ nil
 
 >>> (del (foo 'a))
 deleting a which is 1
-nil
+1
 
 >>> (del (foo 'b))
 deleting b which is 2
-nil
+2
 
 >>> (del foo!a)
 deleting a which is 1
-nil
+1
 
 >>> (del foo!b)
 deleting b which is 2
-nil
+2
 
 
 >>> foo<-a
@@ -349,7 +349,7 @@ nil
 
 
 >>> (del foo<-a)
-nil
+1
 
 >>> foo<-a
 nil
@@ -359,7 +359,7 @@ nil
 
 
 >>> (del foo<-b)
-nil
+2
 
 >>> foo<-a
 nil
