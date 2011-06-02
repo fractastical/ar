@@ -22,7 +22,7 @@
   v)
 
 
-(def cut (x (o start) (o end))
+(def cut (x (o start) (o end) (o s))
   (let len (len x)
     (if (no end)    (=  end len)
         (< end 0)   (++ end len))
@@ -34,11 +34,17 @@
     (err "start index must be smaller than the end index"))
 
   (if (isa x 'string)
-      (let s2 (newstring (- end start))
-        (for i 0 (- end start 1)
-          (= (s2 i) (x (+ start i))))
-        s2)
-      (firstn (- end start) (nthcdr start x))))
+        (let s2 (newstring (- end start))
+          (for i 0 (- end start 1)
+            (= (s2 i) (x (+ start i))))
+          s2)
+
+      (let x (firstn (- end start) (nthcdr start x))
+        ; write tests!
+        (if s (if (is s 0) (err "step cannot be 0") ; should return nil?
+                  (< s 0)  (rev:map car (tuples x (abs s)))
+                           (map car (tuples x s)))
+              x))))
 
 
 (let fail (uniq)
