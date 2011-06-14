@@ -160,19 +160,17 @@
   (multisubst name-rules* (string x)))
 
 (def fncall (f . args)
-  (let x (errsafe:eval f)
-    (if (isa x 'mac)
-          (tojs:macex:cons f args)
-        (string (mangle-name f) "(" (addsep "," args) ")"))))
+  (string (mangle-name f) "(" (addsep "," args) ")"))
 
 
 (def tojs (x)
   (err "unknown expression" x))
 
-(extend tojs (x) (acons x)
-  (if (acons:car x)
-        (apply fncall (tojs:car x) (cdr x))
-      (apply fncall x)))
+(extend tojs (expr) (acons expr)
+  (let x (macex expr)
+    (if (is x expr)
+          (apply fncall (tojs:car x) (cdr x))
+        (tojs x))))
 
 (extend tojs (x) (isa x 'string)
   (string "\"" x "\""))
