@@ -54,9 +54,7 @@ undefined
 (function () {})
 
 > (tojs '(fn () nil))
-(function () {
-    return undefined;
-})
+(function () {})
 
 > (tojs '(fn () (+ 10 5)))
 (function () {
@@ -114,9 +112,8 @@ undefined
 
 > (tojs '(fn () (let a 10 a)))
 (function () {
-    return (function (a) {
-        return a;
-    })(10);
+    var a = 10;
+    return a;
 })
 
 > (tojs '(fn () (let a 10 a) (let a 10 a)))
@@ -184,8 +181,8 @@ foo
 
 
 > (tojs '(in x "foo" "bar" "qux"))
-(function (__arc_gensym_35) {
-    return ((__arc_gensym_35 === "foo") || (__arc_gensym_35 === "bar") || (__arc_gensym_35 === "qux"));
+(function (__arc_gensym_48) {
+    return ((__arc_gensym_48 === "foo") || (__arc_gensym_48 === "bar") || (__arc_gensym_48 === "qux"));
 })(x)
 
 > (tojs '(or "foo" "bar" "qux"))
@@ -211,9 +208,7 @@ foo
 
 
 > (tojs '(def foo () nil))
-var foo = (function () {
-    return undefined;
-});
+var foo = (function () {});
 
 > (tojs '(def foo () (def bar nil)))
 var foo = (function () {
@@ -228,9 +223,7 @@ var foo = (function () {
 var foo = (function () {
     return bar = (function () {
         return qux = (function () {
-            return corge = (function () {
-                return undefined;
-            });
+            return corge = (function () {});
         });
     });
 });
@@ -241,7 +234,7 @@ var foo = (function () {
              (def bar ()
                (def qux ()
                 (def corge () nil))))))
-var foo=(function(){return bar=(function(){return qux=(function(){return corge=(function(){return undefined;});});});});
+var foo=(function(){return bar=(function(){return qux=(function(){return corge=(function(){});});});});
 
 
 > (tojs '(= (foo 'bar) "qux"))
@@ -276,3 +269,125 @@ console.error("foo", "bar", "qux")
 > (tojs '(list #\a #\b #\newline #\space))
 ["a", "b", "
 ", " "]
+
+
+> (tojs '(fn ()
+           (let a 5)))
+(function () {
+    var a = 5;
+})
+
+
+> (tojs '(fn ()
+           (let a 5)
+           (+ a 50)))
+(function () {
+    (function (a) {})(5);
+    return (a + 50);
+})
+
+
+> (tojs '(fn ()
+           (let a 5 nil)))
+(function () {
+    var a = 5;
+})
+
+
+> (tojs '(fn ()
+           (let a 5 a)))
+(function () {
+    var a = 5;
+    return a;
+})
+
+
+> (tojs '(fn ()
+           (let a 5
+             (++ a 50)
+             (+ 20 a))))
+(function () {
+    var a = 5;
+    a = (a + 50);
+    return (20 + a);
+})
+
+
+> (tojs '(let a 5
+           (++ a 50)
+           (+ 20 a)))
+(function (a) {
+    a = (a + 50);
+    return (20 + a);
+})(5)
+
+
+> (tojs '(fn ()
+           (do a b c)))
+(function () {
+    a;
+    b;
+    return c;
+})
+
+
+> (tojs '(fn ()
+           (do a b c)
+           nil))
+(function () {
+    a;
+    b;
+    c;
+})
+
+
+> (tojs '(fn ()
+           (do a b c nil)))
+(function () {
+    a;
+    b;
+    c;
+})
+
+
+> (tojs '(fn ()
+           (do a b c nil)
+           nil))
+(function () {
+    a;
+    b;
+    c;
+    undefined;
+})
+
+
+> (tojs '(fn ()
+           (do a b c)
+           (let a 10 a)))
+(function () {
+    a;
+    b;
+    c;
+    return (function (a) {
+        return a;
+    })(10);
+})
+
+
+> (tojs '(fn ()
+           (do a b c)
+           a))
+(function () {
+    a;
+    b;
+    c;
+    return a;
+})
+
+
+> (tojs '(do a b c))
+(function () {
+    a;
+    b;
+    return c;
+})()

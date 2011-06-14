@@ -48,15 +48,37 @@
                     (= origindent indent))
      ,@body))
 
+
+(def optimizefn (x) x)
+
+(extend optimizefn ((x . rest)) (caris x 'do)
+  (join (cdr x) rest))
+
+(extend optimizefn ((x . rest)) (and (caris x 'let)
+                                     (no rest))
+  (cons (sym:string "var " (x 1) spaces "=" spaces (x 2))
+        (or (nthcdr 3 x) (list nil))))
+
+#|
+;; should be in arc.arc
+(mac whenis (x y . body)
+  `(when (is ,x ,y) ,@body))|#
+
 (defjs fn (parms . body)
   "(function" spaces (tojsparms parms) spaces "{"
-  (if body linesep)
+
+  (do (= body (optimizefn body)) nil)
 
   (reindent/if local
     (w/local t
-      (let x (map tojs body)
-        (setlast x (string "return " it))
-        (map line x))))
+      (= body (map tojs body))
+
+      (if (is (last body) "undefined")
+        (zap cut body 0 -1)
+        (setlast body (string "return " it)))
+
+      (when body
+        (cons linesep (map line body)))))
 
   (and local body indent)
   "})")
@@ -154,13 +176,23 @@
   (binand "===" args))
 
 
-(= name-rules* '(("-" "_")))
+(= name-rules* '(("-"  "_")
+                 ("w/" "with_")))
 
 (def mangle-name (x)
   (multisubst name-rules* (string x)))
 
 (def fncall (f . args)
   (string (mangle-name f) "(" (addsep "," args) ")"))
+
+
+(defjs mac (name parms . body)
+  (do (eval `(assign ,name (annotate 'mac (fn ,parms ,@body))))
+      nil))
+
+#|(mac mac (name parms . body)
+  `(do (assign ,name (annotate 'mac (fn ,parms ,@body)))
+       nil))|#
 
 
 (def tojs (x)
@@ -188,6 +220,13 @@
   (apply it (cdr x)))
 
 
-(def arc2js (arc js)
+(def dispfile (x f)
+  (w/outfile o f (disp x o)))
 
-  )
+(def arc2js (arc js)
+  (w/infile f arc
+    (w/uniq eof
+      (let x (string:intersperse (string linesep linesep)
+               (rem empty (drain (tojs:read f eof) eof)))
+        (dispfile x js))))
+  t)
