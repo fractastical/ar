@@ -1,0 +1,82 @@
+> (use arc2js)
+
+
+> (tojs '(+ 10))
+"10"
+
+> (tojs '(+ 10 5))
+"10 + 5"
+
+> (tojs '(+ 10 5 6))
+"10 + 5 + 6"
+
+
+> (tojs "foobar")
+"\"foobar\""
+
+> (tojs '(+ "foobar" 50))
+"\"foobar\" + 50"
+
+> (tojs '(+ 10 5 6 "foobar"))
+"10 + 5 + 6 + \"foobar\""
+
+
+> (tojs nil)
+"undefined"
+
+> (tojs '(is x nil))
+"x === undefined"
+
+
+> (tojs '(fn ()))
+"(function () {})"
+
+> (tojs '(fn () nil))
+"(function () {\n    return undefined;\n})"
+
+> (tojs '(fn () (+ 10 5)))
+"(function () {\n    return 10 + 5;\n})"
+
+> (tojs '(fn (x) (+ 10 5)))
+"(function (x) {\n    return 10 + 5;\n})"
+
+> (tojs '(fn (x y) (+ 10 5)))
+"(function (x, y) {\n    return 10 + 5;\n})"
+
+> (tojs '(fn (x y z) (+ 10 5)))
+"(function (x, y, z) {\n    return 10 + 5;\n})"
+
+> (tojs '(fn (x) (+ x 5)))
+"(function (x) {\n    return x + 5;\n})"
+
+
+> (tojs '(fn (x) (foo x 5)))
+"(function (x) {\n    return foo(x, 5);\n})"
+
+> (tojs '(fn (x) (foo-bar x 5)))
+"(function (x) {\n    return foo_bar(x, 5);\n})"
+
+> (tojs '(fn (x) (foo_bar x 5)))
+"(function (x) {\n    return foo_bar(x, 5);\n})"
+
+
+> (tojs '(fn (x) (+ 10 5) (foo-bar x 5)))
+"(function (x) {\n    10 + 5;\n    return foo_bar(x, 5);\n})"
+
+
+> (w/whitespace minify
+    (tojs '(fn (x y z) (+ 10 5))))
+"(function(x,y,z){return 10+5;})"
+
+
+> (tojs '(fn () (let a 10 a)))
+"(function () {\n    return (function (a) {\n    return a;\n})(10);\n})"
+
+> (tojs '(fn () (let a 10 a) (let a 10 a)))
+"(function () {\n    (function (a) {\n    return a;\n})(10);\n    return (function (a) {\n    return a;\n})(10);\n})"
+
+> (tojs '(with (a 5 b 10 c 20) (list a b c)))
+"(function (a, b, c) {\n    return [a, b, c];\n})(5, 10, 20)"
+
+> (tojs '(with (a 5 b 10 c 20) (list "foobar" b c)))
+"(function (a, b, c) {\n    return [\"foobar\", b, c];\n})(5, 10, 20)"
