@@ -1,9 +1,5 @@
 (use arc strings)
 
-#|
-(extend * (x . args) (isa x 'string)
-  (apply string (n-of (apply + args) x)))|#
-
 (implicit linesep "\n")
 (implicit indent  "    ")
 (implicit spaces  " ")
@@ -90,20 +86,6 @@
   x "[" (tojs k) "]" spaces "=" spaces (tojs v))
 
 (defjs quote (x) (tojs:coerce x 'string))
-#|(defjs quote (x)
-  (string "\"" (tojs x) "\""))|#
-
-#|(defjs bound (x)
-  "(function" spaces "()" spaces "{" linesep
-  indent "try" spaces "{" linesep
-  indent (line "return " (tojs x) spaces "!==" spaces "undefined")
-  indent "}" spaces "catch" spaces "(e)" spaces "{" linesep
-  indent (line "return false")
-  indent "}" linesep
-  "}())")|#
-
-#|(defjs def (name parms . body)
-  name spaces "=" spaces "function" )|#
 
 (defjs prn args
   "console.log(" (addsep "," args) ")")
@@ -117,19 +99,18 @@
 (defjs warn args
   "console.warn(" (addsep "," args) ")")
 
+
 (redef expand= (place val)
   (if (isa place 'sym)
         `(assign ,place ,val)
       `(sref ,(car place) ,val ,(cadr place))))
 
+;; should be in arc.arc
 (redef expand=list (terms)
   (if (cddr terms)
         `(do ,@(map (fn ((p v)) (expand= p v))
                     (pair terms)))
       (apply expand= terms)))
-
-#|(defjs ar-disp (x y)
-  "console.log(" (tojs x) ")")|#
 
 
 (= uniq-counter* 0)
