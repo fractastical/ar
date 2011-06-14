@@ -46,6 +46,20 @@
 (defjs list args
   "[" (addsep "," args) "]")
 
+(defjs assign (x y)
+  x spaces "=" spaces (tojs y))
+
+(defjs if args
+  ((afn (x)
+     (if (no:cdr x)
+           (tojs:car x)
+         (string "(" (tojs:car x)
+                 spaces "?" spaces
+                 (tojs:cadr x)
+                 spaces ":" spaces
+                 (self (cddr x)) ")")))
+   args))
+
 
 (def binary (name args)
   (addsep (string spaces name) args))
@@ -57,6 +71,9 @@
 
 (binaries + - * /)
 
+(defjs is args
+  (binary "===" args))
+
 
 (= name-rules* '(("-" "_")))
 
@@ -64,7 +81,7 @@
   (multisubst name-rules* (string x)))
 
 (def fncall (f . args)
-  (let x (eval f)
+  (let x (errsafe:eval f)
     (if (isa x 'mac)
           (tojs:macex:cons f args)
         (string (mangle-name f) "(" (addsep "," args) ")"))))

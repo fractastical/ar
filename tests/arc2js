@@ -80,3 +80,43 @@
 
 > (tojs '(with (a 5 b 10 c 20) (list "foobar" b c)))
 "(function (a, b, c) {\n    return [\"foobar\", b, c];\n})(5, 10, 20)"
+
+
+> (tojs '(assign foo "bar"))
+"foo = \"bar\""
+
+> (tojs '(= foo "bar"))
+"(function () {\n    return foo = \"bar\";\n})()"
+
+> (tojs '(= foo "bar" bar "qux"))
+"(function () {\n    foo = \"bar\";\n    return bar = \"qux\";\n})()"
+
+
+> (tojs '(if))
+"undefined"
+
+> (tojs '(if foo))
+"foo"
+
+> (tojs '(if (+ 50 10)))
+"50 + 10"
+
+> (tojs '(if foo "bar"))
+"(foo ? \"bar\" : undefined)"
+
+> (tojs '(if foo "bar" bar "qux"))
+"(foo ? \"bar\" : (bar ? \"qux\" : undefined))"
+
+> (tojs '(if foo "bar" bar "qux" "corge"))
+"(foo ? \"bar\" : (bar ? \"qux\" : \"corge\"))"
+
+> (tojs '(if foo "bar" bar "qux" qux "corge"))
+"(foo ? \"bar\" : (bar ? \"qux\" : (qux ? \"corge\" : undefined)))"
+
+> (tojs '(if (+ a 50) "bar" qux "corge"))
+"(a + 50 ? \"bar\" : (qux ? \"corge\" : undefined))"
+
+
+> (w/whitespace minify
+    (tojs '(if (+ a 50) "bar" qux "corge")))
+"(a+50?\"bar\":(qux?\"corge\":undefined))"
