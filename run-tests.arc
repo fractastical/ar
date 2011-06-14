@@ -1,11 +1,14 @@
 #! /usr/bin/env arc
 
-(use arc cwd io test-by-example)
+(use arc cwd io strings path) ; test-by-example)
 
-(def test-file (x)
+(w/cwd "../old/lib/"
+  (load "tester.arc"))
+
+#|(def test-file (x)
   (w/infile file x
     (example-test (runtime '(arc))
-                  (allchars file))))
+                  (allchars file))))|#
 
 (w/cwd "tests"
   (each x (dir ".")

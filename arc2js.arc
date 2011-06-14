@@ -1,8 +1,13 @@
 (use arc strings)
 
+#|
+(extend * (x . args) (isa x 'string)
+  (apply string (n-of (apply + args) x)))|#
+
 (implicit linesep "\n")
 (implicit indent  "    ")
 (implicit spaces  " ")
+(implicit local)
 
 (mac w/whitespace (x . body)
   (case x
@@ -33,13 +38,31 @@
 (def line args
   (string indent args ";" linesep))
 
+;; should be in arc.arc
+(def lastcdr (x)
+  (nthcdr (- (len x) 1) x))
+
+;; should use (defset last ...)
+(mac setlast (x y)
+  `(whenlet it (lastcdr ,x)
+     (= (car it) ,y)))
+
+(mac reindent/if (x . body)
+  `(w/indent (if ,x (string indent origindent)
+                    (= origindent indent))
+     ,@body))
+
 (defjs fn (parms . body)
   "(function" spaces (tojsparms parms) spaces "{"
   (if body linesep)
-  (let x (map tojs body)
-    (whenlet y (nthcdr (- (len x) 1) x)
-      (= (car y) (string "return " (car y)))
-      (map line x)))
+
+  (reindent/if local
+    (w/local t
+      (let x (map tojs body)
+        (setlast x (string "return " it))
+        (map line x))))
+
+  (and local body indent)
   "})")
 
 
@@ -47,7 +70,9 @@
   "[" (addsep "," args) "]")
 
 (defjs assign (x y)
-  x spaces "=" spaces (tojs y))
+  (unless local "var ")
+  x spaces "=" spaces (tojs y)
+  (unless local ";"))
 
 (defjs if args
   ((afn (x)
@@ -61,12 +86,62 @@
    args))
 
 
+(defjs sref (x v k)
+  x "[" (tojs k) "]" spaces "=" spaces (tojs v))
+
+(defjs quote (x) (tojs:coerce x 'string))
+#|(defjs quote (x)
+  (string "\"" (tojs x) "\""))|#
+
+#|(defjs bound (x)
+  "(function" spaces "()" spaces "{" linesep
+  indent "try" spaces "{" linesep
+  indent (line "return " (tojs x) spaces "!==" spaces "undefined")
+  indent "}" spaces "catch" spaces "(e)" spaces "{" linesep
+  indent (line "return false")
+  indent "}" linesep
+  "}())")|#
+
+#|(defjs def (name parms . body)
+  name spaces "=" spaces "function" )|#
+
+(defjs prn args
+  "console.log(" (addsep "," args) ")")
+
+(defjs pr args
+  "console.dir(" (addsep "," args) ")")
+
+(defjs err args
+  "console.error(" (addsep "," args) ")")
+
+(defjs warn args
+  "console.warn(" (addsep "," args) ")")
+
+(redef expand= (place val)
+  (if (isa place 'sym)
+        `(assign ,place ,val)
+      `(sref ,(car place) ,val ,(cadr place))))
+
+(redef expand=list (terms)
+  (if (cddr terms)
+        `(do ,@(map (fn ((p v)) (expand= p v))
+                    (pair terms)))
+      (apply expand= terms)))
+
+#|(defjs ar-disp (x y)
+  "console.log(" (tojs x) ")")|#
+
+
 (= uniq-counter* 0)
 
 ;; ew
-(def uniq ()
+(redef uniq ()
   (do1 (sym:string "__arc_gensym_" uniq-counter*)
        (++ uniq-counter*)))
+
+;; ew
+(mac def (name parms . body)
+  `(assign ,name (fn ,parms ,@body)))
 
 
 (def binwrap (name args)
@@ -126,6 +201,9 @@
 
 (extend tojs (x) (js-literal? x) x)
 (extend tojs (x) (no x) "undefined")
+
+(extend tojs (x) (isa x 'char)
+  (tostring (pr #\") (pr x) (pr #\")))
 
 (extend tojs (x) (errsafe:js-rules*:car x)
   (apply it (cdr x)))
