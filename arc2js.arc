@@ -61,18 +61,41 @@
    args))
 
 
-(def binary (name args)
-  (addsep (string spaces name) args))
+(= uniq-counter* 0)
+
+;; ew
+(def uniq ()
+  (do1 (sym:string "__arc_gensym_" uniq-counter*)
+       (++ uniq-counter*)))
+
+
+(def binwrap (name args)
+  (string "(" (intersperse (string spaces name spaces) args) ")"))
+
+(def bin (name args)
+  (binwrap name (map tojs args)))
+
+(def binand (name (x . args))
+  (if (cdr args)
+        (binwrap "&&" (map [bin name (list x _)] args))
+      (bin name (cons x args))))
 
 (mac binaries args
   `(do ,@(map (fn (x)
-                `(defjs ,x args (binary ',x args)))
+                `(defjs ,x args (bin ',x args)))
               args)))
+
 
 (binaries + - * /)
 
+(defjs or args
+  (bin "||" args))
+
+(defjs and args
+  (bin "&&" args))
+
 (defjs is args
-  (binary "===" args))
+  (binand "===" args))
 
 
 (= name-rules* '(("-" "_")))
@@ -91,7 +114,7 @@
   (err "unknown expression" x))
 
 (extend tojs (x) (acons x)
-  (if (acons (car x))
+  (if (acons:car x)
         (apply fncall (tojs:car x) (cdr x))
       (apply fncall x)))
 

@@ -2,30 +2,50 @@
 
 
 > (tojs '(+ 10))
-"10"
+"(10)"
 
 > (tojs '(+ 10 5))
-"10 + 5"
+"(10 + 5)"
 
 > (tojs '(+ 10 5 6))
-"10 + 5 + 6"
+"(10 + 5 + 6)"
+
+> (tojs '(+ 10 (+ 5 6)))
+"(10 + (5 + 6))"
 
 
 > (tojs "foobar")
 "\"foobar\""
 
 > (tojs '(+ "foobar" 50))
-"\"foobar\" + 50"
+"(\"foobar\" + 50)"
 
 > (tojs '(+ 10 5 6 "foobar"))
-"10 + 5 + 6 + \"foobar\""
+"(10 + 5 + 6 + \"foobar\")"
 
 
 > (tojs nil)
 "undefined"
 
 > (tojs '(is x nil))
-"x === undefined"
+"(x === undefined)"
+
+> (tojs '(is x))
+"(x)"
+
+> (tojs '(is "foo"))
+"(\"foo\")"
+
+> (tojs '(is x y z "foo"))
+"((x === y) && (x === z) && (x === \"foo\"))"
+
+> (tojs '(is (+ 10 5) 15))
+"((10 + 5) === 15)"
+
+
+> (w/whitespace minify
+    (tojs '(is x y z "foo")))
+"((x===y)&&(x===z)&&(x===\"foo\"))"
 
 
 > (tojs '(fn ()))
@@ -35,19 +55,19 @@
 "(function () {\n    return undefined;\n})"
 
 > (tojs '(fn () (+ 10 5)))
-"(function () {\n    return 10 + 5;\n})"
+"(function () {\n    return (10 + 5);\n})"
 
 > (tojs '(fn (x) (+ 10 5)))
-"(function (x) {\n    return 10 + 5;\n})"
+"(function (x) {\n    return (10 + 5);\n})"
 
 > (tojs '(fn (x y) (+ 10 5)))
-"(function (x, y) {\n    return 10 + 5;\n})"
+"(function (x, y) {\n    return (10 + 5);\n})"
 
 > (tojs '(fn (x y z) (+ 10 5)))
-"(function (x, y, z) {\n    return 10 + 5;\n})"
+"(function (x, y, z) {\n    return (10 + 5);\n})"
 
 > (tojs '(fn (x) (+ x 5)))
-"(function (x) {\n    return x + 5;\n})"
+"(function (x) {\n    return (x + 5);\n})"
 
 
 > (tojs '(fn (x) (foo x 5)))
@@ -61,12 +81,12 @@
 
 
 > (tojs '(fn (x) (+ 10 5) (foo-bar x 5)))
-"(function (x) {\n    10 + 5;\n    return foo_bar(x, 5);\n})"
+"(function (x) {\n    (10 + 5);\n    return foo_bar(x, 5);\n})"
 
 
 > (w/whitespace minify
     (tojs '(fn (x y z) (+ 10 5))))
-"(function(x,y,z){return 10+5;})"
+"(function(x,y,z){return (10+5);})"
 
 
 > (tojs '(fn () (let a 10 a)))
@@ -99,7 +119,7 @@
 "foo"
 
 > (tojs '(if (+ 50 10)))
-"50 + 10"
+"(50 + 10)"
 
 > (tojs '(if foo "bar"))
 "(foo ? \"bar\" : undefined)"
@@ -114,9 +134,19 @@
 "(foo ? \"bar\" : (bar ? \"qux\" : (qux ? \"corge\" : undefined)))"
 
 > (tojs '(if (+ a 50) "bar" qux "corge"))
-"(a + 50 ? \"bar\" : (qux ? \"corge\" : undefined))"
+"((a + 50) ? \"bar\" : (qux ? \"corge\" : undefined))"
 
 
 > (w/whitespace minify
     (tojs '(if (+ a 50) "bar" qux "corge")))
-"(a+50?\"bar\":(qux?\"corge\":undefined))"
+"((a+50)?\"bar\":(qux?\"corge\":undefined))"
+
+
+> (tojs '(in x "foo" "bar" "qux"))
+"(function (__arc_gensym_48) {\n    return ((__arc_gensym_48 === \"foo\") || (__arc_gensym_48 === \"bar\") || (__arc_gensym_48 === \"qux\"));\n})(x)"
+
+> (tojs '(or "foo" "bar" "qux"))
+"(\"foo\" || \"bar\" || \"qux\")"
+
+> (tojs '(and "foo" "bar" "qux"))
+"(\"foo\" && \"bar\" && \"qux\")"
