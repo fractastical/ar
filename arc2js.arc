@@ -59,10 +59,6 @@
   (cons (sym:string "var " (x 1) spaces "=" spaces (x 2))
         (or (nthcdr 3 x) (list nil))))
 
-#|
-;; should be in arc.arc
-(mac whenis (x y . body)
-  `(when (is ,x ,y) ,@body))|#
 
 (defjs fn (parms . body)
   "(function" spaces (tojsparms parms) spaces "{"
@@ -189,10 +185,6 @@
 (defjs mac (name parms . body)
   (do (eval `(assign ,name (annotate 'mac (fn ,parms ,@body))))
       nil))
-
-#|(mac mac (name parms . body)
-  `(do (assign ,name (annotate 'mac (fn ,parms ,@body)))
-       nil))|#
 
 
 (def tojs (x)
