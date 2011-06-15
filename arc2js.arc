@@ -24,11 +24,38 @@
   (intersperse (string x spaces) (map tojs args)))
 
 
-(def tojsparms (x)
+(def pushfront (x . rest)
+  (when x
+    (= (cdr x) (cons (car x) (cdr x)))
+    (= (car x) (sym:apply string rest))))
+
+(def tocomplexfn (x body)
+  ((afn (x i)
+     (let c (car x)
+       (if (no x) nil
+           (caris c 'o)
+             (let n (cadr c)
+               (iflet v (caddr c)
+                 (pushfront body n spaces
+                            "=" spaces n spaces
+                            "||" spaces (tojs v)))
+               (cons n (self (cdr x) (+ i 1))))
+           (aand (cdr x) (isa it 'sym))
+             (do (pushfront body "var " (cdr x) spaces "=" spaces
+                            "Array.prototype.slice.call(arguments," spaces i ")")
+                 (cons c nil))
+           (cons c (self (cdr x) (+ i 1))))))
+   x 1))
+
+(def tojsparms (x body)
   (if (no x)
         (string "()")
       (isa x 'cons)
-        (string "(" (addsep "," x) ")")
+        (string "(" (addsep "," (tocomplexfn x body)) ")")
+      (isa x 'sym)
+        (do (pushfront body "var " x spaces "=" spaces
+                       "Array.prototype.slice.call(arguments)")
+            (string "()"))
       (err "invalid argument list" x)))
 
 (def line args
@@ -59,11 +86,25 @@
   (cons (sym:string "var " (x 1) spaces "=" spaces (x 2))
         (or (nthcdr 3 x) (list nil))))
 
+#|(extend macex (x (o once)) (let y x
+                             (prn y)
+                             (and y))
+  it)|#
+
+#|(def macex (e (o once))
+  (if (acons e)
+       (let m (ac-macro? (car e))
+         (if m
+              (let expansion (apply m (cdr e))
+                (if (no once) (macex expansion) expansion))
+              e))
+       e))|#
+
 
 (defjs fn (parms . body)
-  "(function" spaces (tojsparms parms) spaces "{"
+  (do (zap optimizefn body) nil)
 
-  (do (= body (optimizefn body)) nil)
+  "(function" spaces (tojsparms parms body) spaces "{"
 
   (reindent/if local
     (w/local t

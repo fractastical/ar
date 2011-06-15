@@ -391,3 +391,173 @@ console.error("foo", "bar", "qux")
     b;
     return c;
 })()
+
+
+> (tojs '(in foo "bar" "qux" "corge"))
+(function (__arc_gensym_49) {
+    return ((__arc_gensym_49 === "bar") || (__arc_gensym_49 === "qux") || (__arc_gensym_49 === "corge"));
+})(foo)
+
+
+> (tojs '(fn ()
+           (in foo "bar" "qux" "corge")))
+(function () {
+    return (function (__arc_gensym_50) {
+        return ((__arc_gensym_50 === "bar") || (__arc_gensym_50 === "qux") || (__arc_gensym_50 === "corge"));
+    })(foo);
+})
+
+
+> (tojs '(fn ()
+           (in foo "bar" "qux" "corge")
+           (let a 50
+             (in foo "bar" "qux" "corge"))))
+(function () {
+    (function (__arc_gensym_51) {
+        return ((__arc_gensym_51 === "bar") || (__arc_gensym_51 === "qux") || (__arc_gensym_51 === "corge"));
+    })(foo);
+    return (function (a) {
+        return (function (__arc_gensym_52) {
+            return ((__arc_gensym_52 === "bar") || (__arc_gensym_52 === "qux") || (__arc_gensym_52 === "corge"));
+        })(foo);
+    })(50);
+})
+
+
+
+> (tojs '(fn args))
+(function () {})
+
+
+> (tojs '(fn args (prn args)))
+(function () {
+    var args = Array.prototype.slice.call(arguments);
+    return console.log(args);
+})
+
+
+> (tojs '(fn args (do (prn args))))
+(function () {
+    var args = Array.prototype.slice.call(arguments);
+    return console.log(args);
+})
+
+
+> (tojs '(fn args (let x args (prn args))))
+(function () {
+    var args = Array.prototype.slice.call(arguments);
+    var x = args;
+    return console.log(args);
+})
+
+
+
+> (tojs '(fn (a b (o c))))
+(function (a, b, c) {})
+
+
+> (tojs '(fn (a b (o c)) (list a b c)))
+(function (a, b, c) {
+    return [a, b, c];
+})
+
+
+> (tojs '(fn (a b (o c)) (do (list a b c))))
+(function (a, b, c) {
+    return [a, b, c];
+})
+
+
+> (tojs '(fn (a b (o c)) (let x c (list a b c x))))
+(function (a, b, c) {
+    var x = c;
+    return [a, b, c, x];
+})
+
+
+
+> (tojs '(fn (a b (o c 5))))
+(function (a, b, c) {})
+
+
+> (tojs '(fn (a b (o c 5)) (list a b c)))
+(function (a, b, c) {
+    c = c || 5;
+    return [a, b, c];
+})
+
+
+> (tojs '(fn (a b (o c 5)) (do (list a b c))))
+(function (a, b, c) {
+    c = c || 5;
+    return [a, b, c];
+})
+
+
+> (tojs '(fn (a b (o c 5)) (let x c (list a b c x))))
+(function (a, b, c) {
+    c = c || 5;
+    var x = c;
+    return [a, b, c, x];
+})
+
+
+
+> (tojs '(fn (a b (o c (foo "bar")))))
+(function (a, b, c) {})
+
+
+> (tojs '(fn (a b (o c (foo "bar"))) (list a b c)))
+(function (a, b, c) {
+    c = c || foo("bar");
+    return [a, b, c];
+})
+
+
+> (tojs '(fn (a b (o c (foo "bar"))) (do (list a b c))))
+(function (a, b, c) {
+    c = c || foo("bar");
+    return [a, b, c];
+})
+
+
+> (tojs '(fn (a b (o c (foo "bar"))) (let x c (list a b c x))))
+(function (a, b, c) {
+    c = c || foo("bar");
+    var x = c;
+    return [a, b, c, x];
+})
+
+
+
+> (tojs '(fn (a b . c)))
+(function (a, b) {})
+
+
+> (tojs '(fn (a b . c) c))
+(function (a, b) {
+    var c = Array.prototype.slice.call(arguments, 2);
+    return c;
+})
+
+
+> (tojs '(fn (a b . c) (list a b c)))
+(function (a, b) {
+    var c = Array.prototype.slice.call(arguments, 2);
+    return [a, b, c];
+})
+
+
+> (tojs '(fn (a b . c) (do (list a b c))))
+(function (a, b) {
+    var c = Array.prototype.slice.call(arguments, 2);
+    return [a, b, c];
+})
+
+
+> (tojs '(fn (a b . c) (let x c (list a b c x))))
+(function (a, b) {
+    var c = Array.prototype.slice.call(arguments, 2);
+    var x = c;
+    return [a, b, c, x];
+})
