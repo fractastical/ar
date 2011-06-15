@@ -1,9 +1,15 @@
 (use arc strings)
 
-(implicit linesep "\n")
-(implicit indent  "    ")
-(implicit spaces  " ")
-(implicit local)
+(implicit linesep     "\n")
+(implicit indent      "    ")
+(implicit spaces      " ")
+(implicit gensym-name "__g")
+
+(implicit global      t)
+(implicit local       nil)
+
+(implicit strict      t)
+(implicit wrapper     t)
 
 (mac w/whitespace (x . body)
   (case x
@@ -70,6 +76,8 @@
   `(whenlet it (lastcdr ,x)
      (= (car it) ,y)))
 
+;(= origindent indent)
+
 (mac reindent/if (x . body)
   `(w/indent (if ,x (string indent origindent)
                     (= origindent indent))
@@ -85,6 +93,23 @@
                                      (no rest))
   (cons (sym:string "var " (x 1) spaces "=" spaces (x 2))
         (or (nthcdr 3 x) (list nil))))
+
+
+(def optimizeglobal (x) x)
+
+(extend optimizeglobal (x) (caris x 'do)
+  (sym:string:intersperse (string ";" linesep linesep)
+                          (map tojs (cdr x))))
+
+
+(def optimize (expr)
+  (if local (zap optimizefn expr)
+            (zap optimizeglobal expr))
+
+  (let x (macex expr t)
+    (if (is x expr)
+          x
+        (optimize x))))
 
 #|(extend macex (x (o once)) (let y x
                              (prn y)
@@ -102,7 +127,9 @@
 
 
 (defjs fn (parms . body)
-  (do (zap optimizefn body) nil)
+  (w/local t
+    (zap optimize body)
+    nil)
 
   "(function" spaces (tojsparms parms body) spaces "{"
 
@@ -126,8 +153,7 @@
 
 (defjs assign (x y)
   (unless local "var ")
-  x spaces "=" spaces (tojs y)
-  (unless local ";"))
+  x spaces "=" spaces (tojs y))
 
 (defjs if args
   ((afn (x)
@@ -176,7 +202,7 @@
 
 ;; ew
 (redef uniq ()
-  (do1 (sym:string "__arc_gensym_" uniq-counter*)
+  (do1 (sym:string gensym-name uniq-counter*)
        (++ uniq-counter*)))
 
 ;; ew
@@ -224,7 +250,7 @@
 
 
 (defjs mac (name parms . body)
-  (do (eval `(assign ,name (annotate 'mac (fn ,parms ,@body))))
+  (do (eval `(mac ,name ,parms ,@body))
       nil))
 
 
@@ -232,25 +258,36 @@
   (err "unknown expression" x))
 
 (extend tojs (expr) (acons expr)
-  (let x (macex expr)
-    (if (is x expr)
+  (let x (optimize expr)
+    (if #|(js-literal? x)
+          x|#
+        (is x expr)
           (apply fncall (tojs:car x) (cdr x))
         (tojs x))))
 
 (extend tojs (x) (isa x 'string)
   (string "\"" x "\""))
 
-(def js-literal? (x)
-  (in (type x) 'int 'num 'sym))
-
-(extend tojs (x) (js-literal? x) x)
-(extend tojs (x) (no x) "undefined")
-
 (extend tojs (x) (isa x 'char)
   (tostring (pr #\") (pr x) (pr #\")))
 
 (extend tojs (x) (errsafe:js-rules*:car x)
   (apply it (cdr x)))
+
+(extend tojs (x) (no x) "undefined")
+
+(extend tojs (x) global
+  (w/global nil
+    ;(= x (orig (optimizefn (list x))))
+    (zap orig x)
+    (if (empty x)
+          nil
+        (string x ";"))))
+
+(def js-literal? (x)
+  (and x (in (type x) 'int 'num 'sym)))
+
+(extend tojs (x) (js-literal? x) x)
 
 
 (def dispfile (x f)
@@ -259,7 +296,22 @@
 (def arc2js (arc js)
   (w/infile f arc
     (w/uniq eof
-      (let x (string:intersperse (string linesep linesep)
-               (rem empty (drain (tojs:read f eof) eof)))
+      (let x (drain (read f eof) eof)
+        (if strict
+          (push "use strict" x))
+
+        (= x (string:intersperse (string linesep linesep)
+                                 (rem no (map tojs x))))
+
+        (if wrapper
+          (= x (string "(function" spaces "()" spaces "{" linesep
+                       indent (subst "\n"
+                                (string indent "\n")
+                                (subst (string "\n" indent)
+                                  "\n"
+                                  x))
+                       linesep
+                       "})();")))
+
         (dispfile x js))))
   t)
