@@ -7,7 +7,6 @@
 
 (implicit global      t)
 (implicit local       nil)
-(implicit nested      nil)
 (implicit precedence  0)
 
 (implicit optimize?   t)
@@ -295,22 +294,15 @@
   (tojs x) spaces "=" spaces (tojs y))
 
 (defjs if args
-  ;(prn " " precedence)
-  (let nested nil
-    ((afn (x)
-       (if (no:cdr x)
-             (tojs:car x)
-           (string ;(when nested "(")
-                   (tojs:car x)
-                   spaces "?" spaces
-                   (tojs:cadr x)
-                   spaces ":" spaces
-                   (if nested (list (self (cddr x))
-                                    ;(when nested ")")
-                                    )
-                              (do (= nested t)
-                                  (self (cddr x)))))))
-     args)))
+  ((afn (x)
+     (if (no:cdr x)
+           (tojs:car x)
+         (string (tojs:car x)
+                 spaces "?" spaces
+                 (tojs:cadr x)
+                 spaces ":" spaces
+                 (self (cddr x)))))
+   args))
 
 
 (defjs sref (x v k)
@@ -365,25 +357,25 @@
   ;(prn " " name " " args " " precedence)
   (prn " ")
   (string (unless (cdr args) name)
-  (binwrap name (w/nested t (map (fn (x)
-                                   (if (acons x)
-                                         (let c (car x)
-                                           (if (is c name)
-                                                 (w/precedence
-                                                   (if (errsafe:cddr x)
-                                                         precedence
-                                                       13)
-                                                   (tojs x))
-                                               (w/precedence (+ precedence 1)
-                                                 ;(prn " " c " " name " " precedence " " (op-precedence c))
-                                                 ;(prn x)
-                                                 (w/precedence
-                                                   (if (cddr x)
-                                                         precedence
-                                                       0)
-                                                   (tojs x)))))
-                                       (tojs x)))
-                                 args)))))
+  (binwrap name (map (fn (x)
+                       (if (acons x)
+                             (let c (car x)
+                               (if (is c name)
+                                     (w/precedence
+                                       (if (errsafe:cddr x)
+                                             precedence
+                                           13)
+                                       (tojs x))
+                                   (w/precedence (+ precedence 1)
+                                     ;(prn " " c " " name " " precedence " " (op-precedence c))
+                                     ;(prn x)
+                                     (w/precedence
+                                       (if (cddr x)
+                                             precedence
+                                           0)
+                                       (tojs x)))))
+                           (tojs x)))
+                     args))))
 
 (def binwrap (name args)
   ;(let op (op-precedence name)
@@ -395,14 +387,14 @@
                 ;)
 
 (def bin (name args)
-  (binwrap name (w/nested t (map tojs args))))
+  (binwrap name (map tojs args)))
 #|                                      (mapeach x args
                                         ;(prn x " " (errsafe:op-precedence:car x) " " precedence)
                                         x)))))|#
 
 (def binand (name (x . args))
   (if (cdr args)
-        (binwrap "&&" (map [w/nested t (bin name (list x _))] args))
+        (binwrap "&&" (map [bin name (list x _)] args))
       (bin name (cons x args))))
 
 (def prefix (name (x))
