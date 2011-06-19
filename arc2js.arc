@@ -7,6 +7,7 @@
 
 (implicit global      t)
 (implicit local       nil)
+(implicit nested      nil)
 (implicit precedence  0)
 
 (implicit optimize?   t)
@@ -248,23 +249,26 @@
 
 
 (defjs fn (parms . body)
-  (w/local t
-    (= body (mappend [optimize optfn _]
-                     #|(fn (x)
-                       (zap optimize x)
-                       (prn x)
-                       (if (acons:car x)
-                             x
-                           (list x)))|#
-                     body))
-    ;(zap optimize body)
-    ;(prn body)
-    nil)
+  (reindent/if local
+    (w/local t
+      (= body (mappend [optimize optfn _]
+                       #|(fn (x)
+                         (zap optimize x)
+                         (prn x)
+                         (if (acons:car x)
+                               x
+                             (list x)))|#
+                       body))
+      ;(zap optimize body)
+      ;(prn body)
+      nil))
 
   "function" spaces (tojsparms parms body) spaces "{"
 
+  ;(do (prn " " local) nil)
   (reindent/if local
     (w/local t
+      ;(prn " " (len indent) " " (len origindent))
       (= body (map tojs body))
 
       ;(prn (intersperse "\n" body))
@@ -294,19 +298,20 @@
   "[" (addsep "," args) "]")
 
 (defjs assign (x y)
-  (unless (or (ac-ssyntax x) local) "var ")
+  (unless (or (ac-ssyntax x) local nested) "var ")
   (tojs x) spaces "=" spaces (tojs y))
 
 (defjs if args
-  ((afn (x)
-     (if (no:cdr x)
-           (tojs:car x)
-         (string (tojs:car x)
-                 spaces "?" spaces
-                 (tojs:cadr x)
-                 spaces ":" spaces
-                 (self (cddr x)))))
-   args))
+  (w/nested t
+    ((afn (x)
+       (if (no:cdr x)
+             (tojs:car x)
+           (string (tojs:car x)
+                   spaces "?" spaces
+                   (tojs:cadr x)
+                   spaces ":" spaces
+                   (self (cddr x)))))
+     args)))
 
 
 (defjs sref (x v k)
