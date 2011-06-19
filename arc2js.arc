@@ -386,10 +386,10 @@
 (def binwrap (name args)
   ;(let op (op-precedence name)
     ;(prn " " name " " op " " precedence)
-    (string ;(when (< op precedence) "(")
-            (intersperse (string spaces name spaces) args)
-                ;(when (< op precedence) ")")
-                ))
+  (string:intersperse (string spaces name spaces) args
+              ;(when (< op precedence) "(")
+              ;(when (< op precedence) ")")
+              ))
                 ;)
 
 (def bin (name args)
@@ -398,10 +398,13 @@
                                         ;(prn x " " (errsafe:op-precedence:car x) " " precedence)
                                         x)))))|#
 
-(def binand (name (x . args))
+(def binand (name args)
   (if (cdr args)
-        (binwrap "&&" (map [bin name (list x _)] args))
-      (bin name (cons x args))))
+        (let last (car args)
+          (binwrap "&&" (mapeach x (cdr args)
+                          (do1 (bin name (list last x))
+                               (= last x)))))
+      (bin name args)))
 
 (def prefix (name (x))
   (string name (tojs x)))
@@ -412,7 +415,8 @@
               args)))|#
 
 
-(= op-precedence (obj if      2
+(= op-precedence (obj ;mod     12
+                      if      2
                       assign  1))
 
 #|(= op-precedence (obj no    '("!"   4)
@@ -431,10 +435,11 @@
                       or    '("||"  14)))|#
 
 (mac defop (from to precedence type)
-  `(do (= (op-precedence ',from) ,precedence
-          (op-precedence ',to)   ,precedence)
+  `(do (= (op-precedence ',from) ,precedence)
+;          (op-precedence ',to)   ,precedence)
        (defjs ,from args
-         (,type ',to args))))
+         (w/nested t
+           (,type ',to args)))))
 
 
 #|(def makebin (args type)
@@ -467,11 +472,11 @@
             +     +        11
             -     -        11)
 
-  (bin      and   &&       4
+  (bin      mod   %        12
+            and   &&       4
             or    \|\|     3)
 
-  (binand   mod   %        12
-            <     <        9
+  (binand   <     <        9
             <=    <=       9
             >     >        9
             >=    >=       9
@@ -480,6 +485,13 @@
 
   (prefix   del   delete\  14
             no    !        13))
+
+#|(defop mod % 12 (fn (n (x y))
+  (list (tojs x) spaces "%" spaces (tojs y))))|#
+
+#|(defjs mod (x y)
+  (w/nested t
+    (list (tojs x) spaces "%" spaces (tojs y))))|#
 
 #|(defjs or args
   (bin "||" args))
