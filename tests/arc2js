@@ -2,129 +2,135 @@
 
 > (= expects-strings t)
 
+> (= readable? nil)
+
 
 > (tojs '(+ 10))
-(10);
+10;
 
 > (tojs '(+ 10 5))
-(10 + 5);
+10 + 5;
 
 > (tojs '(+ 10 5 6))
-(10 + 5 + 6);
+10 + 5 + 6;
 
 > (tojs '(+ 10 (+ 5 6)))
-(10 + (5 + 6));
+10 + 5 + 6;
 
 
 > (tojs "foobar")
 "foobar";
 
 > (tojs '(+ "foobar" 50))
-("foobar" + 50);
+"foobar" + 50;
 
 > (tojs '(+ 10 5 6 "foobar"))
-(10 + 5 + 6 + "foobar");
+10 + 5 + 6 + "foobar";
 
 
 > (tojs nil)
-undefined;
+void 0;
 
 > (tojs '(is x nil))
-(x === undefined);
+x === void 0;
 
 > (tojs '(is x))
-(x);
+x;
 
 > (tojs '(is "foo"))
-("foo");
+"foo";
 
 > (tojs '(is x y z "foo"))
-((x === y) && (x === z) && (x === "foo"));
+x === y && x === z && x === "foo";
 
 > (tojs '(is (+ 10 5) 15))
-((10 + 5) === 15);
+10 + 5 === 15;
 
 
 > (w/whitespace minify
     (tojs '(is x y z "foo")))
-((x===y)&&(x===z)&&(x==="foo"));
+x===y&&x===z&&x==="foo";
 
 
 > (tojs '(fn ()))
-(function () {});
+function () {};
 
 > (tojs '(fn () nil))
-(function () {});
+function () {};
 
 > (tojs '(fn () (+ 10 5)))
-(function () {
-    return (10 + 5);
-});
+function () {
+    return 10 + 5;
+};
 
 > (tojs '(fn (x) (+ 10 5)))
-(function (x) {
-    return (10 + 5);
-});
+function (x) {
+    return 10 + 5;
+};
 
 > (tojs '(fn (x y) (+ 10 5)))
-(function (x, y) {
-    return (10 + 5);
-});
+function (x, y) {
+    return 10 + 5;
+};
 
 > (tojs '(fn (x y z) (+ 10 5)))
-(function (x, y, z) {
-    return (10 + 5);
-});
+function (x, y, z) {
+    return 10 + 5;
+};
 
 > (tojs '(fn (x) (+ x 5)))
-(function (x) {
-    return (x + 5);
-});
+function (x) {
+    return x + 5;
+};
 
 
 > (tojs '(fn (x) (foo x 5)))
-(function (x) {
+function (x) {
     return foo(x, 5);
-});
+};
 
 > (tojs '(fn (x) (foo-bar x 5)))
-(function (x) {
+function (x) {
     return foo_bar(x, 5);
-});
+};
 
 > (tojs '(fn (x) (foo_bar x 5)))
-(function (x) {
+function (x) {
     return foo_bar(x, 5);
-});
+};
 
 
 > (tojs '(fn (x) (+ 10 5) (foo-bar x 5)))
-(function (x) {
-    (10 + 5);
+function (x) {
+    10 + 5;
     return foo_bar(x, 5);
-});
+};
+
+
+> (tojs '(fn (foo-bar) (foo-bar (+ 10 5))))
+function (foo_bar) {
+    return foo_bar(10 + 5);
+};
 
 
 > (w/whitespace minify
     (tojs '(fn (x y z) (+ 10 5))))
-(function(x,y,z){return (10+5);});
+function(x,y,z){return 10+5;};
 
 
 > (tojs '(fn () (let a 10 a)))
-(function () {
-    var a = 10;
-    return a;
-});
+function () {
+    var __g... = 10;
+    return __g...;
+};
 
 > (tojs '(fn () (let a 10 a) (let a 10 a)))
-(function () {
-    (function (a) {
-        return a;
-    })(10);
-    return (function (a) {
-        return a;
-    })(10);
-});
+function () {
+    var __g... = 10;
+    __g...;
+    var __g... = 10;
+    return __g...;
+};
 
 > (tojs '(with (a 5 b 10 c 20) (list a b c)))
 (function (a, b, c) {
@@ -135,6 +141,132 @@ undefined;
 (function (a, b, c) {
     return ["foobar", b, c];
 })(5, 10, 20);
+
+
+> (tojs '(fn () (with (a 5 b 10 c 20) (list a b c))))
+function () {
+    var __g... = 5,
+        __g... = 10,
+        __g... = 20;
+    return [__g..., __g..., __g...];
+};
+
+
+> (tojs '(fn () (with (a a b a c b) (list a b c))))
+function () {
+    var __g... = a,
+        __g... = a,
+        __g... = b;
+    return [__g..., __g..., __g...];
+};
+
+
+
+> (tojs '(fn () (withs (a b b 2) (list a b ...))))
+function () {
+    var __g... = b;
+    var __g... = 2;
+    return [__g..., __g..., ...];
+};
+
+
+> (tojs '(fn () (withs (a b b 2 c b) (list a b c ...))))
+function () {
+    var __g... = b;
+    var __g... = 2;
+    var __g... = __g...;
+    return [__g..., __g..., __g..., ...];
+};
+
+
+
+> (tojs '(fn () (let a (+ 10 5) a)))
+function () {
+    var __g... = 10 + 5;
+    return __g...;
+};
+
+
+> (tojs '(fn () (let a 5 (let a 10 a))))
+function () {
+    var __g... = 5;
+    var __g... = 10;
+    return __g...;
+};
+
+
+> (tojs '(fn () (let a 5 (let b 10 (list a b)))))
+function () {
+    var __g... = 5;
+    var __g... = 10;
+    return [__g..., __g...];
+};
+
+
+
+> (tojs '(fn () (withs (a b b 2 c b d c e e) (list a b c d e ...))))
+function () {
+    var __g... = b;
+    var __g... = 2;
+    var __g... = __g...;
+    var __g... = __g...;
+    var __g... = e;
+    return [__g..., __g..., __g..., __g..., __g..., ...];
+};
+
+
+
+> (w/optimize? nil (tojs '(fn () (withs (a b b 2 c b) (list a b c ...)))))
+function () {
+    return (function (a) {
+        return (function (b) {
+            return (function (c) {
+                return (function () {
+                    return [a, b, c, ...];
+                })();
+            })(b);
+        })(2);
+    })(b);
+};
+
+
+> (tojs '(fn () (withs (a b b 2 c b) (list a b c ...))))
+function () {
+    var __g... = b;
+    var __g... = 2;
+    var __g... = __g...;
+    return [__g..., __g..., __g..., ...];
+};
+
+
+
+> (tojs '(fn () (let a a a)))
+function () {
+    var __g... = a;
+    return __g...;
+};
+
+
+> (tojs '(let a a a))
+(function (a) {
+    return a;
+})(a);
+
+
+
+> (tojs '(fn () (with (a a b b) (list a b))))
+function () {
+    var __g... = a,
+        __g... = b;
+    return [__g..., __g...];
+};
+
+
+> (tojs '(with (a a b b) (list a b)))
+(function (a, b) {
+    return [a, b];
+})(a, b);
+
 
 
 > (tojs '(assign foo "bar"))
@@ -151,91 +283,184 @@ var bar = "qux";
 > (tojs '(fn ()
            (= foo "bar"
               bar "qux")))
-(function () {
-    return (function () {
-        foo = "bar";
-        return bar = "qux";
-    })();
-});
+function () {
+    foo = "bar";
+    return bar = "qux";
+};
 
 
 > (tojs '(if))
-undefined;
+void 0;
 
 > (tojs '(if foo))
 foo;
 
 > (tojs '(if (+ 50 10)))
-(50 + 10);
+50 + 10;
 
 > (tojs '(if foo "bar"))
-(foo ? "bar" : undefined);
+foo ? "bar" : void 0;
 
 > (tojs '(if foo "bar" bar "qux"))
-(foo ? "bar" : (bar ? "qux" : undefined));
+foo ? "bar" : bar ? "qux" : void 0;
 
 > (tojs '(if foo "bar" bar "qux" "corge"))
-(foo ? "bar" : (bar ? "qux" : "corge"));
+foo ? "bar" : bar ? "qux" : "corge";
 
 > (tojs '(if foo "bar" bar "qux" qux "corge"))
-(foo ? "bar" : (bar ? "qux" : (qux ? "corge" : undefined)));
+foo ? "bar" : bar ? "qux" : qux ? "corge" : void 0;
 
 > (tojs '(if (+ a 50) "bar" qux "corge"))
-((a + 50) ? "bar" : (qux ? "corge" : undefined));
+a + 50 ? "bar" : qux ? "corge" : void 0;
 
 
 > (w/whitespace minify
     (tojs '(if (+ a 50) "bar" qux "corge")))
-((a+50)?"bar":(qux?"corge":undefined));
+a+50?"bar":qux?"corge":void 0;
 
 
 > (tojs '(in x "foo" "bar" "qux"))
-(function (__g59) {
-    return ((__g59 === "foo") || (__g59 === "bar") || (__g59 === "qux"));
+(function (__g...) {
+    return __g... === "foo" || __g... === "bar" || __g... === "qux";
 })(x);
 
+
+> (tojs '(if (in foo 'a 'b) ...))
+(function (__g...) {
+    return __g... === "a" || __g... === "b";
+})(foo) ? ... : void 0;
+
+
+
+> (tojs '(do a))
+a;
+
+
+> (tojs 'a)
+a;
+
+
+
+> (tojs '(fn ()
+           (with (a (fn ())
+                  b (fn (a) a))
+             (list a b))))
+function () {
+    var __g... = function () {},
+        __g... = function (a) {
+        return a;
+    };
+    return [__g..., __g...];
+};
+
+
+> (tojs '(with (a (fn ())
+                b (fn (a) a))
+           (list a b)))
+(function (a, b) {
+    return [a, b];
+})(function () {}, function (a) {
+    return a;
+});
+
+
+> (tojs '(foo (with (a (fn ())
+                     b (fn (a) a))
+                (list a b))))
+foo((function (a, b) {
+    return [a, b];
+})(function () {}, function (a) {
+    return a;
+}));
+
+
+> (tojs '(fn ()
+           (foo (with (a (fn ())
+                       b (fn (a) a))
+                  (list a b)))))
+function () {
+    return foo((function (a, b) {
+        return [a, b];
+    })(function () {}, function (a) {
+        return a;
+    }));
+};
+
+
+> (tojs '(fn ()
+           (foo (let a 5 a))))
+function () {
+    return foo((function (a) {
+        return a;
+    })(5));
+};
+
+
+
+> (tojs '(let undefined 2 (if nil 3)))
+(function (undefined) {
+    return void 0 ? 3 : void 0;
+})(2);
+
+
+> (w/whitespace minify (tojs '(let undefined 2 (if nil 3))))
+(function(undefined){return void 0?3:void 0;})(2);
+
+
+> (tojs '(let undefined 2 (if nil 3 (+ undefined 5))))
+(function (undefined) {
+    return void 0 ? 3 : undefined + 5;
+})(2);
+
+
+> (tojs '(let nil 2 (if nil 3)))
+(function (nil) {
+    return nil ? 3 : void 0;
+})(2);
+
+
 > (tojs '(or "foo" "bar" "qux"))
-("foo" || "bar" || "qux");
+"foo" || "bar" || "qux";
 
 > (tojs '(and "foo" "bar" "qux"))
-("foo" && "bar" && "qux");
+"foo" && "bar" && "qux";
 
 
 > (tojs '(rfn foo-bar () foo-bar))
 (function (foo_bar) {
-    return foo_bar = (function () {
+    return foo_bar = function () {
         return foo_bar;
-    });
-})(undefined);
+    };
+})();
 
 > (tojs '(rfn foo-bar () (foo-bar)))
 (function (foo_bar) {
-    return foo_bar = (function () {
+    return foo_bar = function () {
         return foo_bar();
-    });
-})(undefined);
+    };
+})();
 
 
 > (tojs '(def foo () nil))
-var foo = (function () {});
+var foo = function () {};
 
 > (tojs '(def foo () (def bar nil)))
-var foo = (function () {
-    return bar = (function () {});
-});
+var foo = function () {
+    return bar = function () {};
+};
 
 
 > (tojs '(def foo ()
            (def bar ()
              (def qux ()
                (def corge () nil)))))
-var foo = (function () {
-    return bar = (function () {
-        return qux = (function () {
-            return corge = (function () {});
-        });
-    });
-});
+var foo = function () {
+    return bar = function () {
+        return qux = function () {
+            return corge = function () {};
+        };
+    };
+};
 
 
 > (w/whitespace minify
@@ -243,7 +468,7 @@ var foo = (function () {
              (def bar ()
                (def qux ()
                 (def corge () nil))))))
-var foo=(function(){return bar=(function(){return qux=(function(){return corge=(function(){});});});});
+var foo=function(){return bar=function(){return qux=function(){return corge=function(){};};};};
 
 
 > (tojs '(= (foo 'bar) "qux"))
@@ -282,116 +507,126 @@ console.error("foo", "bar", "qux");
 
 > (tojs '(fn ()
            (let a 5)))
-(function () {
-    var a = 5;
-});
+function () {
+    var __g... = 5;
+};
 
 
 > (tojs '(fn ()
            (let a 5)
            (+ a 50)))
-(function () {
-    (function (a) {})(5);
-    return (a + 50);
-});
+function () {
+    var __g... = 5;
+    return a + 50;
+};
 
 
 > (tojs '(fn ()
            (let a 5 nil)))
-(function () {
-    var a = 5;
-});
+function () {
+    var __g... = 5;
+};
 
 
 > (tojs '(fn ()
            (let a 5 a)))
-(function () {
-    var a = 5;
-    return a;
-});
+function () {
+    var __g... = 5;
+    return __g...;
+};
 
 
 > (tojs '(fn ()
            (let a 5
              (++ a 50)
              (+ 20 a))))
-(function () {
-    var a = 5;
-    a = (a + 50);
-    return (20 + a);
-});
+function () {
+    var __g... = 5;
+    __g... = __g... + 50;
+    return 20 + __g...;
+};
 
 
 > (tojs '(let a 5
            (++ a 50)
            (+ 20 a)))
 (function (a) {
-    a = (a + 50);
-    return (20 + a);
+    a = a + 50;
+    return 20 + a;
 })(5);
 
 
 > (tojs '(fn ()
            (do a b c)))
-(function () {
+function () {
     a;
     b;
     return c;
-});
+};
 
 
 > (tojs '(fn ()
            (do a b c)
            nil))
-(function () {
+function () {
     a;
     b;
     c;
-});
+};
 
 
 > (tojs '(fn ()
            (do a b c nil)))
-(function () {
+function () {
     a;
     b;
     c;
-});
+};
 
 
 > (tojs '(fn ()
            (do a b c nil)
            nil))
-(function () {
+function () {
     a;
     b;
     c;
-    undefined;
-});
+};
 
 
 > (tojs '(fn ()
            (do a b c)
            (let a 10 a)))
-(function () {
+function () {
     a;
     b;
     c;
-    return (function (a) {
-        return a;
-    })(10);
-});
+    var __g... = 10;
+    return __g...;
+};
+
+
+> (tojs '(fn ()
+           (do b c d)
+           (let a 10 a)))
+function () {
+    b;
+    c;
+    d;
+    var __g... = 10;
+    return __g...;
+};
 
 
 > (tojs '(fn ()
            (do a b c)
            a))
-(function () {
+function () {
     a;
     b;
     c;
     return a;
-});
+};
 
 
 > (tojs '(do a b c))
@@ -411,190 +646,398 @@ var c = 20;
 
 
 > (tojs '(in foo "bar" "qux" "corge"))
-(function (__g60) {
-    return ((__g60 === "bar") || (__g60 === "qux") || (__g60 === "corge"));
+(function (__g...) {
+    return __g... === "bar" || __g... === "qux" || __g... === "corge";
 })(foo);
 
 
 > (tojs '(fn ()
            (in foo "bar" "qux" "corge")))
-(function () {
-    return (function (__g61) {
-        return ((__g61 === "bar") || (__g61 === "qux") || (__g61 === "corge"));
-    })(foo);
-});
+function () {
+    var __g... = foo;
+    return __g... === "bar" || __g... === "qux" || __g... === "corge";
+};
 
 
 > (tojs '(fn ()
            (in foo "bar" "qux" "corge")
            (let a 50
-             (in foo "bar" "qux" "corge"))))
-(function () {
-    (function (__g62) {
-        return ((__g62 === "bar") || (__g62 === "qux") || (__g62 === "corge"));
-    })(foo);
-    return (function (a) {
-        return (function (__g63) {
-            return ((__g63 === "bar") || (__g63 === "qux") || (__g63 === "corge"));
-        })(foo);
-    })(50);
-});
+             (in foo "bar" "qux" "corge" a))))
+function () {
+    var __g... = foo;
+    __g... === "bar" || __g... === "qux" || __g... === "corge";
+    var __g... = 50;
+    var __g... = foo;
+    return __g... === "bar" || __g... === "qux" || __g... === "corge" || __g... === __g...;
+};
 
 
 > (tojs '(fn ()
            (let a 50
              (in foo "bar" "qux" "corge"))))
-(function () {
-    var a = 50;
-    return (function (__g64) {
-        return ((__g64 === "bar") || (__g64 === "qux") || (__g64 === "corge"));
-    })(foo);
-});
+function () {
+    var __g... = 50;
+    var __g... = foo;
+    return __g... === "bar" || __g... === "qux" || __g... === "corge";
+};
 
 
 
 > (tojs '(fn args))
-(function () {});
+function () {};
 
 
 > (tojs '(fn args (prn args)))
-(function () {
+function () {
     var args = Array.prototype.slice.call(arguments);
     return console.log(args);
-});
+};
 
 
 > (tojs '(fn args (do (prn args))))
-(function () {
+function () {
     var args = Array.prototype.slice.call(arguments);
     return console.log(args);
-});
+};
 
 
 > (tojs '(fn args (let x args (prn args))))
-(function () {
+function () {
     var args = Array.prototype.slice.call(arguments);
-    var x = args;
+    var __g... = args;
     return console.log(args);
-});
+};
 
 
 
 > (tojs '(fn (a b (o c))))
-(function (a, b, c) {});
+function (a, b, c) {};
 
 
 > (tojs '(fn (a b (o c)) (list a b c)))
-(function (a, b, c) {
+function (a, b, c) {
     return [a, b, c];
-});
+};
+
+
+> (tojs '(fn (a b (o c nil)) (list a b c)))
+function (a, b, c) {
+    return [a, b, c];
+};
 
 
 > (tojs '(fn (a b (o c)) (do (list a b c))))
-(function (a, b, c) {
+function (a, b, c) {
     return [a, b, c];
-});
+};
 
 
 > (tojs '(fn (a b (o c)) (let x c (list a b c x))))
-(function (a, b, c) {
-    var x = c;
-    return [a, b, c, x];
-});
+function (a, b, c) {
+    var __g... = c;
+    return [a, b, c, __g...];
+};
 
 
 
 > (tojs '(fn (a b (o c 5))))
-(function (a, b, c) {});
+function (a, b, c) {};
 
 
 > (tojs '(fn (a b (o c 5)) (list a b c)))
-(function (a, b, c) {
+function (a, b, c) {
     c = c || 5;
     return [a, b, c];
-});
+};
 
 
 > (tojs '(fn (a b (o c 5)) (do (list a b c))))
-(function (a, b, c) {
+function (a, b, c) {
     c = c || 5;
     return [a, b, c];
-});
+};
 
 
 > (tojs '(fn (a b (o c 5)) (let x c (list a b c x))))
-(function (a, b, c) {
+function (a, b, c) {
     c = c || 5;
-    var x = c;
-    return [a, b, c, x];
-});
+    var __g... = c;
+    return [a, b, c, __g...];
+};
 
 
 
 > (tojs '(fn (a b (o c (foo "bar")))))
-(function (a, b, c) {});
+function (a, b, c) {};
 
 
 > (tojs '(fn (a b (o c (foo "bar"))) (list a b c)))
-(function (a, b, c) {
+function (a, b, c) {
     c = c || foo("bar");
     return [a, b, c];
-});
+};
 
 
 > (tojs '(fn (a (o b 5) (o c (foo "bar")) (o d) (o e foo)) (list a b c)))
-(function (a, b, c, d, e) {
+function (a, b, c, d, e) {
     e = e || foo;
     c = c || foo("bar");
     b = b || 5;
     return [a, b, c];
-});
+};
+
+
+> (tojs '(fn (a (o b 5) (o c (foo "bar")) (o d nil) (o e nil)) (list a b c)))
+function (a, b, c, d, e) {
+    c = c || foo("bar");
+    b = b || 5;
+    return [a, b, c];
+};
 
 
 > (tojs '(fn (a b (o c (foo "bar"))) (do (list a b c))))
-(function (a, b, c) {
+function (a, b, c) {
     c = c || foo("bar");
     return [a, b, c];
-});
+};
 
 
 > (tojs '(fn (a b (o c (foo "bar"))) (let x c (list a b c x))))
-(function (a, b, c) {
+function (a, b, c) {
     c = c || foo("bar");
-    var x = c;
-    return [a, b, c, x];
-});
+    var __g... = c;
+    return [a, b, c, __g...];
+};
 
 
 
 > (tojs '(fn (a b . c)))
-(function (a, b) {});
+function (a, b) {};
 
 
 > (tojs '(fn (a b . c) c))
-(function (a, b) {
+function (a, b) {
     var c = Array.prototype.slice.call(arguments, 2);
     return c;
-});
+};
 
 
 > (tojs '(fn (a b . c) (list a b c)))
-(function (a, b) {
+function (a, b) {
     var c = Array.prototype.slice.call(arguments, 2);
     return [a, b, c];
-});
+};
 
 
 > (tojs '(fn (a b . c) (do (list a b c))))
-(function (a, b) {
+function (a, b) {
     var c = Array.prototype.slice.call(arguments, 2);
     return [a, b, c];
-});
+};
 
 
 > (tojs '(fn (a b . c) (let x c (list a b c x))))
-(function (a, b) {
+function (a, b) {
     var c = Array.prototype.slice.call(arguments, 2);
-    var x = c;
-    return [a, b, c, x];
-});
+    var __g... = c;
+    return [a, b, c, __g...];
+};
+
+
+> (tojs '(= window.foo (fn (a) (+ a 50))))
+window.foo = function (a) {
+    return a + 50;
+};
+
+
+> (tojs '(foo))
+foo();
+
+> (tojs '(foo nil))
+foo();
+
+> (tojs '(foo nil nil nil nil nil))
+foo();
+
+> (tojs '(foo a nil nil nil nil))
+foo(a);
+
+> (tojs '(foo nil nil nil nil a))
+foo(void 0, void 0, void 0, void 0, a);
+
+> (tojs '(foo nil nil nil nil a nil))
+foo(void 0, void 0, void 0, void 0, a);
+
+> (tojs '(foo nil nil nil nil a nil nil nil nil))
+foo(void 0, void 0, void 0, void 0, a);
+
+> (tojs '(foo nil nil nil nil a nil nil nil nil b))
+foo(void 0, void 0, void 0, void 0, a, void 0, void 0, void 0, void 0, b);
+
+> (tojs '(foo nil nil nil nil a nil nil nil nil b nil nil nil))
+foo(void 0, void 0, void 0, void 0, a, void 0, void 0, void 0, void 0, b);
+
+> (tojs '(foo a b c))
+foo(a, b, c);
+
+
+> (tojs '(+ 10 5 20 60 "foo" (+ 5 2 5) (* "nou" 5) (/ "testing" 2)))
+10 + 5 + 20 + 60 + "foo" + 5 + 2 + 5 + "nou" * 5 + "testing" / 2;
+
+> (tojs '(* 10 5 20 60 "foo" (+ 5 2 5) (- "nou" 5) (/ "testing" 2)))
+10 * 5 * 20 * 60 * "foo" * (5 + 2 + 5) * ("nou" - 5) * ("testing" / 2);
+
+
+> (tojs '(+ 10 5 (* 2 3) (/ 5 10)))
+10 + 5 + 2 * 3 + 5 / 10;
+
+> (tojs '(* 10 5 (+ 2 3) (/ 5 10)))
+10 * 5 * (2 + 3) * (5 / 10);
+
+
+> (tojs '(fn ()
+           (let a 5
+             (fn () a))
+           (let a 2)))
+function () {
+    var __g... = 5;
+    function () {
+        return __g...;
+    };
+    var __g... = 2;
+};
+
+
+> (tojs '(if a b c (+ 10 5)))
+a ? b : c ? 10 + 5 : void 0;
+
+
+> (tojs '(if a b c (+ 10 5) d (+ c 50 (+ d 20))))
+a ? b : c ? 10 + 5 : d ? c + 50 + d + 20 : void 0;
+
+
+> (tojs '(if a b c (+ 10 5) d (+ c 50 (+ d 20)) e (+ 10 (* 20 5 6) 6)))
+a ? b : c ? 10 + 5 : d ? c + 50 + d + 20 : e ? 10 + 20 * 5 * 6 + 6 : void 0;
+
+
+> (tojs '(if foo-bar a b c))
+foo_bar ? a : b ? c : void 0;
+
+
+> (tojs '(fn () (= foo-bar "qux")))
+function () {
+    return foo_bar = "qux";
+};
+
+
+> (tojs '(rfn foo-bar (foo-bar)))
+(function (foo_bar) {
+    return foo_bar = function (foo_bar) {};
+})();
+
+
+> (tojs '(rfn foo-bar () (foo-bar)))
+(function (foo_bar) {
+    return foo_bar = function () {
+        return foo_bar();
+    };
+})();
+
+
+
+> (tojs '(and 1 2 (or 3 4 5)))
+1 && 2 && (3 || 4 || 5);
+
+
+> (tojs '(or 1 2 (and 3 4 5)))
+1 || 2 || 3 && 4 && 5;
+
+
+> (tojs '(or (is 1 2) (is 3 4) (is 5 6)))
+1 === 2 || 3 === 4 || 5 === 6;
+
+
+> (tojs '(if (= a 5) a))
+(a = 5) ? a : void 0;
+
+
+> (tojs '(* 2 (/ 3 4) 5))
+2 * (3 / 4) * 5;
+
+> (tojs '(/ 2 (* 3 4) 5))
+2 / (3 * 4) / 5;
+
+
+> (tojs '(+ 1 (- 1e20 1e20) 2))
+1 + (1e+20 - 1e+20) + 2;
+
+> (tojs '(- 1 (+ 1e20 1e20) 2))
+1 - (1e+20 + 1e+20) - 2;
+
+
+> (tojs '(no a))
+!a;
+
+> (tojs '(no "foo"))
+!"foo";
+
+> (tojs '(no nil))
+!void 0;
+
+> (tojs '(no (no nil)))
+!!void 0;
+
+> (tojs '(no (+ 10 5)))
+!(10 + 5);
+
+
+> (tojs '(del a))
+delete a;
+
+> (tojs '(del foo.bar))
+delete foo.bar;
+
+
+> (tojs '(+ 5))
++5;
+
+> (tojs '(- 5))
+-5;
+
+
+> (tojs '(+ "foo"))
++"foo";
+
+> (tojs '(- "foo"))
+-"foo";
+
+
+> (tojs '(+ (+ "foo")))
++(+"foo");
+
+> (tojs '(- (- "foo")))
+-(-"foo");
+
+
+> (tojs '(+ 1 1e20 (- 1e20)))
+1 + 1e+20 + -1e+20;
+
+> (tojs '(+ 1 1e20 (+ 1e20)))
+1 + 1e+20 + (+1e+20);
+
+
+> (tojs '(* 1 1e20 (* 1e20)))
+1 * 1e+20 * 1e+20;
+
+> (tojs '(* 1 1e20 (/ 1e20)))
+1 * 1e+20 * 1e+20;
+
+> (tojs '(* 1 1e20 (+ 1e20)))
+1 * 1e+20 * +1e+20;
+
+> (tojs '(* 1 1e20 (- 1e20)))
+1 * 1e+20 * -1e+20;
+
+
+> (tojs '(if (= a 1) (= b 2) (= c 3) (= d 4) (= e 5)))
+(a = 1) ? (b = 2) : (c = 3) ? (d = 4) : (e = 5);
