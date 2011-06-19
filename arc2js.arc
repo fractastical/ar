@@ -10,7 +10,7 @@
 (implicit precedence  0)
 
 (implicit optimize?   t)
-(implicit readable?   t)
+;(implicit readable?   t)
 (implicit strict?     t)
 (implicit wrapper?    t)
 
@@ -21,9 +21,10 @@
     minify `(w/linesep   ""
             (w/indent    ""
             (w/spaces    ""
-            (w/readable? nil
+            ;(w/readable? nil
             (w/optimize? t
-              ,@body)))))
+              ,@body))))
+            ;)
     (err "unknown whitespace mode" x)))
 
 
@@ -48,11 +49,11 @@
 #|(def replace (x v)
   (= (js-replace-rules* x) v))|#
 
-(mac replaceall (x . body)
+(mac w/replace (x . body)
   `(dlet replace (if replace (join ,x replace) ,x) ,@body))
 
-(mac w/replace (from to . body)
-  `(replaceall ((,from ,to)) ,@body))
+#|(mac w/replace (from to . body)
+  `(replaceall ((,from ,to)) ,@body))|#
 
 
 (def addsep (x args)
@@ -151,9 +152,9 @@
                 (w/uniq u
                   (push (list n u) acc)
                   (list u spaces "=" spaces (tojs v))))))
-          (or (replaceall acc (map sym:tojs
-                                   (mappend [optimize optfn _]
-                                            body)))
+          (or (w/replace acc (map sym:tojs
+                                  (mappend [optimize optfn _]
+                                           body)))
               (list nil)))))
 #|
   (w/uniq u
@@ -280,7 +281,10 @@
       (= body (rem '|void 0| body))
 
       (when body
-        (cons linesep (map line body)))))
+        `(,linesep ,indent
+          ,@(intersperse (string ";" linesep indent) body)
+          ,linesep))))
+                      ;(map line body)
 
   (and local body indent)
   "}")
@@ -355,27 +359,24 @@
 (def math (name args)
   ;13
   ;(prn " " name " " args " " precedence)
-  (prn " ")
+  ;(prn " ")
   (string (unless (cdr args) name)
-  (binwrap name (map (fn (x)
-                       (if (acons x)
-                             (let c (car x)
-                               (if (is c name)
-                                     (w/precedence
-                                       (if (errsafe:cddr x)
-                                             precedence
-                                           13)
-                                       (tojs x))
-                                   (w/precedence (+ precedence 1)
-                                     ;(prn " " c " " name " " precedence " " (op-precedence c))
-                                     ;(prn x)
-                                     (w/precedence
-                                       (if (cddr x)
-                                             precedence
-                                           0)
-                                       (tojs x)))))
-                           (tojs x)))
-                     args))))
+          (binwrap name (mapeach x args
+                          (if (acons x)
+                                (let c (car x)
+                                  (if (is c name)
+                                        (w/precedence
+                                          (if (cddr x)
+                                                precedence
+                                              13)
+                                          (tojs x))
+                                      (w/precedence (+ precedence 1)
+                                        (w/precedence
+                                          (if (cddr x)
+                                                precedence
+                                              0)
+                                          (tojs x)))))
+                              (tojs x))))))
 
 (def binwrap (name args)
   ;(let op (op-precedence name)
