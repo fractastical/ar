@@ -26,6 +26,16 @@
         args)
      ,e))
 
+(mac on (type parms . body)
+  `(addEventListener ,(string type)
+                     (fn ,parms ,@body)
+                     false))
+
+(mac style (e . args)
+  `(do ,@(mapeach (x y) (pair args)
+           `(= ,(sym:string e ".style." x)
+               ,(string y)))))
+
 (mac element (n . args)
   `(w/element self ,n ,@args))
 
