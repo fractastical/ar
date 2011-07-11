@@ -1,0 +1,410 @@
+> (use import)
+
+
+==============================================================================
+
+
+> (= foo (new-namespace))
+#<namespace>
+
+
+> (foo '+)
+#<fn:+>
+
+> (keys foo)
+nil
+
+
+> (= (foo '+) "nou")
+"nou"
+
+> (foo '+)
+"nou"
+
+> (keys foo)
+(+)
+
+
+> foo<-parent
+#<namespace __built-ins*>
+
+> (foo<-parent '+)
+#<fn:+>
+
+
+> (del (foo '+))
+"nou"
+
+> (foo '+)
+#<fn:+>
+
+> (keys foo)
+nil
+
+
+==============================================================================
+
+
+;> (eval '(+ 10 5) (this-namespace))
+15
+
+
+> (eval '(+ 10 5) (table))
+error: undefined variable: +
+
+> (eval '(+ 10 5) (obj + +))
+15
+
+
+> (eval '(+ 10 5) __built-ins*)
+15
+
+> (eval '(+ 10 5) (new-namespace))
+15
+
+
+> (eval '(+ 10 5) (new-namespace (table)))
+error: undefined variable: +
+
+> (eval '(+ 10 5) (new-namespace (obj + +)))
+15
+
+
+> (w/namespace (table) (eval '(+ 5 10)))
+error: undefined variable: +
+
+> (w/namespace (obj + +) (eval '(+ 5 10)))
+15
+
+
+> (let namespace 'nou (eval '(+ 5 10) (obj + +)))
+15
+
+> (let namespace 'nou (eval '(+ 5 10)))
+15
+
+
+> (w/namespace 'nou (eval '(+ 5 10) (obj + +)))
+15
+
+> (w/namespace 'nou (eval '(+ 5 10)))
+error: Can't coerce nou #<fn:g...>
+
+
+==============================================================================
+
+
+> (= foo (new-namespace))
+#<namespace>
+
+
+> bar
+error: reference to undefined identifier: bar
+
+> (foo 'bar)
+nil
+
+
+> (w/namespace foo (eval '(assign bar 'qux)))
+qux
+
+> bar
+error: reference to undefined identifier: bar
+
+> (foo 'bar)
+qux
+
+> (foo 'qux)
+nil
+
+
+> (eval 'bar)
+error: reference to undefined identifier: bar
+
+> (w/namespace foo (eval 'bar))
+qux
+
+> bar
+error: reference to undefined identifier: bar
+
+
+
+> (w/namespace foo (eval '(assign yesm bar)))
+qux
+
+> (foo 'yesm)
+qux
+
+
+
+> (eval 'yesm)
+error: reference to undefined identifier: yesm
+
+> (w/namespace foo (eval 'yesm))
+qux
+
+> yesm
+error: reference to undefined identifier: yesm
+
+
+
+> (w/namespace foo (eval '(let a 5 a)))
+5
+
+> (eval 'a)
+error: reference to undefined identifier: a
+
+> (foo 'a)
+nil
+
+> (w/namespace foo (eval 'a))
+error: undefined variable: a
+
+
+
+> (w/namespace foo (eval '(let a 5 (assign a 10) a)))
+10
+
+> (eval 'a)
+error: reference to undefined identifier: a
+
+> (foo 'a)
+nil
+
+> (w/namespace foo (eval 'a))
+error: undefined variable: a
+
+
+
+> (eval 'ppr)
+error: reference to undefined identifier: ppr
+
+> (import pprint "../arc3.1/pprint.arc")
+nil
+
+> (eval 'ppr)
+error: reference to undefined identifier: ppr
+
+
+> pprint
+<namespace>
+
+> pprint!ppr
+#<fn>
+
+
+> (sort < (keys pprint))
+(bodops* lpar oneline* ppr ppr-call ppr-progn pprest rpar sp write-spaced)
+
+
+> (tostring (pprint!ppr "foobar"))
+"\"foobar\""
+
+> (pprint!ppr '(do (fn ()) (+ aa 5) (+ bb 5) (+ cc 5)))
+(do (fn nil)
+    (+ aa 5)
+    (+ bb 5)
+    (+ cc 5))t
+
+
+> (w/namespace pprint (tostring (pprint!ppr "foobar")))
+"\"foobar\""
+
+> (w/namespace pprint (pprint!ppr '(do (fn ()) (+ aa 5) (+ bb 5) (+ cc 5))))
+(do (fn nil)
+    (+ aa 5)
+    (+ bb 5)
+    (+ cc 5))t
+
+
+> (eval 'ppr)
+error: reference to undefined identifier: ppr
+
+
+==============================================================================
+
+
+> (= foo (new-namespace))
+<namespace>
+
+> foo!+
+#<fn:+>
+
+> a
+error: reference to undefined identifier: a
+
+> (= foo!a 50)
+50
+
+> foo!a
+50
+
+> a
+error: reference to undefined identifier: a
+
+> (w/namespace foo (+ a 50))
+error: reference to undefined identifier: a
+
+> (w/namespace foo (eval '(+ a 27)))
+77
+
+> a
+error: reference to undefined identifier: a
+
+> (foo!+ a 50)
+error: reference to undefined identifier: a
+
+
+> (= foo!bar (fn () qux))
+#<fn>
+
+> foo!bar
+#<fn>
+
+> (foo!bar)
+error: reference to undefined identifier: qux
+
+> (= foo!qux "hiya!")
+"hiya!"
+
+> (foo!bar)
+"hiya!"
+
+> foo!qux
+"hiya!"
+
+> (w/namespace foo (foo!bar))
+"hiya!"
+
+
+> (del foo!qux)
+"hiya!"
+
+> (w/namespace foo (eval '(= bar (fn () qux))))
+#<fn>
+
+> foo!bar
+#<fn>
+
+> (foo!bar)
+error: undefined variable: qux
+
+> (= foo!qux "hiya!")
+"hiya!"
+
+> (foo!bar)
+"hiya!"
+
+> foo!qux
+"hiya!"
+
+> (w/namespace foo (foo!bar))
+"hiya!"
+
+> (w/namespace foo (eval '(foo!bar)))
+"hiya!"
+
+> qux
+error: reference to undefined identifier: qux
+
+> (eval 'qux)
+error: reference to undefined identifier: qux
+
+
+==============================================================================
+
+
+> (do (= foo (new-namespace))
+      (eval '(= bar (fn () qux)) foo)
+      (prn foo!bar)
+      (= foo!qux "hiya")
+      (foo!bar))
+#<fn>
+"hiya"
+
+
+==============================================================================
+
+
+> (= foo (new-namespace))
+#<namespace>
+
+> (= bar (new-namespace))
+#<namespace>
+
+> (w/eval foo
+    (def helper (x)
+      (+ 5 x)))
+#<fn>
+
+> (w/eval foo
+    (mac something ()
+      `(helper 10)))
+#<mac>
+
+> (eval `(= foo ',foo) bar)
+#<namespace>
+
+> (w/eval bar
+    (foo!something))
+15
+
+> (w/eval bar
+    (w/eval foo
+      (something)))
+15
+
+> (w/eval bar
+    (w/namespace foo
+      (something)))
+error: namespace-variable-value: something is not defined
+
+> (w/eval bar
+    (w/eval namespace
+      (something)))
+error: undefined variable something
+
+> (w/eval bar
+    (something))
+error: undefined variable something
+
+> (w/eval bar
+    (= something foo!something))
+#<mac>
+
+> (w/eval bar
+    (something))
+15
+
+> (w/eval bar
+    (w/eval namespace
+      (something)))
+error: undefined variable helper
+
+
+==============================================================================
+
+
+> (w/eval (obj + +)
+    (+ 10 5))
+15
+
+
+> (w/eval (obj + +)
+    (/ 10 5))
+error: undefined variable: /
+
+
+> (w/eval (obj + +)
+    (+ 10 5)
+    (/ 5 20))
+error: undefined variable: /
+
+
+> (w/eval (table)
+    (+ 10 5))
+error: undefined variable: +
+
+
+> (w/eval (table) 5)
+5

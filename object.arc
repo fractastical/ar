@@ -1,3 +1,9 @@
+(use arc defcall strings)
+
+;; should be in arc.arc
+(def 1+ (x)
+  (+ 1 x))
+
 ;=============================================================================
 ;  Ssyntax
 ;=============================================================================
@@ -52,11 +58,11 @@
   (racket-hash-ref (rep tab) key default))
 
 (def set-attribute (tab key (o value))
-  (racket (racket-hash-set! (rep tab) key value))
+  (ail-code (racket-hash-set! (rep tab) key value))
   value)
 
 (def del-attribute (tab key)
-  (racket (racket-hash-remove! (rep tab) key))
+  (ail-code (racket-hash-remove! (rep tab) key))
   nil)
 
 (defset get-attribute (x k)
@@ -242,7 +248,16 @@
     (apply call args)
     (apply (rep x) args)))|#
 
+#|(defcall object (x . args)
+  )|#
 
+(extend ar-apply-non-fn (x args) (object? x)
+  ;(prn x " " args)
+  (isnt/fail call (get-attribute x 'call)
+    (apply call-w/self x call args)
+    (apply get-attribute x args)))
+
+#|
 ;; inefficient, use defcall later
 (extend coerce (x type . r) (and (is type 'fn)
                                  (object? x))
@@ -250,7 +265,7 @@
     (fn args
       (apply call-w/self x call args))
     (fn args
-      (apply get-attribute x args))))
+      (apply get-attribute x args))))|#
     ;(orig (rep x) type)))
 
   #|
@@ -281,7 +296,7 @@
   (def dref (x l (o r fail) (o s fail))
     ;(prn x)
     (case (type x)
-      table (do (racket (racket-hash-remove! x l))
+      table (do (ail-code (racket-hash-remove! x l))
                 x)
       cons  (do (if (and (is r fail)
                          (is s fail))
