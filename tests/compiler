@@ -1,0 +1,418 @@
+> (use compiler)
+
+> (defoutput fn (x parms . body)
+    (cons (list 'fn parms) body))
+
+> (mac test (x)
+    `(w/uniq-counter 1 ,x))
+
+> (redef uniq ((o n))
+    (racket-string->uninterned-symbol:str (or n gensym-name)
+                                          (do1 uniq-counter
+                                               (++ uniq-counter))))
+
+> (def demacex (x)
+    (if (cons? x)
+          (iflet c (and (caris car.x 'fn) car.x)
+            (do (zap2 map demacex cdr.x)
+                (zap2 map demacex cddr.c)
+                (if (or cadr.c cdr.x)
+                      (let x (flatzip cadr.c cdr.x)
+                        (if (is len.x 2)
+                              `(let ,@x ,@cddr.c)
+                            `(with ,x ,@cddr.c)))
+                    `(do ,@cddr.c)))
+            (if (caris x 'ref)
+                  (sym:intersperse "!" cdr.x)
+                (map demacex x)))
+        x))
+
+;> (test (find-globals '((fn (foo)
+                           (assign foo (fn (x)
+                                         (foo x))))
+                         nil)))
+u
+
+
+;> (test (optimizefn '(if a (do b c d))))
+(((if a (do b c d))) nil)
+
+
+;> (test (optimizefn '(fn (foo)
+                        ((fn (x)
+                           (foo x 10))
+                         5)
+                        (assign foo (fn (x)
+                                      (foo x))))))
+(((fn (foo) ((fn (x) (foo x 10)) 5) (assign foo (fn (x) (foo x))))) nil)
+
+
+;> (test (optimizefn '(fn (foo)
+                        ((fn (x)
+                           (foo x 10))
+                         5)
+                        (assign foo (fn (x)
+                                      (foo x))))))
+
+
+;> (test (optimizefn '((fn (x)
+                         (foo x 10))
+                       5)))
+(((foo __g 10)) ((__g 5)))
+
+
+;> (test (optimizefn '((fn (x)
+                         (foo x 10)))))
+(((foo __g 10)) ((__g nil)))
+
+
+;> (test (optimizefn '((fn ()
+                         (foo x 10)))))
+(((foo x 10)) nil)
+
+
+;> (test (optimizefn '(let x 5
+                        (foo x 10))))
+(((foo __g 10)) ((__g 5)))
+
+
+;> (test (optimizefn '(let x 5
+                 (let y 15
+                   (foo x y 10))))
+(((foo __g __g 10)) ((__g 5) (__g 15)))
+
+
+;> (test (optimizefn '(do a b c))
+((a b c) nil)
+
+
+;> (test (let (body vars) (optimizefn '(let x 5
+                                  (let y 15
+                                    (foo x y 10))))
+    (str (varblock vars) ";" linesep
+         (map tojsexpr body)))
+"var a = 5,\n        b = 15;\nfoo(a, b, 10)"
+
+
+
+> (test (expand
+          '(let x (document!createElement "div")
+             (x!setAttribute "test" "yes")
+             (x!appendChild
+               (let self (document!createElement "div")
+                 (self!setAttribute "foo" "bar")
+                 (self!appendChild
+                   (let self (document!createElement "div")
+                     (self!setAttribute "qux" "corge")
+                     self))
+                 (self!appendChild
+                   (let self (document!createElement "div")
+                     (self!setAttribute "corge" (+ (x!getAttribute "test") "no"))
+                     self))
+                 self))
+             x)))
+((fn (x) ((ref x "setAttribute") "test" "yes") ((ref x "appendChild") ((fn (self) ((ref self "setAttribute") "foo" "bar") ((ref self "appendChild") ((fn (self) ((ref self "setAttribute") "qux" "corge") self) ((ref document "createElement") "div"))) ((ref self "appendChild") ((fn (self) ((ref self "setAttribute") "corge" (+ ((ref x "getAttribute") "test") "no")) self) ((ref document "createElement") "div"))) self) ((ref document "createElement") "div"))) x) ((ref document "createElement") "div"))
+
+
+> (test (analyze:expand
+          '(let x (document!createElement "div")
+             (x!setAttribute "test" "yes")
+             (x!appendChild
+               (let self (document!createElement "div")
+                 (self!setAttribute "foo" "bar")
+                 (self!appendChild
+                   (let self (document!createElement "div")
+                     (self!setAttribute "qux" "corge")
+                     self))
+                 (self!appendChild
+                   (let self (document!createElement "div")
+                     (self!setAttribute "corge" (+ (x!getAttribute "test") "no"))
+                     self))
+                 self))
+             x)))
+(#info((body . (((ref x "setAttribute") "test" "yes") ((ref x "appendChild") (#info((body . (((ref self "setAttribute") "foo" "bar") ((ref self "appendChild") (#info((body . (((ref self "setAttribute") "qux" "corge") self))
+                  (global . (ref))
+                  (inner . (self))
+                  (name . fn)
+                  (parms . (self))) ((ref document "createElement") "div"))) ((ref self "appendChild") (#info((body . (((ref self "setAttribute") "corge" (+ ((ref x "getAttribute") "test") "no")) self))
+                  (global . (ref +))
+                  (inner . (self x))
+                  (name . fn)
+                  (parms . (self))) ((ref document "createElement") "div"))) self))
+            (global . (ref document +))
+            (inner . (self x))
+            (name . fn)
+            (parms . (self))) ((ref document "createElement") "div"))) x))
+      (global . (ref document +))
+      (inner . (self))
+      (name . fn)
+      (parms . (x))) ((ref document "createElement") "div"))
+
+
+> (test (analyze:shorten:normalize:expand
+          '(let x (document!createElement "div")
+             (x!setAttribute "test" "yes")
+             (x!appendChild
+               (let self (document!createElement "div")
+                 (self!setAttribute "foo" "bar")
+                 (self!appendChild
+                   (let self (document!createElement "div")
+                     (self!setAttribute "qux" "corge")
+                     self))
+                 (self!appendChild
+                   (let self (document!createElement "div")
+                     (self!setAttribute "corge" (+ (x!getAttribute "test") "no"))
+                     self))
+                 self))
+             x)))
+(#info((body . (((ref __g1 "setAttribute") "test" "yes") ((ref __g1 "appendChild") (#info((body . (((ref __g2 "setAttribute") "foo" "bar") ((ref __g2 "appendChild") (#info((body
+ . (((ref __g3 "setAttribute") "qux" "corge") __g3))
+                  (global . (ref))
+                  (name . fn)
+                  (parms . (__g3))) ((ref document "createElement") "div"))) ((ref __g2 "appendChild") (#info((body . (((ref __g4 "setAttribute") "corge" (+ ((ref __g1 "getAttri
+bute") "test") "no")) __g4))
+                  (global . (ref +))
+                  (inner . (__g1))
+                  (name . fn)
+                  (parms . (__g4))) ((ref document "createElement") "div"))) __g2))
+            (global . (ref document +))
+            (inner . (__g3 __g4 __g1))
+            (name . fn)
+            (parms . (__g2))) ((ref document "createElement") "div"))) __g1))
+      (global . (ref document +))
+      (inner . (__g2 __g3 __g4))
+      (name . fn)
+      (parms . (__g1))) ((ref document "createElement") "div"))
+
+
+> (test (demacex:optimize:shorten:normalize:expand
+          '(let x (document!createElement "div")
+             (x!setAttribute "test" "yes")
+             (x!appendChild
+               (let self (document!createElement "div")
+                 (self!setAttribute "foo" "bar")
+                 (self!appendChild
+                   (let self (document!createElement "div")
+                     (self!setAttribute "qux" "corge")
+                     self))
+                 (self!appendChild
+                   (let self (document!createElement "div")
+                     (self!setAttribute "corge" (+ (x!getAttribute "test") "no"))
+                     self))
+                 self))
+             x)))
+(let __g1 (document!createElement "div") (__g1!setAttribute "test" "yes") (let __g2 (document!createElement "div") (__g2!setAttribute "foo" "bar") (let __g3 (document!createElement "div") (__g3!setAttribute "qux" "corge") (__g2!appendChild __g3)) (let __g4 (document!createElement "div") (__g4!setAttribute "corge" (+ (__g1!getAttribute "test") "no")) (__g2!appendChild __g4)) (__g1!appendChild __g2)) __g1)
+
+
+> (test (optimize:shorten:normalize:expand
+          '(let x (document!createElement "div")
+             (x!setAttribute "test" "yes")
+             (x!appendChild
+               (let self (document!createElement "div")
+                 (self!setAttribute "foo" "bar")
+                 (self!appendChild
+                   (let self (document!createElement "div")
+                     (self!setAttribute "qux" "corge")
+                     self))
+                 (self!appendChild
+                   (let self (document!createElement "div")
+                     (self!setAttribute "corge" (+ (x!getAttribute "test") "no"))
+                     self))
+                 self))
+             x)))
+u
+
+
+> (test (compile:analyze:optimize:shorten:normalize:expand
+          '(let x (document!createElement "div")
+             (x!setAttribute "test" "yes")
+             (x!appendChild
+               (let self (document!createElement "div")
+                 (self!setAttribute "foo" "bar")
+                 (self!appendChild
+                   (let self (document!createElement "div")
+                     (self!setAttribute "qux" "corge")
+                     self))
+                 (self!appendChild
+                   (let self (document!createElement "div")
+                     (self!setAttribute "corge" (+ (x!getAttribute "test") "no"))
+                     self))
+                 self))
+             x)))
+u
+
+
+> (test (optimize:shorten:normalize:expand
+          '(fn (x)
+             (let y 5
+               (list x y)))))
+(fn (__g1) ((fn (__g2) (list __g1 __g2)) 5))
+
+
+> (test (optimize:shorten:normalize:expand
+          '(fn (x)
+             (let y 5
+               (+ y 10)
+               (list x y)))))
+(fn (__g1) ((fn (__g2) (+ __g2 10) (list __g1 __g2)) 5))
+
+
+> (test (optimize:shorten:normalize:expand
+          '(fn (x)
+             (let y 5
+               (let z 10
+                 (list x y z))))))
+(fn (__g1) ((fn (__g2) ((fn (__g3) (list __g1 __g2 __g3)) 10)) 5))
+
+
+> (test (optimize:shorten:normalize:expand
+          '(fn (x)
+             (let y 5
+               (+ y 25)
+               (let z 10
+                 (list x y z))))))
+(fn (__g1) ((fn (__g2) (+ __g2 25) ((fn (__g3) (list __g1 __g2 __g3)) 10)) 5))
+
+
+> (test (optimize:shorten:normalize:expand
+          '(foo (let a 5 a))))
+((fn (__g1) (foo __g1)) 5)
+
+
+> (test (optimize:shorten:normalize:expand
+          '(foo bar (let a 5 a))))
+((fn (__g1) (foo bar (do (assign __g1 5) __g1))) nil)
+
+
+> (test (optimize:shorten:normalize:expand
+          '(foo (let a 5 a)
+                (let a 10 (+ a 5)))))
+((fn (__g1 __g2) (foo __g1 (do (assign __g2 10) (+ __g2 5)))) 5 nil)
+
+
+> (test (optimize:shorten:normalize:expand
+          '(foo (let a 5  (+ a 20) a)
+                (let a 10 (+ a 5)))))
+((fn (__g1 __g2) (+ __g1 20) (foo __g1 (do (assign __g2 10) (+ __g2 5)))) 5 nil)
+
+
+> (test (optimize:shorten:normalize:expand
+          '(foo (let a 5  (+ a 20) (* a 2))
+                (let a 10 (+ a 5)))))
+((fn (__g1 __g2) (+ __g1 20) (foo (* __g1 2) (do (assign __g2 10) (+ __g2 5)))) 5 nil)
+
+
+> (test (optimize:shorten:normalize:expand
+          '(foo (let a 5 a)
+                (let a 10 (+ a 5))
+                (let a 15 (/ a 4)))))
+((fn (__g1 __g2 __g3) (foo __g1 (do (assign __g2 10) (+ __g2 5)) (do (assign __g3 15) (/ __g3 4)))) 5 nil nil)
+
+
+> (test (optimize:shorten:normalize:expand
+          '(foo bar
+                (let a 5 a)
+                (let a 10 (+ a 5))
+                (let a 15 (/ a 4)))))
+((fn (__g1 __g2 __g3) (foo bar (do (assign __g1 5) __g1) (do (assign __g2 10) (+ __g2 5)) (do (assign __g3 15) (/ __g3 4)))) nil nil nil)
+
+
+> (test (optimize:shorten:normalize:expand
+          '(foo (let a 5
+                  (bar (let a 10 a))))))
+((fn (__g1) ((fn (__g2) (foo (bar __g2))) 10)) 5)
+
+
+
+> (test (optimize:shorten:normalize:expand
+          '(foo (let a 5
+                  (bar (let a 10
+                         (qux (let a 15 a))))))))
+((fn (__g1) ((fn (__g2) ((fn (__g3) (foo (bar (qux __g3)))) 15)) 10)) 5)
+
+
+> (test (optimize:shorten:normalize:expand
+          '(foo (let a 5
+                  (+ a 10)
+                  (bar (let a 10
+                         (+ a 15)
+                         (qux (let a 15
+                                (+ a 20)
+                                (corge a (let a 20
+                                           (+ a 25)
+                                           a))))))))))
+((fn (__g1) (+ __g1 10) ((fn (__g2) (+ __g2 15) ((fn (__g3) (+ __g3 20) ((fn (__g4) (foo (bar (qux (corge __g3 (do (assign __g4 20) (+ __g4 25) __g4)))))) nil)) 15)) 10)) 5)
+
+
+> (test (optimize:shorten:normalize:expand
+          '(foo (let a 5
+                  (bar (let a 10
+                         (qux (let a 15
+                                (corge a (let a 20 a))))))))))
+((fn (__g1) ((fn (__g2) ((fn (__g3) ((fn (__g4) (foo (bar (qux (corge __g3 (do (assign __g4 20) __g4)))))) nil)) 15)) 10)) 5)
+
+
+> (test (optimize:shorten:normalize:expand
+          '(let a (let a 5
+                    (+ a 15)
+                    a)
+             (+ a 10)
+             a)))
+((fn (__g1) (+ __g1 15) __g1 (+ __g1 10) __g1) 5)
+
+
+> (test (optimize:shorten:normalize:expand
+          '(let a (let a 5
+                    (+ a 15)
+                    (* a 20))
+             (+ a 10)
+             a)))
+((fn (__g1) (+ __g1 15) (* a 20) (+ __g1 10) __g1) 5)
+
+
+
+> (test (normalize:expand '(fn (x y z) (list x y z))))
+(fn (x y z) (list x y z))
+
+
+> (test (normalize:expand '(fn args args)))
+(fn nil ((fn (args) args) ((ref (ref (ref Array (quote prototype)) (quote slice)) (quote call)) arguments)))
+
+
+> (test (normalize:expand '(fn (x y . c)
+                             (list x y c))))
+(fn (x y) ((fn (c) (list x y c)) ((ref (ref (ref Array (quote prototype)) (quote slice)) (quote call)) arguments 2)))
+
+
+> (test (normalize:expand '(fn (x (o y 5) (o z) . c)
+                             (list x y z c))))
+(fn (x y z) ((fn (c) (or y (assign y 5)) (list x y z c)) ((ref (ref (ref Array (quote prototype)) (quote slice)) (quote call)) arguments 3)))
+
+
+
+> (test (optimize '(do)))
+nil
+
+
+> (test (optimize '(do 1)))
+1
+
+
+> (test (optimize '(do (do 1))))
+1
+
+
+> (test (optimize '(do (do (do 1)))))
+1
+
+
+> (test (optimize '(do (do (do ((fn () 1)))))))
+1
+
+
+> (test (optimize '(do 1 2)))
+(do 1 2)
+
+
+> (test (optimize '(do 1 2 3)))
+(do 1 2 3)

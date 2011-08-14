@@ -2,8 +2,6 @@
 
 > (= expects-strings t)
 
-> (= readable? nil)
-
 > (mac test (x)
     `(w/uniq-counter 1 (tojs ',x)))
 
@@ -66,7 +64,7 @@
 > (test (arc (+ 10 5 6)))
 21;
 
-> (test (arc (string 10 5 6)))
+> (test (arc (str 10 5 6)))
 "1056";
 
 
@@ -99,7 +97,7 @@ x === y && y === z && z === "foo";
 10 + 5 === 15;
 
 
-> (w/whitespace minify
+> (w/mode minify
     (test (is x y z "foo")))
 x===y&&y===z&&z==="foo";
 
@@ -116,184 +114,589 @@ function () {
 };
 
 > (test (fn (x) (+ 10 5)))
-function (x) {
+function (a) {
     return 10 + 5
 };
 
+> (test (fn (foobar) (+ 10 5 foobar)))
+function (a) {
+    return 10 + 5 + a
+};
+
+> (w/shorten? nil (test (fn (foobar) (+ 10 5 foobar))))
+function (foobar) {
+    return 10 + 5 + foobar
+};
+
+
 > (test (fn (x y) (+ 10 5)))
-function (x, y) {
+function (a, b) {
     return 10 + 5
 };
 
 > (test (fn (x y z) (+ 10 5)))
-function (x, y, z) {
+function (a, b, c) {
     return 10 + 5
 };
 
 > (test (fn (x) (+ x 5)))
-function (x) {
-    return x + 5
+function (a) {
+    return a + 5
 };
 
 
 > (test (fn (x) (foo x 5)))
-function (x) {
-    return foo(x, 5)
+function (a) {
+    return foo(a, 5)
 };
 
 > (test (fn (x) (foo-bar x 5)))
-function (x) {
-    return foo_bar(x, 5)
+function (a) {
+    return foo_bar(a, 5)
 };
 
 > (test (fn (x) (foo_bar x 5)))
-function (x) {
-    return foo_bar(x, 5)
+function (a) {
+    return foo_bar(a, 5)
 };
 
 
 > (test (fn (x) (+ 10 5) (foo-bar x 5)))
-function (x) {
+function (a) {
     10 + 5;
-    return foo_bar(x, 5)
+    return foo_bar(a, 5)
 };
 
 
 > (test (fn (foo-bar) (foo-bar (+ 10 5))))
-function (foo_bar) {
-    return foo_bar(10 + 5)
+function (a) {
+    return a(10 + 5)
 };
 
 
-> (w/whitespace minify
+> (w/mode minify
     (test (fn (x y z) (+ 10 5))))
-function(x,y,z){return 10+5};
+function(a,b,c){return 10+5};
 
 
 > (test (fn () (let a 10 a)))
 function () {
-    var __g1 = 10;
-    return __g1
+    var a = 10;
+    return a
 };
 
-> (test (fn () (let a 10 a) (let a 10 a)))
+
+> (test (fn () (let a a a)))
 function () {
-    var __g1 = 10;
-    __g1;
-    var __g2 = 10;
-    return __g2
+    var b = a;
+    return b
 };
 
-> (test (with (a 5 b 10 c 20) (list a b c)))
+
+> (test (fn () (let a aa a)))
+function () {
+    var a = aa;
+    return a
+};
+
+
+> (test (fn () (let a ab a)))
+function () {
+    var a = ab;
+    return a
+};
+
+
+> (test (fn () (let a (a 10) a)))
+function () {
+    var b = a(10);
+    return b
+};
+
+
+> (test (fn () (let a b a)))
+function () {
+    var a = b;
+    return a
+};
+
+
+> (test (fn () (let a (a b) a)))
+function () {
+    var c = a(b);
+    return c
+};
+
+
+> (test (fn () (let a (b a) a)))
+function () {
+    var c = b(a);
+    return c
+};
+
+
+> (test (fn () (let a 10 a) a))
+function () {
+    var b = 10;
+    b;
+    return a
+};
+
+
+> (test (fn () (let a 10 a) (a 5)))
+function () {
+    var b = 10;
+    b;
+    return a(5)
+};
+
+
+> (test (fn () (let a 10 a) (let a 5 a)))
+function () {
+    var a = 10;
+    a;
+    var b = 5;
+    return b
+};
+
+
+
+> (test (fn ()
+          (with (a  1
+                 b  2
+                 c  3
+                 d  4
+                 e  5
+                 f  6
+                 g  7
+                 h  8
+                 i  9
+                 j  10
+                 k  11
+                 l  12
+                 m  13
+                 n  14
+                 o  15
+                 p  16
+                 q  17
+                 r  18
+                 s  19
+                 t  20
+                 u  21
+                 v  22
+                 w  23
+                 x  24
+                 y  25
+                 z  26
+                 a2 27
+                 b2 28
+                 c2 29)
+            [a b c a2 b2 c2])))
+function () {
+    var a = 1,
+        b = 2,
+        c = 3,
+        d = 4,
+        e = 5,
+        f = 6,
+        g = 7,
+        h = 8,
+        i = 9,
+        j = 10,
+        k = 11,
+        l = 12,
+        m = 13,
+        n = 14,
+        o = 15,
+        p = 16,
+        q = 17,
+        r = 18,
+        s = 19,
+        t = 20,
+        u = 21,
+        v = 22,
+        w = 23,
+        x = 24,
+        y = 25,
+        z = 26,
+        a1 = 27,
+        b1 = 28,
+        c1 = 29;
+    return [a, b, c, a1, b1, c1]
+};
+
+
+> (test (fn ()
+          (with (a  1
+                 b  2
+                 c  3
+                 d  4
+                 e  5
+                 f  6
+                 g  7
+                 h  8
+                 i  9
+                 j  10
+                 k  11
+                 l  12
+                 m  13
+                 n  14
+                 o  15
+                 p  16
+                 q  17
+                 r  18
+                 s  19
+                 t  20
+                 u  21
+                 v  22
+                 w  23
+                 x  24
+                 y  25
+                 z  26
+                 aa aa
+                 bb bb
+                 cc cc
+                 a1 a1
+                 b1 b1
+                 c1 c1)
+            [a b c aa bb cc a1 b1 c1])))
+function () {
+    var a = 1,
+        b = 2,
+        c = 3,
+        d = 4,
+        e = 5,
+        f = 6,
+        g = 7,
+        h = 8,
+        i = 9,
+        j = 10,
+        k = 11,
+        l = 12,
+        m = 13,
+        n = 14,
+        o = 15,
+        p = 16,
+        q = 17,
+        r = 18,
+        s = 19,
+        t = 20,
+        u = 21,
+        v = 22,
+        w = 23,
+        x = 24,
+        y = 25,
+        z = 26,
+        d1 = aa,
+        e1 = bb,
+        f1 = cc,
+        g1 = a1,
+        h1 = b1,
+        i1 = c1;
+    return [a, b, c, d1, e1, f1, g1, h1, i1]
+};
+
+
+> (test (fn ()
+          (with (a  1
+                 b  2
+                 c  3
+                 d  4
+                 e  5
+                 f  6
+                 g  7
+                 h  8
+                 i  9
+                 j  10
+                 k  11
+                 l  12
+                 m  13
+                 n  14
+                 o  15
+                 p  16
+                 q  17
+                 r  18
+                 s  19
+                 t  20
+                 u  21
+                 v  22
+                 w  23
+                 x  24
+                 y  25
+                 z  26
+                 a2 27
+                 b2 28
+                 c2 29
+                 d2 30
+                 e2 31
+                 f2 32
+                 g2 33
+                 h2 34
+                 i2 35
+                 j2 36
+                 k2 37
+                 l2 38
+                 m2 39
+                 n2 40
+                 o2 41
+                 p2 42
+                 q2 43
+                 r2 44
+                 s2 45
+                 t2 46
+                 u2 47
+                 v2 48
+                 w2 49
+                 x2 50
+                 y2 51
+                 z2 52
+                 a3 53
+                 b3 54
+                 c3 55
+                 d3 56
+                 e3 57
+                 f3 58
+                 g3 59
+                 h3 60
+                 i3 61
+                 j3 62
+                 k3 63
+                 l3 64
+                 m3 65
+                 n3 66
+                 o3 67
+                 p3 68
+                 q3 69
+                 r3 70
+                 s3 71
+                 t3 72
+                 u3 73
+                 v3 74
+                 w3 75
+                 x3 76
+                 y3 77
+                 z3 78
+                 z4 79)
+            [a b c a2 b2 c2 a3 b3 c3])))
+function () {
+    var a = 1,
+        b = 2,
+        c = 3,
+        d = 4,
+        e = 5,
+        f = 6,
+        g = 7,
+        h = 8,
+        i = 9,
+        j = 10,
+        k = 11,
+        l = 12,
+        m = 13,
+        n = 14,
+        o = 15,
+        p = 16,
+        q = 17,
+        r = 18,
+        s = 19,
+        t = 20,
+        u = 21,
+        v = 22,
+        w = 23,
+        x = 24,
+        y = 25,
+        z = 26,
+        a1 = 27,
+        b1 = 28,
+        c1 = 29,
+        d1 = 30,
+        e1 = 31,
+        f1 = 32,
+        g1 = 33,
+        h1 = 34,
+        i1 = 35,
+        j1 = 36,
+        k1 = 37,
+        l1 = 38,
+        m1 = 39,
+        n1 = 40,
+        o1 = 41,
+        p1 = 42,
+        q1 = 43,
+        r1 = 44,
+        s1 = 45,
+        t1 = 46,
+        u1 = 47,
+        v1 = 48,
+        w1 = 49,
+        x1 = 50,
+        y1 = 51,
+        z1 = 52,
+        a2 = 53,
+        b2 = 54,
+        c2 = 55,
+        d2 = 56,
+        e2 = 57,
+        f2 = 58,
+        g2 = 59,
+        h2 = 60,
+        i2 = 61,
+        j2 = 62,
+        k2 = 63,
+        l2 = 64,
+        m2 = 65,
+        n2 = 66,
+        o2 = 67,
+        p2 = 68,
+        q2 = 69,
+        r2 = 70,
+        s2 = 71,
+        t2 = 72,
+        u2 = 73,
+        v2 = 74,
+        w2 = 75,
+        x2 = 76,
+        y2 = 77,
+        z2 = 78,
+        a3 = 79;
+    return [a, b, c, a1, b1, c1, a2, b2, c2]
+};
+
+
+> (test (with (a 5 a 10 c 20) [a b c]))
+(function (a, a, c) {
+    return [a, b, c]
+})(5, 10, 20);
+
+
+> (test (with (a 5 b 10 c 20) [a b c]))
 (function (a, b, c) {
     return [a, b, c]
 })(5, 10, 20);
 
-> (test (with (a 5 b 10 c 20) (list "foobar" b c)))
+
+> (test (with (a 5 b 10 c 20) ["foobar" b c]))
 (function (a, b, c) {
     return ["foobar", b, c]
 })(5, 10, 20);
 
 
-> (test (fn () (with (a 5 b 10 c 20) (list a b c))))
+> (test (fn () (with (a 5 b 10 c 20) [a b c])))
 function () {
-    var __g1 = 5,
-        __g2 = 10,
-        __g3 = 20;
-    return [__g1, __g2, __g3]
+    var a = 5,
+        b = 10,
+        c = 20;
+    return [a, b, c]
 };
 
 
-> (test (fn () (with (a a b a c b) (list a b c))))
+> (test (fn () (with (a a b a c b) [a b c])))
 function () {
-    var __g1 = a,
-        __g2 = a,
-        __g3 = b;
-    return [__g1, __g2, __g3]
+    var c = a,
+        d = a,
+        e = b;
+    return [c, d, e]
 };
 
 
 
-> (test (fn () (withs (a b b 2) (list a b))))
+> (test (fn () (withs (a b b 2) [a b])))
 function () {
-    var __g1 = b,
-        __g2 = 2;
-    return [__g1, __g2]
+    var a = b,
+        c = 2;
+    return [a, c]
 };
 
 
-> (test (fn () (withs (a b b 2 c b) (list a b c))))
+> (test (fn () (withs (a b b 2 c b) [a b c])))
 function () {
-    var __g1 = b,
-        __g2 = 2,
-        __g3 = __g2;
-    return [__g1, __g2, __g3]
+    var a = b,
+        c = 2,
+        d = c;
+    return [a, c, d]
 };
 
 
 
 > (test (fn () (let a (+ 10 5) a)))
 function () {
-    var __g1 = 10 + 5;
-    return __g1
+    var a = 10 + 5;
+    return a
 };
 
 
 > (test (fn () (let a 5 (let a 10 a))))
 function () {
-    var __g1 = 5,
-        __g2 = 10;
-    return __g2
+    var a = 5,
+        b = 10;
+    return b
 };
 
 
-> (test (fn () (let a 5 (let b 10 (list a b)))))
+> (test (fn () (let a 5 (let b 10 [a b]))))
 function () {
-    var __g1 = 5,
-        __g2 = 10;
-    return [__g1, __g2]
+    var a = 5,
+        b = 10;
+    return [a, b]
 };
 
 
 
-> (test (fn () (withs (a b b 2 c b d c e e) (list a b c d e))))
+> (test (fn ()
+          (withs (a b
+                  b 2
+                  c b
+                  d c
+                  e e)
+            [a b c d e])))
 function () {
-    var __g1 = b,
-        __g2 = 2,
-        __g3 = __g2,
-        __g4 = __g3,
-        __g5 = e;
-    return [__g1, __g2, __g3, __g4, __g5]
+    var a = b,
+        c = 2,
+        d = c,
+        f = d,
+        g = e;
+    return [a, c, d, f, g]
 };
 
 
 
-> (w/optimize? nil (test (fn () (withs (a b b 2 c b) (list a b c)))))
+> (w/optimize? nil (test (fn () (withs (a b b 2 c b) [a b c]))))
 function () {
     return (function (a) {
         return (function (b) {
             return (function (c) {
                 return [a, b, c]
+            })(b)
+        })(2)
+    })(b)
+};
+
+
+> (w/optimize? nil (test (fn () (withs (a b b 2 c b) [a b c this]))))
+function () {
+    return (function (a) {
+        return (function (b) {
+            return (function (c) {
+                return [a, b, c, this]
             }).call(this, b)
         }).call(this, 2)
     }).call(this, b)
 };
 
 
-> (test (fn () (withs (a b b 2 c b) (list a b c))))
+> (test (fn () (withs (a b b 2 c b) [a b c])))
 function () {
-    var __g1 = b,
-        __g2 = 2,
-        __g3 = __g2;
-    return [__g1, __g2, __g3]
+    var a = b,
+        c = 2,
+        d = c;
+    return [a, c, d]
 };
 
 
 
 > (test (fn () (let a a a)))
 function () {
-    var __g1 = a;
-    return __g1
+    var b = a;
+    return b
 };
 
 
@@ -304,11 +707,11 @@ function () {
 
 
 
-> (test (fn () (with (a a b b) (list a b))))
+> (test (fn () (with (a a b b) [a b])))
 function () {
-    var __g1 = a,
-        __g2 = b;
-    return [__g1, __g2]
+    var c = a,
+        d = b;
+    return [c, d]
 };
 
 
@@ -316,18 +719,18 @@ function () {
           (with (a (fn () (+ _ 1))
                  b (fn () (+ a 2))
                  c (fn () (+ b 3)))
-            (list a b))))
+            [a b])))
 function () {
-    var __g1 = function () {
+    var c = function () {
             return _ + 1
         },
-        __g2 = function () {
+        d = function () {
             return a + 2
         },
-        __g3 = function () {
+        e = function () {
             return b + 3
         };
-    return [__g1, __g2]
+    return [c, d]
 };
 
 
@@ -335,18 +738,18 @@ function () {
           (withs (a (fn () (+ _ 1))
                   b (fn () (+ a 2))
                   c (fn () (+ b 3)))
-            (list a b))))
+            [a b])))
 function () {
-    var __g1 = function () {
+    var a = function () {
             return _ + 1
         },
-        __g2 = function () {
-            return __g1 + 2
+        b = function () {
+            return a + 2
         },
-        __g3 = function () {
-            return __g2 + 3
+        c = function () {
+            return b + 3
         };
-    return [__g1, __g2]
+    return [a, b]
 };
 
 
@@ -354,41 +757,52 @@ function () {
           (let a (fn () (+ a 10))
             a)))
 function () {
-    var __g1 = function () {
+    var b = function () {
         return a + 10
     };
-    return __g1
+    return b
 };
 
 
-> (test (with (a a b b) (list a b)))
+> (test (with (a a b b) [a b]))
 (function (a, b) {
     return [a, b]
 })(a, b);
 
 
 
-> (test (assign foo "bar"))
-var foo;
+> (test (assign))
 \
-foo = "bar";
+
+
+> (test (assign foo "bar"))
+var foo = "bar";
+
 
 > (test (assign foo bar qux "bar"))
-var foo, bar, qux;
-\
-foo = bar = qux = "bar";
+var foo = bar = qux = "bar";
+
 
 > (test (= foo "bar"))
-var foo;
-\
-foo = "bar";
+var foo = "bar";
 
-> (test (= foo "bar" bar "qux"))
-var foo, bar;
+
+> (test (= foo "bar"
+           bar "qux"))
+var foo = "bar";
 \
-foo = "bar";
+var bar = "qux";
+
+
+> (test (= foo bar
+           bar qux
+           qux qux))
+var foo = bar;
 \
-bar = "qux";
+var bar = qux;
+\
+var qux = qux;
+
 
 > (test (fn ()
            (= foo "bar"
@@ -399,6 +813,7 @@ function () {
     foo = "bar";
     return bar = "qux"
 };
+
 
 
 > (test (if))
@@ -426,21 +841,35 @@ foo ? "bar" : bar ? "qux" : qux && "corge";
 a + 50 ? "bar" : qux && "corge";
 
 
-> (w/whitespace minify
+> (w/mode minify
     (test (if (+ a 50) "bar" qux "corge")))
 a+50?"bar":qux&&"corge";
 
 
 > (test (in x "foo" "bar" "qux"))
-(function (__g1) {
-    return __g1 === "foo" || __g1 === "bar" || __g1 === "qux"
+(function (a) {
+    return a === "foo" || a === "bar" || a === "qux"
+})(x);
+
+
+> (test (in x "foo" a b "bar" "qux" c))
+(function (d) {
+    return d === "foo" || d === a || d === b || d === "bar" || d === "qux" || d === c
 })(x);
 
 
 > (test (if (in foo 'a 'b) c))
-(function (__g1) {
-    return __g1 === "a" || __g1 === "b"
-})(foo) && c;
+(function (a) {
+    return (a === "a" || a === "b") && c
+})(foo);
+
+
+> (test (fn ()
+          (if (in foo 'a 'b) c)))
+function () {
+    var a = foo;
+    return (a === "a" || a === "b") && c
+};
 
 
 
@@ -456,19 +885,19 @@ a;
 > (test (fn ()
            (with (a (fn ())
                   b (fn (a) a))
-             (list a b))))
+             [a b])))
 function () {
-    var __g1 = function () {},
-        __g2 = function (a) {
+    var a = function () {},
+        b = function (a) {
             return a
         };
-    return [__g1, __g2]
+    return [a, b]
 };
 
 
 > (test (with (a (fn ())
                b (fn (a) a))
-          (list a b)))
+          [a b]))
 (function (a, b) {
     return [a, b]
 })(function () {}, function (a) {
@@ -478,57 +907,98 @@ function () {
 
 > (test (foo (with (a (fn ())
                     b (fn (a) a))
-               (list a b))))
-foo((function (a, b) {
-    return [a, b]
+               [a b])))
+(function (a, b) {
+    return foo([a, b])
 })(function () {}, function (a) {
     return a
-}));
+});
 
 
 > (test (fn ()
            (foo (with (a (fn ())
                        b (fn (a) a))
-                  (list a b)))))
+                  [a b]))))
 function () {
-    return foo((function (a, b) {
-        return [a, b]
-    }).call(this, function () {}, function (a) {
-        return a
-    }))
+    var a = function () {},
+        b = function (a) {
+            return a
+        };
+    return foo([a, b])
 };
 
 
 > (test (fn ()
            (foo (let a 5 a))))
 function () {
-    return foo((function (a) {
-        return a
-    }).call(this, 5))
+    var a = 5;
+    return foo(a)
+};
+
+
+> (test (fn ()
+          (foo (let foo 5 foo))))
+function () {
+    var a = 5;
+    return foo(a)
+};
+
+
+> (w/shorten? nil
+    (test (fn ()
+            (foo (let bar 5 bar)))))
+function () {
+    var bar = 5;
+    return foo(bar)
+};
+
+
+> (w/shorten? nil
+    (test (fn ()
+            (foo (let foo 5 foo)))))
+function () {
+    return foo((function (foo) {
+        return foo
+    })(5))
 };
 
 
 
 > (test (let undefined 2 (if nil 3)))
-(function (undefined) {
+(function (a) {
     return void 0 && 3
 })(2);
 
 
-> (w/whitespace minify (test (let undefined 2 (if nil 3))))
-(function(undefined){return void 0&&3})(2);
+> (w/mode minify (test (let undefined 2 (if nil 3))))
+(function(a){return void 0&&3})(2);
 
 
 > (test (let undefined 2 (if nil 3 (+ undefined 5))))
-(function (undefined) {
-    return void 0 ? 3 : undefined + 5
+(function (a) {
+    return void 0 ? 3 : a + 5
 })(2);
 
 
 > (test (let nil 2 (if nil 3)))
-(function (nil) {
-    return nil && 3
+(function (a) {
+    return void 0 && 3
 })(2);
+
+
+> (test (fn (nil a b c)
+          (if nil 3 [nil a b c])))
+function (a, b, c, d) {
+    return void 0 ? 3 : [void 0, b, c, d]
+};
+
+
+> (test (fn nil
+          (if nil 3 [nil a b c])))
+function () {
+    return void 0 ? 3 : [void 0, a, b, c]
+};
+
 
 
 > (test (or "foo" "bar" "qux"))
@@ -538,41 +1008,116 @@ function () {
 "foo" && "bar" && "qux";
 
 
+
+> (test (or a))
+a;
+
+
+> (test (or a nil))
+a || void 0;
+
+> (test (or a nil b))
+a || b;
+
+> (test (or a "" b c d e))
+a || b || c || d || e;
+
+
+> (test (or nil a))
+a;
+
+> (test (or false a))
+a;
+
+> (test (or null a))
+a;
+
+> (test (or NaN a))
+a;
+
+> (test (or 0 a))
+a;
+
+> (test (or "" a))
+a;
+
+
+> (test (and a))
+a;
+
+
+> (test (and a nil))
+a && void 0;
+
+> (test (and a nil b))
+a && void 0;
+
+> (test (and a "" b c d e))
+a && "";
+
+
+> (test (and nil a))
+void 0;
+
+> (test (and false a))
+false;
+
+> (test (and null a))
+null;
+
+> (test (and NaN a))
+NaN;
+
+> (test (and 0 a))
+0;
+
+> (test (and "" a))
+"";
+
+
+
 > (test (rfn foo-bar () foo-bar))
-(function (foo_bar) {
-    return foo_bar = function () {
-        return foo_bar
+(function (a) {
+    return a = function () {
+        return a
     }
 })();
 
 > (test (rfn foo-bar () (foo-bar)))
-(function (foo_bar) {
-    return foo_bar = function () {
-        return foo_bar()
+(function (a) {
+    return a = function () {
+        return a()
+    }
+})();
+
+> (test (rfn foo (x)
+          (foo x)))
+(function (a) {
+    return a = function (b) {
+        return a(b)
     }
 })();
 
 
 > (test (def foo () nil))
-var foo;
-\
-foo = function () {};
+var foo = function () {};
 
 > (test (def foo () (def bar nil)))
-var foo, bar;
+var bar;
 \
-foo = function () {
+var foo = function () {
     return bar = function () {}
 };
+
 
 
 > (test (def foo ()
            (def bar ()
              (def qux ()
                (def corge () nil)))))
-var foo, bar, qux, corge;
+var bar, qux, corge;
 \
-foo = function () {
+var foo = function () {
     return bar = function () {
         return qux = function () {
             return corge = function () {}
@@ -581,19 +1126,19 @@ foo = function () {
 };
 
 
-> (w/whitespace minify
+> (w/mode minify
     (test (def foo ()
              (def bar ()
                (def qux ()
                 (def corge () nil))))))
-var foo,bar,qux,corge;foo=function(){return bar=function(){return qux=function(){return corge=function(){}}}};
+var bar,qux,corge;var foo=function(){return bar=function(){return qux=function(){return corge=function(){}}}};
 
 
 > (test (= (foo 'bar) "qux"))
-foo["bar"] = "qux";
+foo.bar = "qux";
 
 > (test (sref foo "qux" 'bar))
-foo["bar"] = "qux";
+foo.bar = "qux";
 
 > (test (= (foo (foobar "qux")) "qux"))
 foo[foobar("qux")] = "qux";
@@ -612,13 +1157,16 @@ console.dir("foo", "bar", "qux");
 console.warn("foo", "bar", "qux");
 
 > (test (err "foo" "bar" "qux"))
-console.error("foo", "bar", "qux");
+throw "foo" + " " + "bar" + " " + "qux";
+
+> (test (err a b c))
+throw a + " " + b + " " + c;
 
 
 > (test #\a)
 "a";
 
-> (test (list #\a #\b #\newline #\space))
+> (test [#\a #\b #\newline #\space])
 ["a", "b", "
 ", " "];
 
@@ -626,7 +1174,7 @@ console.error("foo", "bar", "qux");
 > (test (fn ()
            (let a 5)))
 function () {
-    var __g1 = 5
+    var a = 5
 };
 
 
@@ -634,7 +1182,7 @@ function () {
            (let a 5)
            (+ a 50)))
 function () {
-    var __g1 = 5;
+    var b = 5;
     return a + 50
 };
 
@@ -643,14 +1191,14 @@ function () {
 > (test (fn ()
            (let a 5 nil)))
 function () {
-    var __g1 = 5
+    var a = 5
 };
 
 
 > (test (fn ()
           (let a 5 void 0)))
 function () {
-    var __g1 = 5;
+    var a = 5;
     void;
     return 0
 };
@@ -659,7 +1207,7 @@ function () {
 > (test (fn ()
           (let a 5 "void 0")))
 function () {
-    var __g1 = 5;
+    var a = 5;
     return "void 0"
 };
 
@@ -667,7 +1215,7 @@ function () {
 > (test (fn ()
           (let a 5 '|void 0|)))
 function () {
-    var __g1 = 5;
+    var a = 5;
     return "void 0"
 };
 
@@ -675,7 +1223,7 @@ function () {
 > (test (fn ()
           (let a 5 |void 0|)))
 function () {
-    var __g1 = 5;
+    var a = 5;
     return void_0
 };
 
@@ -683,22 +1231,22 @@ function () {
 > (test (fn ()
           (let a 5 (arc '|void 0|))))
 function () {
-    var __g1 = 5;
+    var a = 5;
     return void_0
 };
 
 
 > (test (fn ()
-          (let a 5 (arc (jslit "void 0")))))
+          (let a 5 (arc (lit "void 0")))))
 function () {
-    var __g1 = 5
+    var a = 5
 };
 
 
 > (test (fn ()
-          (let a 5 (arc (jslit '|void 0|)))))
+          (let a 5 (arc (lit '|void 0|)))))
 function () {
-    var __g1 = 5
+    var a = 5
 };
 
 
@@ -706,8 +1254,8 @@ function () {
 > (test (fn ()
            (let a 5 a)))
 function () {
-    var __g1 = 5;
-    return __g1
+    var a = 5;
+    return a
 };
 
 
@@ -716,21 +1264,19 @@ function () {
              (++ a 50)
              (+ 20 a))))
 function () {
-    var __g1 = 5;
-    __g1 += 50;
-    return 20 + __g1
+    var a = 5;
+    a += 50;
+    return 20 + a
 };
 
 
 > (test (= foo (document!createElement "foo")))
-var foo;
-\
-foo = document.createElement("foo");
+var foo = document.createElement("foo");
 
 
 > (test (let a 5
-           (++ a 50)
-           (+ 20 a)))
+          (++ a 50)
+          (+ 20 a)))
 (function (a) {
     a += 50;
     return 20 + a
@@ -738,7 +1284,7 @@ foo = document.createElement("foo");
 
 
 > (test (fn ()
-           (do a b c)))
+          (do a b c)))
 function () {
     a;
     b;
@@ -747,8 +1293,8 @@ function () {
 
 
 > (test (fn ()
-           (do a b c)
-           nil))
+          (do a b c)
+          nil))
 function () {
     a;
     b;
@@ -757,7 +1303,7 @@ function () {
 
 
 > (test (fn ()
-           (do a b c nil)))
+          (do a b c nil)))
 function () {
     a;
     b;
@@ -766,8 +1312,8 @@ function () {
 
 
 > (test (fn ()
-           (do a b c nil)
-           nil))
+          (do a b c nil)
+          nil))
 function () {
     a;
     b;
@@ -776,26 +1322,60 @@ function () {
 
 
 > (test (fn ()
-           (do a b c)
-           (let a 10 a)))
+          (do a b c)
+          (let a 10 a)))
 function () {
     a;
     b;
     c;
-    var __g1 = 10;
-    return __g1
+    var d = 10;
+    return d
 };
 
 
 > (test (fn ()
-           (do b c d)
-           (let a 10 a)))
+          (do b c d)
+          (let a 10 a)))
 function () {
     b;
     c;
     d;
-    var __g1 = 10;
-    return __g1
+    var a = 10;
+    return a
+};
+
+
+> (test (fn ()
+          (do (do a b) c (do d e f g) (do (do (do (do a)))))
+          (let a 10 a)))
+function () {
+    a;
+    b;
+    c;
+    d;
+    e;
+    f;
+    g;
+    a;
+    var h = 10;
+    return h
+};
+
+
+> (test (fn ()
+          ((fn () ((fn () a b)) c ((fn () d e f g)) ((fn () ((fn () ((fn () ((fn () a))))))))))
+          (let a 10 a)))
+function () {
+    a;
+    b;
+    c;
+    d;
+    e;
+    f;
+    g;
+    a;
+    var h = 10;
+    return h
 };
 
 
@@ -819,26 +1399,24 @@ c;
 
 
 > (test (do (= a 5) (= b 10 c 20)))
-var a, b, c;
+var a = 5;
 \
-a = 5;
+var b = 10;
 \
-b = 10;
-\
-c = 20;
+var c = 20;
 
 
 > (test (in foo "bar" "qux" "corge"))
-(function (__g1) {
-    return __g1 === "bar" || __g1 === "qux" || __g1 === "corge"
+(function (a) {
+    return a === "bar" || a === "qux" || a === "corge"
 })(foo);
 
 
 > (test (fn ()
            (in foo "bar" "qux" "corge")))
 function () {
-    var __g1 = foo;
-    return __g1 === "bar" || __g1 === "qux" || __g1 === "corge"
+    var a = foo;
+    return a === "bar" || a === "qux" || a === "corge"
 };
 
 
@@ -847,11 +1425,11 @@ function () {
            (let a 50
              (in foo "bar" "qux" "corge" a))))
 function () {
-    var __g1 = foo;
-    __g1 === "bar" || __g1 === "qux" || __g1 === "corge";
-    var __g2 = 50,
-        __g3 = foo;
-    return __g3 === "bar" || __g3 === "qux" || __g3 === "corge" || __g3 === __g2
+    var a = foo;
+    a === "bar" || a === "qux" || a === "corge";
+    var b = 50,
+        c = foo;
+    return c === "bar" || c === "qux" || c === "corge" || c === b
 };
 
 
@@ -859,103 +1437,140 @@ function () {
            (let a 50
              (in foo "bar" "qux" "corge"))))
 function () {
-    var __g1 = 50,
-        __g2 = foo;
-    return __g2 === "bar" || __g2 === "qux" || __g2 === "corge"
+    var a = 50,
+        b = foo;
+    return b === "bar" || b === "qux" || b === "corge"
 };
 
 
 
 > (test (uniq))
-uniq();
-
-
-> (test (uniq nil))
-uniq();
-
+"a";
 
 > (test (uniq (+ "__" 10 5)))
-uniq("__" + 10 + 5);
+"a";
 
 
-> (test (uniq 'foo))
-uniq("foo");
-
-> (test (uniq "foo"))
-uniq("foo");
+> (w/shorten? nil (test (uniq)))
+"__g1";
 
 
-> (test (arc (uniq)))
+> (w/shorten? nil (test (uniq nil)))
+"__g1";
+
+
+> (w/shorten? nil (test (uniq (+ "__" 10 5))))
+"__1051";
+
+
+> (w/shorten? nil (test (uniq 'foo)))
+"foo1";
+
+> (w/shorten? nil (test (uniq "foo")))
+"foo1";
+
+
+> (w/shorten? nil (test (do (uniq) (uniq))))
+"__g1";
+\
+"__g2";
+
+
+> (w/shorten? nil (test (do (uniq 'foo) (uniq 'foo))))
+"foo1";
+\
+"foo2";
+
+
+
+> (w/shorten? nil (test (arc (uniq))))
 __g1;
 
 
-> (test (arc (uniq nil)))
+> (w/shorten? nil (test (arc (uniq nil))))
 __g1;
 
 
-> (test (arc (uniq (+ "__" 10 5))))
-__1051
+> (w/shorten? nil (test (arc (uniq (+ "__" 10 5)))))
+__1051;
 
 
-> (test (arc (uniq 'foo)))
+> (w/shorten? nil (test (arc (uniq 'foo))))
 foo1;
 
-> (test (arc (uniq "foo")))
+> (w/shorten? nil (test (arc (uniq "foo"))))
 foo1;
 
 
-> (test (do (arc:uniq) (arc:uniq)))
+> (w/shorten? nil (test (do (arc:uniq) (arc:uniq))))
 __g1;
 \
 __g2;
 
 
-> (test (do (arc:uniq "foo") (arc:uniq "foo")))
+> (w/shorten? nil (test (do (arc:uniq "foo") (arc:uniq "foo"))))
 foo1;
 \
 foo2;
 
 
-> (test (do (arc:uniq "bar") (arc:uniq "bar")))
+> (w/shorten? nil (test (do (arc:uniq "bar") (arc:uniq "bar"))))
 bar1;
 \
 bar2;
 
 
 > (test (w/uniq u (+ u 5)))
-(function (u) {
-    return u + 5
-})(__g1);
+(function (a) {
+    return a + 5
+})("a");
+
+
+> (test (let a 10
+          (w/uniq u (+ u 5))))
+(function (a) {
+    var b = "c";
+    return b + 5
+})(10);
 
 
 > (test (w/uniq u `(+ ,u 5)))
-(function (u) {
-    return __g1 + 5; quasiquote(unquote(u) + 5)
-})(__g1);
+(function (a) {
+    return ["+"].concat(a, 5)
+})("a");
 
 
-> (test (fn () (arc:w/uniq u (+ u 5))))
+> (test (fn () (arc:w/uniq u (str u 5))))
 function () {
-    var __g1 = __g2;
-    return __g1 + 5
+    return "__g5"
 };
 
+
+> (test (fn () (arc:w/uniq u u)))
+function () {
+    return a
+};
+
+
 > (test (fn () (w/uniq u `(+ ,u 5))))
-u
+function () {
+    var a = "b";
+    return ["+"].concat(a, 5)
+};
 
 
 
 > (w/uniq u (eval `(test (fn ,u (prn ,u)))))
 function () {
-    var __g1 = Array.prototype.slice.call(arguments);
-    return console.log(__g1)
+    var a = Array.prototype.slice.call(arguments);
+    return console.log(a)
 };
 
 
 > (w/uniq u (eval `(test (fn (a b . ,u) (prn ,u)))))
 function (a, b) {
-    var __g1 = Array.prototype.slice.call(arguments, 2);
-    return console.log(__g1)
+    var c = Array.prototype.slice.call(arguments, 2);
+    return console.log(c)
 };
 
 
@@ -966,56 +1581,56 @@ function () {};
 
 > (test (fn args (prn args)))
 function () {
-    var __g1 = Array.prototype.slice.call(arguments);
-    return console.log(__g1)
+    var a = Array.prototype.slice.call(arguments);
+    return console.log(a)
 };
 
 
-> (test (fn args (zap string args) (prn args)))
+> (test (fn args (zap str args) (prn args)))
 function () {
-    var __g1 = Array.prototype.slice.call(arguments);
-    __g1 = "" + __g1;
-    return console.log(__g1)
+    var a = Array.prototype.slice.call(arguments);
+    a = "" + a;
+    return console.log(a)
 };
 
 
 > (w/optimize? nil (test (fn args (prn args))))
 function () {
-    return (function (args) {
-        return console.log(args)
-    }).call(this, Array.prototype.slice.call(arguments))
+    return (function (a) {
+        return console.log(a)
+    })(Array.prototype.slice.call(arguments))
 };
 
 
-> (w/optimize? nil (test (fn args (zap string args) (prn args))))
+> (w/optimize? nil (test (fn args (zap str args) (prn args))))
 function () {
-    return (function (args) {
-        args = "" + args;
-        return console.log(args)
-    }).call(this, Array.prototype.slice.call(arguments))
+    return (function (a) {
+        a = "" + a;
+        return console.log(a)
+    })(Array.prototype.slice.call(arguments))
 };
 
 
 > (test (fn args (do (prn args))))
 function () {
-    var __g1 = Array.prototype.slice.call(arguments);
-    return console.log(__g1)
+    var a = Array.prototype.slice.call(arguments);
+    return console.log(a)
 };
 
 
 > (test (fn args (let x args (prn args))))
 function () {
-    var __g1 = Array.prototype.slice.call(arguments),
-        __g2 = __g1;
-    return console.log(__g1)
+    var a = Array.prototype.slice.call(arguments),
+        b = a;
+    return console.log(a)
 };
 
 
 > (test (fn args (let x args (prn args x))))
 function () {
-    var __g1 = Array.prototype.slice.call(arguments),
-        __g2 = __g1;
-    return console.log(__g1, __g2)
+    var a = Array.prototype.slice.call(arguments),
+        b = a;
+    return console.log(a, b)
 };
 
 
@@ -1024,28 +1639,28 @@ function () {
 function (a, b, c) {};
 
 
-> (test (fn (a b (o c)) (list a b c)))
+> (test (fn (a b (o c)) [a b c]))
 function (a, b, c) {
     return [a, b, c]
 };
 
 
-> (test (fn (a b (o c nil)) (list a b c)))
+> (test (fn (a b (o c nil)) [a b c]))
 function (a, b, c) {
     return [a, b, c]
 };
 
 
-> (test (fn (a b (o c)) (do (list a b c))))
+> (test (fn (a b (o c)) (do [a b c])))
 function (a, b, c) {
     return [a, b, c]
 };
 
 
-> (test (fn (a b (o c)) (let x c (list a b c x))))
+> (test (fn (a b (o c)) (let x c [a b c x])))
 function (a, b, c) {
-    var __g1 = c;
-    return [a, b, c, __g1]
+    var d = c;
+    return [a, b, c, d]
 };
 
 
@@ -1054,25 +1669,25 @@ function (a, b, c) {
 function (a, b, c) {};
 
 
-> (test (fn (a b (o c 5)) (list a b c)))
+> (test (fn (a b (o c 5)) [a b c]))
 function (a, b, c) {
     c || (c = 5);
     return [a, b, c]
 };
 
 
-> (test (fn (a b (o c 5)) (do (list a b c))))
+> (test (fn (a b (o c 5)) (do [a b c])))
 function (a, b, c) {
     c || (c = 5);
     return [a, b, c]
 };
 
 
-> (test (fn (a b (o c 5)) (let x c (list a b c x))))
+> (test (fn (a b (o c 5)) (let x c [a b c x])))
 function (a, b, c) {
     c || (c = 5);
-    var __g1 = c;
-    return [a, b, c, __g1]
+    var d = c;
+    return [a, b, c, d]
 };
 
 
@@ -1081,14 +1696,14 @@ function (a, b, c) {
 function (a, b, c) {};
 
 
-> (test (fn (a b (o c (foo "bar"))) (list a b c)))
+> (test (fn (a b (o c (foo "bar"))) [a b c]))
 function (a, b, c) {
     c || (c = foo("bar"));
     return [a, b, c]
 };
 
 
-> (test (fn (a (o b 5) (o c (foo "bar")) (o d) (o e foo)) (list a b c)))
+> (test (fn (a (o b 5) (o c (foo "bar")) (o d) (o e foo)) [a b c]))
 function (a, b, c, d, e) {
     e || (e = foo);
     c || (c = foo("bar"));
@@ -1097,7 +1712,7 @@ function (a, b, c, d, e) {
 };
 
 
-> (test (fn (a (o b 5) (o c (foo "bar")) (o d nil) (o e nil)) (list a b c)))
+> (test (fn (a (o b 5) (o c (foo "bar")) (o d nil) (o e nil)) [a b c]))
 function (a, b, c, d, e) {
     c || (c = foo("bar"));
     b || (b = 5);
@@ -1105,18 +1720,18 @@ function (a, b, c, d, e) {
 };
 
 
-> (test (fn (a b (o c (foo "bar"))) (do (list a b c))))
+> (test (fn (a b (o c (foo "bar"))) (do [a b c])))
 function (a, b, c) {
     c || (c = foo("bar"));
     return [a, b, c]
 };
 
 
-> (test (fn (a b (o c (foo "bar"))) (let x c (list a b c x))))
+> (test (fn (a b (o c (foo "bar"))) (let x c [a b c x])))
 function (a, b, c) {
     c || (c = foo("bar"));
-    var __g1 = c;
-    return [a, b, c, __g1]
+    var d = c;
+    return [a, b, c, d]
 };
 
 
@@ -1127,34 +1742,42 @@ function (a, b) {};
 
 > (test (fn (a b . c) c))
 function (a, b) {
-    var __g1 = Array.prototype.slice.call(arguments, 2);
-    return __g1
+    var c = Array.prototype.slice.call(arguments, 2);
+    return c
 };
 
 
-> (test (fn (a b . c) (list a b c)))
+> (test (fn (a b . c) [a b c]))
 function (a, b) {
-    var __g1 = Array.prototype.slice.call(arguments, 2);
-    return [a, b, __g1]
+    var c = Array.prototype.slice.call(arguments, 2);
+    return [a, b, c]
 };
 
 
-> (test (fn (a b . c) (do (list a b c))))
+> (test (fn (a b . c) (do [a b c])))
 function (a, b) {
-    var __g1 = Array.prototype.slice.call(arguments, 2);
-    return [a, b, __g1]
+    var c = Array.prototype.slice.call(arguments, 2);
+    return [a, b, c]
 };
 
 
-> (test (fn (a b . c) (let x c (list a b c x))))
+> (test (fn (a b . c) (let x c [a b c x])))
 function (a, b) {
-    var __g1 = Array.prototype.slice.call(arguments, 2),
-        __g2 = __g1;
-    return [a, b, __g1, __g2]
+    var c = Array.prototype.slice.call(arguments, 2),
+        d = c;
+    return [a, b, c, d]
 };
 
 
-> (test (= window.foo (fn (a) (+ a 50))))
+> (w/shorten? nil (test (fn (foo bar . c) (let x c [foo bar c x]))))
+function (foo, bar) {
+    var c = Array.prototype.slice.call(arguments, 2),
+        x = c;
+    return [foo, bar, c, x]
+};
+
+
+> (test (= window!foo (fn (a) (+ a 50))))
 window.foo = function (a) {
     return a + 50
 };
@@ -1210,11 +1833,11 @@ foo(a, b, c);
              (fn () a))
            (let a 2)))
 function () {
-    var __g1 = 5;
+    var a = 5;
     function () {
-        return __g1
+        return a
     };
-    var __g2 = 2
+    var b = 2
 };
 
 
@@ -1251,15 +1874,15 @@ function () {
 
 
 > (test (rfn foo-bar (foo-bar)))
-(function (foo_bar) {
-    return foo_bar = function (foo_bar) {}
+(function (a) {
+    return a = function (a) {}
 })();
 
 
 > (test (rfn foo-bar () (foo-bar)))
-(function (foo_bar) {
-    return foo_bar = function () {
-        return foo_bar()
+(function (a) {
+    return a = function () {
+        return a()
     }
 })();
 
@@ -1315,6 +1938,9 @@ var a;
 
 > (test (del a))
 delete a;
+
+> (test (del a b c))
+error: #<procedure>: expects 2 arguments, given 4: |delete | a b c
 
 > (test (del foo!bar))
 delete foo.bar;
@@ -1499,34 +2125,35 @@ window.foo = function (a) {
 
 > (test (extend window!foo (a) (isa a 10)
            (+ a 20)))
-(function (orig) {
-    var __g1 = function (a) {
-            return isa(a, 10)
+(function (a) {
+    var b = function (a) {
+            return Object.prototype.toString.call(a) === 10
         },
-        __g2,
-        __g3 = function (a) {
+        c,
+        d = function (a) {
             return a + 20
         };
     return window.foo = function () {
-        var __g4 = Array.prototype.slice.call(arguments);
-        return (__g2 = __g1.apply(this, __g4)) ? __g3.apply(this, __g4) : orig.apply(this, __g4)
+        var e = Array.prototype.slice.call(arguments);
+        return (c = b.apply(this, e)) ? d.apply(this, e) : a.apply(this, e)
     }
 })(window.foo);
 
 
 > (test (extend window!foo (a) (isa (orig x) it 10)
            (orig (+ a it))))
-(function (orig) {
-    var __g1 = function (a) {
-            return isa(orig(x), it, 10)
+(function (a) {
+    var b = function (b) {
+            var c = Object.prototype.toString.call(a(x));
+            return c === it || c === 10
         },
-        __g2,
-        __g3 = function (a) {
-            return orig(a + __g2)
+        c,
+        d = function (b) {
+            return a(b + c)
         };
     return window.foo = function () {
-        var __g4 = Array.prototype.slice.call(arguments);
-        return (__g2 = __g1.apply(this, __g4)) ? __g3.apply(this, __g4) : orig.apply(this, __g4)
+        var e = Array.prototype.slice.call(arguments);
+        return (c = b.apply(this, e)) ? d.apply(this, e) : a.apply(this, e)
     }
 })(window.foo);
 
@@ -1535,17 +2162,18 @@ window.foo = function (a) {
            (extend window!foo (a) (isa (orig x) it 10)
              (orig (+ a it)))))
 function () {
-    var __g1 = window.foo,
-        __g2 = function (a) {
-            return isa(__g1(x), it, 10)
+    var a = window.foo,
+        b = function (b) {
+            var c = Object.prototype.toString.call(a(x));
+            return c === it || c === 10
         },
-        __g3,
-        __g4 = function (a) {
-            return __g1(a + __g3)
+        c,
+        d = function (b) {
+            return a(b + c)
         };
     return window.foo = function () {
-        var __g5 = Array.prototype.slice.call(arguments);
-        return (__g3 = __g2.apply(this, __g5)) ? __g4.apply(this, __g5) : __g1.apply(this, __g5)
+        var e = Array.prototype.slice.call(arguments);
+        return (c = b.apply(this, e)) ? d.apply(this, e) : a.apply(this, e)
     }
 };
 
@@ -1554,30 +2182,51 @@ function () {
            (extend window!foo (a) (isa (orig x) it 10)
              (orig (+ a it) test body))))
 function () {
-    var __g1 = window.foo,
-        __g2 = function (a) {
-            return isa(__g1(x), it, 10)
+    var a = window.foo,
+        b = function (b) {
+            var c = Object.prototype.toString.call(a(x));
+            return c === it || c === 10
         },
-        __g3,
-        __g4 = function (a) {
-            return __g1(a + __g3, test, body)
+        c,
+        d = function (b) {
+            return a(b + c, test, body)
         };
     return window.foo = function () {
-        var __g5 = Array.prototype.slice.call(arguments);
-        return (__g3 = __g2.apply(this, __g5)) ? __g4.apply(this, __g5) : __g1.apply(this, __g5)
+        var e = Array.prototype.slice.call(arguments);
+        return (c = b.apply(this, e)) ? d.apply(this, e) : a.apply(this, e)
+    }
+};
+
+
+> (test (fn ()
+           (extend window!foo (a b) (isa (orig x) it 10)
+             (orig (+ a b it) test body))))
+function () {
+    var a = window.foo,
+        b = function (b, c) {
+            var d = Object.prototype.toString.call(a(x));
+            return d === it || d === 10
+        },
+        c,
+        d = function (b, d) {
+            return a(b + d + c, test, body)
+        };
+    return window.foo = function () {
+        var e = Array.prototype.slice.call(arguments);
+        return (c = b.apply(this, e)) ? d.apply(this, e) : a.apply(this, e)
     }
 };
 
 
 
 > (test (apply foo 1 2 3))
-foo.apply(this, [1, 2].concat(3));
+foo.apply(this, [1].concat(2, 3));
 
 > (test (apply foo (+ 1 2) "foo" "bar" 4 5))
 foo.apply(this, [1 + 2, "foo", "bar", 4].concat(5));
 
-> (test (apply foo (+ 1 2) "foo" "bar" 4 (list 5 6 7)))
-foo.apply(this, [1 + 2, "foo", "bar", 4].concat([5, 6, 7]));
+> (test (apply foo (+ 1 2) "foo" "bar" 4 [5 6 7]))
+foo.apply(this, [1 + 2, "foo", "bar", 4].concat(5, 6, 7));
 
 > (test (apply foo args))
 foo.apply(this, args);
@@ -1595,11 +2244,11 @@ foo.apply(bar, a);
 > (test (fn ()
           (let a 1
             (let b 2
-              (list a b)))))
+              [a b]))))
 function () {
-    var __g1 = 1,
-        __g2 = 2;
-    return [__g1, __g2]
+    var a = 1,
+        b = 2;
+    return [a, b]
 };
 
 
@@ -1607,12 +2256,12 @@ function () {
           (let a 1
             (+ a 5)
             (let b 2
-              (list a b)))))
+              [a b]))))
 function () {
-    var __g1 = 1;
-    __g1 + 5;
-    var __g2 = 2;
-    return [__g1, __g2]
+    var a = 1;
+    a + 5;
+    var b = 2;
+    return [a, b]
 };
 
 
@@ -1621,13 +2270,13 @@ function () {
                  b 2)
             (with (c 3
                    d 4)
-              (list a b c d)))))
+              [a b c d]))))
 function () {
-    var __g1 = 1,
-        __g2 = 2,
-        __g3 = 3,
-        __g4 = 4;
-    return [__g1, __g2, __g3, __g4]
+    var a = 1,
+        b = 2,
+        c = 3,
+        d = 4;
+    return [a, b, c, d]
 };
 
 
@@ -1636,15 +2285,15 @@ function () {
                  b 2)
             (with (c a
                    d 4)
-              (foo (list a b c d)))
-            (list a b c d))))
+              (foo [a b c d]))
+            [a b c d])))
 function () {
-    var __g1 = 1,
-        __g2 = 2,
-        __g3 = __g1,
-        __g4 = 4;
-    foo([__g1, __g2, __g3, __g4]);
-    return [__g1, __g2, c, d]
+    var a = 1,
+        b = 2,
+        e = a,
+        f = 4;
+    foo([a, b, e, f]);
+    return [a, b, c, d]
 };
 
 
@@ -1653,15 +2302,15 @@ function () {
                  b 2)
             (with (c 3
                    d 4)
-              (list a b c d))
-            (list a b c d))))
+              [a b c d])
+            [a b c d])))
 function () {
-    var __g1 = 1,
-        __g2 = 2,
-        __g3 = 3,
-        __g4 = 4;
-    [__g1, __g2, __g3, __g4];
-    return [__g1, __g2, c, d]
+    var a = 1,
+        b = 2,
+        e = 3,
+        f = 4;
+    [a, b, e, f];
+    return [a, b, c, d]
 };
 
 
@@ -1670,10 +2319,10 @@ function () {
                  b 2)
             (do a b c d e))))
 function () {
-    var __g1 = 1,
-        __g2 = 2;
-    __g1;
-    __g2;
+    var a = 1,
+        b = 2;
+    a;
+    b;
     c;
     d;
     return e
@@ -1686,14 +2335,14 @@ function () {
             (+ a 5)
             (with (c 3
                    d 4)
-              (list a b c d)))))
+              [a b c d]))))
 function () {
-    var __g1 = 1,
-        __g2 = 2;
-    __g1 + 5;
-    var __g3 = 3,
-        __g4 = 4;
-    return [__g1, __g2, __g3, __g4]
+    var a = 1,
+        b = 2;
+    a + 5;
+    var c = 3,
+        d = 4;
+    return [a, b, c, d]
 };
 
 
@@ -1703,18 +2352,21 @@ function () {
             (with (c 3
                    d 4)
               (+ a 5)
-              (list a b c d)))))
+              [a b c d]))))
 function () {
-    var __g1 = 1,
-        __g2 = 2,
-        __g3 = 3,
-        __g4 = 4;
-    __g1 + 5;
-    return [__g1, __g2, __g3, __g4]
+    var a = 1,
+        b = 2,
+        c = 3,
+        d = 4;
+    a + 5;
+    return [a, b, c, d]
 };
 
 
 > (test (obj))
+{};
+
+> (test {})
 {};
 
 
@@ -1787,7 +2439,7 @@ function () {
 };
 
 
-> (w/whitespace minify
+> (w/mode minify
     (test (fn ()
             (foo (obj a (fn () (+ a 1))
                       b (fn () (+ b 2)))))))
@@ -1795,7 +2447,7 @@ function(){return foo({"a":function(){return a+1},"b":function(){return b+2}})};
 
 
 > (test (obj a (obj a 5)
-             b (list "c" "d" "e")
+             b ["c" "d" "e"]
              c null))
 {
     "a": {
@@ -1806,31 +2458,50 @@ function(){return foo({"a":function(){return a+1},"b":function(){return b+2}})};
 };
 
 
+> (test { a { a 5 }
+          b ["c" "d" "e"]
+          c null          })
+{
+    "a": {
+        "a": 5
+    },
+    "b": ["c", "d", "e"],
+    "c": null
+};
 
-> (test (list a b c))
+
+
+> (test [a b c])
 [a, b, c];
 
-> (test (list (+ a 1)
-              (+ b 2)
-              (+ c 3)))
+
+> (test [a (do b c d e) f g h (+ 10 5)])
+[a, (b, c, d, e), f, g, h, 10 + 5];
+
+
+> (test [(+ a 1)
+         (+ b 2)
+         (+ c 3)])
 [a + 1, b + 2, c + 3];
 
-> (test (list (+ a 1)
-              (list (+ b 2)
-                    (+ c 3))))
+
+> (test [(+ a 1)
+         [(+ b 2)
+          (+ c 3)]])
 [a + 1, [b + 2, c + 3]];
 
-> (test ((list a b c)!forEach [foo _]))
-[a, b, c].forEach(function (_) {
-    return foo(_)
+
+> (test ([a b c]!forEach (^:foo _)))
+[a, b, c].forEach(function (a) {
+    return foo(a)
 });
 
 
 
 > (test (fn () (let a nil a)))
 function () {
-    var __g1;
-    return __g1
+    var a;
+    return a
 };
 
 > (test (fn () (= a nil) a))
@@ -1854,9 +2525,7 @@ var a;
 var a;
 
 > (test (assign a b c d e nil))
-var a, b, c, d, e;
-\
-a = b = c = d = e = void 0;
+var a = b = c = d = e = void 0;
 
 
 > (test (fn ()
@@ -1864,10 +2533,43 @@ a = b = c = d = e = void 0;
                    (+ a 10))
             a)))
 function () {
-    var __g1 = function (a) {
+    var a = function (a) {
         return a + 10
     };
-    return __g1
+    return a
+};
+
+
+> (test (fn ()
+          (rfn a (a)
+            (+ a 10))))
+function () {
+    var a;
+    return a = function (a) {
+        return a + 10
+    }
+};
+
+
+> (test (fn ()
+          (afn (a)
+            (+ a 10))))
+function () {
+    var a;
+    return a = function (a) {
+        return a + 10
+    }
+};
+
+
+> (test (fn ()
+          (afn (a)
+            (self (+ a 10)))))
+function () {
+    var a;
+    return a = function (b) {
+        return a(b + 10)
+    }
 };
 
 
@@ -1897,13 +2599,13 @@ void_0
             (fn ()
               (let a 5 a))))
 function () {
-    var __g1 = 5;
-    return __g1
+    var a = 5;
+    return a
 };
 \
 function () {
-    var __g1 = 5;
-    return __g1
+    var a = 5;
+    return a
 };
 
 
@@ -1912,13 +2614,13 @@ function () {
             (fn ()
               (let b 4 b))))
 function () {
-    var __g1 = 5;
-    return __g1
+    var a = 5;
+    return a
 };
 \
 function () {
-    var __g1 = 4;
-    return __g1
+    var a = 4;
+    return a
 };
 
 
@@ -1927,10 +2629,10 @@ function () {
             (+ a 5)
             (let a a a))))
 function () {
-    var __g1 = 5;
-    __g1 + 5;
-    var __g2 = __g1;
-    return __g2
+    var a = 5;
+    a + 5;
+    var b = a;
+    return b
 };
 
 
@@ -1939,10 +2641,10 @@ function () {
             (fn ()
               (let a a a)))))
 function () {
-    var __g1 = 5;
+    var a = 5;
     return function () {
-        var __g2 = __g1;
-        return __g2
+        var b = a;
+        return b
     }
 };
 
@@ -1954,17 +2656,50 @@ function () {
                 (fn ()
                   (let a a a))))))
 (function (a) {
-    return a
-})(5);
-\
-function () {
-    var __g1 = 5;
-    __g1;
+    a;
     return function () {
-        var __g2 = __g1;
-        return __g2
+        var a = 5;
+        a;
+        return function () {
+            var b = a;
+            return b
+        }
     }
-};
+})(5);
+
+
+> (test (do (let a 5 a)
+            (prn a)
+            (fn ()
+              (let a 5 a
+                (fn ()
+                  (let a a a))))))
+(function (b) {
+    b;
+    console.log(a);
+    return function () {
+        var a = 5;
+        a;
+        return function () {
+            var b = a;
+            return b
+        }
+    }
+})(5);
+
+
+> (test (do (let a 5 a)
+            (prn a)
+            (let a 10 a)
+            (let a 15 a)))
+(function (b, c, d) {
+    b;
+    console.log(a);
+    c = 10;
+    c;
+    d = 15;
+    return d
+})(5);
 
 
 > (test (do (let a 5 a)
@@ -1972,15 +2707,28 @@ function () {
               (let a a
                 (fn ()
                   (let a a a))))))
-(function (a) {
-    return a
-})(5);
-\
-function () {
-    var __g1 = a;
+(function (b) {
+    b;
     return function () {
-        var __g2 = __g1;
-        return __g2
+        var b = a;
+        return function () {
+            var a = b;
+            return a
+        }
+    }
+})(5);
+
+
+> (test (fn ()
+          (let a a
+            (fn ()
+              (let b a
+                (+ b a))))))
+function () {
+    var b = a;
+    return function () {
+        var a = b;
+        return a + b
     }
 };
 
@@ -2013,24 +2761,24 @@ function (a) {
 
 
 > (test (or= (foo 'a) 5))
-foo["a"] || (foo["a"] = 5);
+foo.a || (foo.a = 5);
 
 
 > (test (fn (a)
           (or= (foo 'a) 5)))
 function (a) {
-    return foo["a"] || (foo["a"] = 5)
+    return foo.a || (foo.a = 5)
 };
 
 
 
 > (test (fn (a)
           ((fn args
-             (string args))!apply foo 1 2 3 a)))
+             (str args))!apply foo 1 2 3 a)))
 function (a) {
     return (function () {
-        var __g1 = Array.prototype.slice.call(arguments);
-        return "" + __g1
+        var a = Array.prototype.slice.call(arguments);
+        return "" + a
     }).apply(foo, 1, 2, 3, a)
 };
 
@@ -2084,7 +2832,7 @@ new ("foo" + "bar");
 new foo.bar;
 
 > (test (new foo!in))
-new foo["in"];
+new foo.in;
 
 > (test (new (foo (+ 0 1) (do a b c) d e f (* a f g) (new (foo)))))
 new foo(0 + 1, (a, b, c), d, e, f, a * f * g, new foo());
@@ -2096,9 +2844,9 @@ new foo(0 + 1, (a, b, c), d, e, f, a * f * g, new foo());
             (= a 10)
             (= a 15))))
 function () {
-    var __g1 = 5;
-    __g1 = 10;
-    return __g1 = 15
+    var a = 5;
+    a = 10;
+    return a = 15
 };
 
 
@@ -2109,8 +2857,8 @@ function () {
 var a;
 \
 function () {
-    var __g1 = 5;
-    __g1 = 10;
+    var b = 5;
+    b = 10;
     return a = 15
 };
 
@@ -2121,7 +2869,7 @@ function () {
 var a;
 \
 function () {
-    var __g1 = 5;
+    var b = 5;
     return a = 15
 };
 
@@ -2131,9 +2879,9 @@ function () {
             (fn ()
               (= a 6)))))
 function () {
-    var __g1 = 5;
+    var a = 5;
     return function () {
-        return __g1 = 6
+        return a = 6
     }
 };
 
@@ -2144,8 +2892,8 @@ function () {
           (fn (a)
             (= a 15))))
 function () {
-    var __g1 = 5;
-    __g1 = 10;
+    var a = 5;
+    a = 10;
     return function (a) {
         return a = 15
     }
@@ -2175,8 +2923,8 @@ function () {
 var a;
 \
 function () {
-    var __g1 = 5;
-    __g1 = 10;
+    var b = 5;
+    b = 10;
     return function (b) {
         a = 15;
         return b = 20
@@ -2195,10 +2943,10 @@ foo("a");
 foo("a", 5);
 
 > (test (ref foo 'a))
-foo["a"];
+foo.a;
 
 > (test (ref foo 'a 5))
-foo["a"] || 5;
+foo.a || 5;
 
 > (test (if (ref foo a 5) 20 30))
 foo[a] || 5 ? 20 : 30;
@@ -2293,31 +3041,125 @@ foo("foobar").length;
 > (test (len (fn () nil)))
 (function () {}).length;
 
-> (test (len (list 1 2 3 4 5)))
+> (test (len [1 2 3 4 5]))
 [1, 2, 3, 4, 5].length;
+
+> (test (len (new foo)))
+(new foo).length;
+
+> (test (new (len foo)))
+new foo.length;
+
+
+
+> (test (while t
+          (prn x)))
+while (true) {
+    console.log(x)
+}
+
+
+> (test (while true
+          (prn x)))
+while (true) {
+    console.log(x)
+}
 
 
 
 > (test (for i 0 (len x)))
-(function (i) {
-    for (i; i < x.length; ++i) {}
+(function (a) {
+    while (a < x.length) {
+        ++a
+    }
+})(0);
+
+
+> (test (if a
+          (for i 0 (len x))))
+a && (function (a) {
+    while (a < x.length) {
+         ++a
+    }
 })(0);
 
 
 > (test (for i 0 (len x)
           (prn:ref x i)))
-(function (i) {
-    for (i; i < x.length; ++i) {
-        console.log(x[i])
+(function (a) {
+    while (a < x.length) {
+        console.log(x[a]);
+        ++a
+    }
+})(0);
+
+
+> (test (for i 0 (len x)
+          (let x i x)))
+(function (a) {
+    var b;
+    while (a < x.length) {
+        b = a;
+        b;
+        ++a
+    }
+})(0);
+
+
+
+> (test (for i 0 (len x)
+          (let x i
+            (fn ()))))
+(function (a) {
+    var b;
+    while (a < x.length) {
+        b = a;
+        function () {};
+        ++a
+    }
+})(0);
+
+
+> (test (for i 0 (len x)
+          (let x i
+            (fn () i))))
+(function (a) {
+    var b;
+    while (a < x.length) {
+        (function (a) {
+            b = a;
+            return function () {
+                return a
+            }
+        })(a);
+        ++a
+    }
+})(0);
+
+
+> (test (for i 0 (len x)
+          (let x i
+            (fn () x))))
+(function (a) {
+    var b;
+    while (a < x.length) {
+        (function (a) {
+            b = a;
+            return function () {
+                return b
+            }
+        })(a);
+        ++a
     }
 })(0);
 
 
 > (test (for i 0 (len x)
           (prn i)))
-(function (i) {
-    for (i; i < x.length; ++i) {
-        console.log(i)
+(function (a) {
+    while (a < x.length) {
+        console.log(a);
+        ++a
     }
 })(0);
 
@@ -2325,10 +3167,11 @@ foo("foobar").length;
 > (test (for i 0 (len x)
           (foo i)
           (prn i)))
-(function (i) {
-    for (i; i < x.length; ++i) {
-        foo(i);
-        console.log(i)
+(function (a) {
+    while (a < x.length) {
+        foo(a);
+        console.log(a);
+        ++a
     }
 })(0);
 
@@ -2336,8 +3179,20 @@ foo("foobar").length;
 > (test (fn ()
           (for i 0 (len x))))
 function () {
-    var __g1 = 0;
-    for (__g1; __g1 < x.length; ++__g1) {}
+    var a = 0;
+    while (a < x.length) {
+        ++a
+    }
+};
+
+
+> (test (fn ()
+          (for i 0 (len a))))
+function () {
+    var b = 0;
+    while (b < a.length) {
+        ++b
+    }
 };
 
 
@@ -2345,9 +3200,10 @@ function () {
           (for i 0 (len x)
             (prn:ref x i))))
 function () {
-    var __g1 = 0;
-    for (__g1; __g1 < x.length; ++__g1) {
-        console.log(x[__g1])
+    var a = 0;
+    while (a < x.length) {
+        console.log(x[a]);
+        ++a
     }
 };
 
@@ -2356,9 +3212,10 @@ function () {
           (for i 0 (len x)
             (prn i))))
 function () {
-    var __g1 = 0;
-    for (__g1; __g1 < x.length; ++__g1) {
-        console.log(__g1)
+    var a = 0;
+    while (a < x.length) {
+        console.log(a);
+        ++a
     }
 };
 
@@ -2368,59 +3225,69 @@ function () {
             (foo i)
             (prn i))))
 function () {
-    var __g1 = 0;
-    for (__g1; __g1 < x.length; ++__g1) {
-        foo(__g1);
-        console.log(__g1)
+    var a = 0;
+    while (a < x.length) {
+        foo(a);
+        console.log(a);
+        ++a
     }
 };
 
 
-> (test (each x (list 1 2 3)
+> (test (each x [1 2 3]
           (prn x)))
-(function (__g1, x) {
-    var __g2 = 0;
-    for (__g2; __g2 < __g1.length; ++__g2) {
-        x = __g1[__g2];
-        console.log(x)
+(function (a) {
+    var b = a.length,
+        c = 0,
+        d;
+    while (c < b) {
+        d = a[c];
+        console.log(d);
+        ++c
     }
 })([1, 2, 3]);
 
 
 > (test (each x l
           (prn x)))
-(function (x) {
-    var __g1 = 0;
-    for (__g1; __g1 < l.length; ++__g1) {
-        x = l[__g1];
-        console.log(x)
+(function (a) {
+    var b = 0,
+        c;
+    while (b < a) {
+        c = l[b];
+        console.log(c);
+        ++b
     }
-})();
+})(l.length);
 
 
 > (test (fn ()
           (each x l
             (prn x))))
 function () {
-    var __g1,
-        __g2 = 0;
-    for (__g2; __g2 < l.length; ++__g2) {
-        __g1 = l[__g2];
-        console.log(__g1)
+    var a = l.length,
+        b = 0,
+        c;
+    while (b < a) {
+        c = l[b];
+        console.log(c);
+        ++b
     }
 };
 
 
 > (test (fn ()
-          (each x (list 1 2 3)
+          (each x [1 2 3]
             (prn x))))
 function () {
-    var __g1 = [1, 2, 3],
-        __g2,
-        __g3 = 0;
-    for (__g3; __g3 < __g1.length; ++__g3) {
-        __g2 = __g1[__g3];
-        console.log(__g2)
+    var a = [1, 2, 3],
+        b = a.length,
+        c = 0,
+        d;
+    while (c < b) {
+        d = a[c];
+        console.log(d);
+        ++c
     }
 };
 
@@ -2429,12 +3296,14 @@ function () {
           (each x '(1 2 3)
             (prn x))))
 function () {
-    var __g1 = [1, 2, 3],
-        __g2,
-        __g3 = 0;
-    for (__g3; __g3 < __g1.length; ++__g3) {
-        __g2 = __g1[__g3];
-        console.log(__g2)
+    var a = [1, 2, 3],
+        b = a.length,
+        c = 0,
+        d;
+    while (c < b) {
+        d = a[c];
+        console.log(d);
+        ++c
     }
 };
 
@@ -2470,7 +3339,7 @@ foo[bar] || 5;
 foo[bar_qux] || 5;
 
 > (test (ref foo 'bar 5))
-foo["bar"] || 5;
+foo.bar || 5;
 
 > (test (ref foo 'bar-qux 5))
 foo["bar-qux"] || 5;
@@ -2483,26 +3352,26 @@ foo(bar);
 
 > (test (foo.bar nou:qux))
 foo(bar)(function () {
-    var __g1 = Array.prototype.slice.call(arguments);
-    return nou(qux.apply(this, __g1))
+    var a = Array.prototype.slice.call(arguments);
+    return nou(qux.apply(this, a))
 });
 
 > (test (foo!bar nou:qux))
 foo.bar(function () {
-    var __g1 = Array.prototype.slice.call(arguments);
-    return nou(qux.apply(this, __g1))
+    var a = Array.prototype.slice.call(arguments);
+    return nou(qux.apply(this, a))
 });
 
 > (test ((ref foo 'bar) nou:qux))
-foo["bar"](function () {
-    var __g1 = Array.prototype.slice.call(arguments);
-    return nou(qux.apply(this, __g1))
+foo.bar(function () {
+    var a = Array.prototype.slice.call(arguments);
+    return nou(qux.apply(this, a))
 });
 
 > (test (foo!bar-qux nou:qux))
 foo["bar-qux"](function () {
-    var __g1 = Array.prototype.slice.call(arguments);
-    return nou(qux.apply(this, __g1))
+    var a = Array.prototype.slice.call(arguments);
+    return nou(qux.apply(this, a))
 });
 
 
@@ -2523,8 +3392,8 @@ u
 
 > (test (foo ~bar qux))
 foo(function () {
-    var __g1 = Array.prototype.slice.call(arguments);
-    return !bar.apply(this, __g1)
+    var a = Array.prototype.slice.call(arguments);
+    return !bar.apply(this, a)
 }, qux);
 
 
@@ -2533,7 +3402,7 @@ foo(function () {
 "foo"[0];
 
 > (test (ref (ref "foo" 0) 'toString))
-"foo"[0]["toString"];
+"foo"[0].toString;
 
 
 > (test ("foo"!0))
@@ -2546,7 +3415,7 @@ foo(function () {
 
 > (test (fn ()
           (let a a
-            (list a b))))
+            [a b])))
 function () {
     var c = a;
     return [c, b]
@@ -2555,7 +3424,7 @@ function () {
 
 > (test (fn ()
           (let a 5
-            (list a b))))
+            [a b])))
 function () {
     var a = 5;
     return [a, b]
@@ -2566,21 +3435,21 @@ function () {
           (withs (a a
                   b a
                   c c)
-            (list a b c))))
+            [a b c])))
 function () {
-    var __a = a,
-        __b = __a,
-        __c = c;
-    return [__a, __b, __c]
+    var b = a,
+        d = b,
+        e = c;
+    return [b, d, e]
 };
 
 
-> (w/readable? nil
+> (w/shorten? nil
     (test (fn ()
             (withs (a a
                     b a
                     c c)
-              (list a b c)))))
+              [a b c]))))
 function () {
     var __g1 = a,
         __g2 = __g1,
@@ -2593,7 +3462,7 @@ function () {
           (withs (b a
                   d b
                   e c)
-            (list b d e))))
+            [b d e])))
 function () {
     var b = a,
         d = b,
@@ -2603,7 +3472,7 @@ function () {
 
 
 
-> (test (arc:defjsmac foobar (x) (+ x 20)))
+> (test (arc:compiler-mac foobar (x) (+ x 20)))
 \
 
 > (test (foobar 10))
@@ -2615,7 +3484,7 @@ function () {
 > (test (foobar 10))
 60;
 
-> (test (arc:defjsmac foobar (x) (+ x 50)))
+> (test (arc:compiler-mac foobar (x) (+ x 50)))
 \
 
 > (test (foobar 10))
@@ -2667,123 +3536,1760 @@ void 0;
 
 > (test (let a 10 `',a))
 (function (a) {
-    return [].concat("quote", a)
+    return ["quote"].concat(a)
 })(10);
 
 > (test (let a 10 `(foobar ,a)))
 (function (a) {
-    return [].concat("foobar", a)
+    return ["foobar"].concat(a)
 })(10);
 
 
 > (test `(a b c d e))
-[].concat("a", "b", "c", "d", "e");
+["a"].concat("b", "c", "d", "e");
 
 
 > (test (let d 20 `(a b c ,d e)))
-(function (d) {
-    return [].concat("a", "b", "c", d, "e")
+(function (a) {
+    return ["a"].concat("b", "c", a, "e")
 })(20);
 
 
 > (test (let d '(1 2 3 4 5)
           (let g 20
             `(a b c ,@d e f ,g))))
-(function (d) {
-    var __g1 = 20;
-    return [].concat("a", "b", "c", d, "e", "f", __g1)
+(function (a) {
+    var b = 20;
+    return ["a"].concat("b", "c", a, "e", "f", b)
 })([1, 2, 3, 4, 5]);
 
 
 > (test (let d '(1 2 3 4 5)
           (let g 20
             `(a b c ,@d `(e f ,,g)))))
-(function (d) {
-    var __g1 = 20;
-    return [].concat("a", "b", "c", d, [[].concat("join", [[].concat("quote", [[].concat("e")])], [[].concat("join", [[].concat("quote", [[].concat("f")])], [[].concat("join", [
-[].concat("list", __g1)], [[].concat("quote", void 0)])])])])
-})([1, 2, 3, 4, 5]);u
+(function (a) {
+    var b = 20;
+    return ["a"].concat("b", "c", a, [["join"].concat([["quote"].concat([["e"].concat()])], [["join"].concat([["quote"].concat([["f"].concat()])], [["join"].concat([["list"].concat(b)], [["quote"].concat(void 0)])])])])
+})([1, 2, 3, 4, 5]);
 
 
 > (test (join 'a 'b 'c 'd))
-error: cannot join (quote a)
+error: cannot join {quote a . nil}
 
 
 > (test (join '(a) '(b) '(c) '(d)))
-[].concat("a", "b", "c", "d");
+["a"].concat("b", "c", "d");
 
 > (test (join '(a) '(b c d) '(e f g (h i j) k l) '(m n)))
-[].concat("a", "b", "c", "d", ["e", "f", "g", ["h", "i", "j"], "k", "l"], "m", "n");
+["a"].concat("b", "c", "d", ["e", "f", "g", ["h", "i", "j"], "k", "l"], "m", "n");
 
 > (test (join '(a) '(b c d) '(e f g (h i j) k l) nil))
-[].concat("a", "b", "c", "d", ["e", "f", "g", ["h", "i", "j"], "k", "l"]);
+["a"].concat("b", "c", "d", ["e", "f", "g", ["h", "i", "j"], "k", "l"]);
 
 > (test (join '(a) '(b c d) '(e f g (h i j) k l)))
-[].concat("a", "b", "c", "d", ["e", "f", "g", ["h", "i", "j"], "k", "l"]);
+["a"].concat("b", "c", "d", ["e", "f", "g", ["h", "i", "j"], "k", "l"]);
 
 
 > (test (join '(a) '(b) '(c) 'd))
-error: cannot join (quote d)
+error: cannot join {quote d . nil}
 
 
 > (test (join '(a) (join '(b) (join '(c) (join '(d) 'nil)))))
-[].concat("a", "b", "c", "d");
+["a"].concat("b", "c", "d");
 
 > (test (join '(a) (join '(b) (join nil (join 'nil (join '(d) 'nil))))))
-[].concat("a", "b", "d");
+["a"].concat("b", "d");
 
 > (test (join '(a) '(b) nil 'nil '(d) 'nil))
-[].concat("a", "b", "d");
+["a"].concat("b", "d");
 
 
 > (test (join nil nil))
 [].concat();
 
+
+> (test (let a '(1 2 3)
+          (join nil a)))
+(function (a) {
+    return a.concat()
+})([1, 2, 3]);
+
+
+> (test (let a '(1 2 3)
+          (join a nil)))
+(function (a) {
+    return a.concat()
+})([1, 2, 3]);
+
+
 > (test (join nil a b c '(d e f (g h i))))
-[].concat(a, b, c, ["d", "e", "f", ["g", "h", "i"]]);
+a.concat(b, c, ["d", "e", "f", ["g", "h", "i"]]);
 
 > (test (join nil '(a b c) '(d e f (g h i))))
-[].concat("a", "b", "c", ["d", "e", "f", ["g", "h", "i"]]);
+["a"].concat("b", "c", ["d", "e", "f", ["g", "h", "i"]]);
 
 
 > (test (let b '(10)
           (join '(a) b '(c) '(d))))
-(function (b) {
-    return [].concat("a", b, "c", "d")
+(function (a) {
+    return ["a"].concat(a, "c", "d")
 })([10]);
 
 
-> (test (join a b (list c d e)))
-[].concat(a, b, c, d, e);
+> (test (let a '(10)
+          (join '(a) a '(c) '(d))))
+(function (a) {
+    return ["a"].concat(a, "c", "d")
+})([10]);
 
-> (test (join a b (list c (list d e))))
-[].concat(a, b, [c, [d, e]]);
+
+> (test (let b '(10)
+          (join '(a) b a '(c) '(d))))
+(function (b) {
+    return ["a"].concat(b, a, "c", "d")
+})([10]);
+
+
+> (test (join a b [c d e]))
+a.concat(b, c, d, e);
+
+> (test (join a b [c [d e]]))
+a.concat(b, [c, [d, e]]);
 
 > (test (with (a '(1 2 3)
                b '(4 5 6)
                c '(7 8 9))
-          (join a b (list c (join '(d e) '(f g))))))
+          (join a b [c (join '(d e) '(f g))])))
 (function (a, b, c) {
-    return [].concat(a, b, [c, [].concat("d", "e", "f", "g")])
+    return a.concat(b, [c, ["d"].concat("e", "f", "g")])
 })([1, 2, 3], [4, 5, 6], [7, 8, 9]);
 
 
-> (test (join a b (list c (join 'd 'e))))
-error: cannot join (quote d)
+> (test (join a b [c (join 'd 'e)]))
+error: cannot join {quote d . nil}
 
 
-> (test (join '(a b) (list 'c 'd 'e)))
-[].concat("a", "b", "c", "d", "e");
+> (test (join '(a b) ['c 'd 'e]))
+["a"].concat("b", "c", "d", "e");
 
-> (test (join '(a b) (list 'c (list 'd 'e))))
-[].concat("a", "b", ["c", ["d", "e"]]);
+> (test (join '(a b) ['(c d) 'e]))
+["a"].concat("b", [["c", "d"], "e"]);
+
+> (test (join '(a b) ['c ['d 'e]]))
+["a"].concat("b", ["c", ["d", "e"]]);
 
 
 > (test (join (join nil nil) '(a b c d e f g)))
-[].concat("a", "b", "c", "d", "e", "f", "g");
+["a"].concat("b", "c", "d", "e", "f", "g");
 
 > (test (join (join '(a b c) '(d e f)) '(a b c d e f g)))
-[].concat("a", "b", "c", "d", "e", "f", "a", "b", "c", "d", "e", "f", "g");
+["a"].concat("b", "c", "d", "e", "f", "a", "b", "c", "d", "e", "f", "g");
 
 > (test (join (join '(a b c) '((d e f))) '(a b c d e f g)))
-[].concat("a", "b", "c", [["d", "e", "f"]], "a", "b", "c", "d", "e", "f", "g");
+["a"].concat("b", "c", [["d", "e", "f"]], "a", "b", "c", "d", "e", "f", "g");
+
+> (test (join (foo 'bar) '(1 2 3 4 5)))
+foo("bar").concat(1, 2, 3, 4, 5);
+
+
+
+> (test (list* 1 2 3 4 5))
+[1].concat(2, 3, 4, 5);
+
+> (test (list* 1 2 3 4 5 a))
+[1].concat(2, 3, 4, 5, a);
+
+> (test (list* 1 2 3 4 5 '(6 7 8 9)))
+[1].concat(2, 3, 4, 5, 6, 7, 8, 9);
+
+> (test (list* 1 2 3 4 5 '(6 7 8 9) '(10 11 12 13)))
+[1, 2, 3, 4, 5, [6, 7, 8, 9]].concat(10, 11, 12, 13);
+
+> (test (list* 1 2 3 4 5 '(6 7 (8 9)) '(10 (11 12) 13)))
+[1, 2, 3, 4, 5, [6, 7, [8, 9]]].concat([10, [11, 12], 13]);
+
+> (test (list* '(1 2 3 4 5) a))
+[[1, 2, 3, 4, 5]].concat(a);
+
+> (test (list* '(1 2 3 4 5) 6 7 8 9 10 a))
+[[1, 2, 3, 4, 5], 6, 7, 8, 9, 10].concat(a);
+
+> (test (list* '(1 2 3 4 5) a nil))
+[[1, 2, 3, 4, 5], a].concat();
+
+> (test (list* '(1 2 3 4 5) nil nil a nil))
+[[1, 2, 3, 4, 5], void 0, void 0, a].concat();
+
+> (test (list* '(1 2 3 4 5) '(6 7 8 9 10) nil nil a nil))
+[[1, 2, 3, 4, 5], [6, 7, 8, 9, 10], void 0, void 0, a].concat();
+
+> (test (list* '(1 2 3 4 5) '(6 7 8 9 10) nil nil a))
+[[1, 2, 3, 4, 5], [6, 7, 8, 9, 10], void 0, void 0].concat(a);
+
+
+
+> (test (do a))
+a;
+
+
+> (w/optimize? nil (test (do a)))
+a;
+
+
+> (w/optimize? nil (test (do a b c d)))
+(function () {
+    a;
+    b;
+    c;
+    return d
+})();
+
+
+> (test (if (do a) (do b) (do c)))
+a ? b : c;
+
+
+> (test (if (do (= a 5)) (do (= b 5)) (do (= c 5))))
+var a, b, c;
+\
+(a = 5) ? (b = 5) : (c = 5);
+
+
+
+> (test (on-err (fn ()
+                  (prn c))
+                (fn ()
+                  (+ a 5)
+                  (/ 1 0))))
+try {
+    a + 5;
+    1 / 0
+} catch () {
+    console.log(c)
+}
+
+
+> (test (on-err (fn (a b c)
+                  (prn c))
+                (fn ()
+                  (+ a 5)
+                  (/ 1 0))))
+try {
+    a + 5;
+    1 / 0
+} catch (a, b, c) {
+    console.log(c)
+}
+
+
+> (test (on-err (fn (c)
+                  (prn c))
+                (fn ()
+                  (+ a 5)
+                  (/ 1 0))))
+try {
+    a + 5;
+    1 / 0
+} catch (c) {
+    console.log(c)
+}
+
+
+> (test (on-err (fn (c)
+                  (prn c))
+                (fn ()
+                  (+ a 5)
+                  (err "foo"))))
+try {
+    a + 5;
+    throw "foo"
+} catch (c) {
+    console.log(c)
+}
+
+
+> (test (on-err (fn (c)
+                  (prn c))
+                (fn (a b c x y)
+                  (+ a 5)
+                  (/ 1 0))))
+try {
+    a + 5;
+    1 / 0
+} catch (c) {
+    console.log(c)
+}
+
+
+> (test (on-err (fn (c)
+                  (prn c)
+                  "bar")
+                (fn (a b c x y)
+                  (+ a 5)
+                  (/ 1 0))))
+try {
+    a + 5;
+    1 / 0
+} catch (c) {
+    console.log(c);
+    "bar"
+}
+
+
+> (test (fn ()
+          (on-err (fn (c)
+                    (prn c)
+                    "bar")
+                  (fn (a b c x y)
+                    (+ a 5)
+                    (/ 1 0)))))
+function () {
+    try {
+        a + 5;
+        return 1 / 0
+    } catch (c) {
+        console.log(c);
+        return "bar"
+    }
+};
+
+
+> (test (fn ()
+          (on-err (fn (c)
+                    (prn c))
+                  (fn ()
+                    (+ a 5)
+                    (err "foo")))))
+function () {
+    try {
+        a + 5;
+        throw "foo"
+    } catch (c) {
+        return console.log(c)
+    }
+};
+
+
+> (test (fn ()
+          (on-err (fn (c)
+                    (prn c))
+                  (fn ()
+                    (+ a 5)
+                    (/ 1 0)))))
+function () {
+    try {
+        a + 5;
+        return 1 / 0
+    } catch (c) {
+        return console.log(c)
+    }
+};
+
+
+> (test (fn ()
+          (on-err (fn (c)
+                    (prn c))
+                  (fn ()
+                    (+ a 5)
+                    (/ 1 0)))
+          (+ 10 5)))
+function () {
+    try {
+        a + 5;
+        1 / 0
+    } catch (c) {
+        console.log(c)
+    }
+    return 10 + 5
+};
+
+
+> (test (if a
+          (on-err (fn (c)
+                    (prn c))
+                  (fn ()
+                    (+ a 5)
+                    (/ 1 0)))))
+a && (function () {
+    try {
+        a + 5;
+        return 1 / 0
+    } catch (c) {
+        return console.log(c)
+    }
+})();
+
+
+
+> (test (arc:def fn-iferr (trial then else)
+          (let (had-err val) (on-err (^:list 't _)
+                                     (^:list nil (trial)))
+            (.val:if had-err then else))))
+
+
+> (test (mac aiferr (x y . body)
+          `(fn-iferr (fn ()   ,x)
+                     (fn (it) ,y)
+                     (fn (it) ,@body))))
+
+
+;> (test (mac aiferr (x y . body)
+          `(let it (on-err (fn (it) ,y)
+                           (fn ()   ,x))
+             ,@body)))
+u
+
+
+> (test (aiferr (err "foo")
+          (prn it)
+          (prn it)))
+u
+
+
+
+> (test (type (obj a b c d)))
+Object.prototype.toString.call({
+    "a": b,
+    "c": d
+});
+
+> (test (type x))
+Object.prototype.toString.call(x);
+
+> (test (type 5))
+Object.prototype.toString.call(5);
+
+> (test (type (fn (a) (+ a 5))))
+Object.prototype.toString.call(function (a) {
+    return a + 5
+});
+
+
+> (test (isa x 'cons))
+Object.prototype.toString.call(x) === "[object Array]";
+
+> (test (cons? x))
+Object.prototype.toString.call(x) === "[object Array]";
+
+> (test (isa x 'fn))
+Object.prototype.toString.call(x) === "[object Function]";
+
+> (test (fn? x))
+Object.prototype.toString.call(x) === "[object Function]";
+
+> (test (isa x 'sym))
+Object.prototype.toString.call(x) === "[object String]";
+
+> (test (sym? x))
+Object.prototype.toString.call(x) === "[object String]";
+
+> (test (isa x 'foo))
+Object.prototype.toString.call(x) === "foo";
+
+> (test (isa x "[object HTMLBodyElement]"))
+Object.prototype.toString.call(x) === "[object HTMLBodyElement]";
+
+> (test (isa x 'cons 'table))
+(function (a) {
+    return a === "[object Array]" || a === "[object Object]"
+})(Object.prototype.toString.call(x));
+
+> (test (isa x "foo" 'cons 'table "[object HTMLElement]"))
+(function (a) {
+    return a === "foo" || a === "[object Array]" || a === "[object Object]" || a === "[object HTMLElement]"
+})(Object.prototype.toString.call(x));
+
+> (test (fn ()
+          (isa x "foo" 'cons 'table "[object HTMLElement]")))
+function () {
+    var a = Object.prototype.toString.call(x);
+    return a === "foo" || a === "[object Array]" || a === "[object Object]" || a === "[object HTMLElement]"
+};
+
+
+
+> (test (let urls (obj)))
+(function (a) {})({});
+
+
+> (test (let urls (obj)
+          (send-request (obj) (info)
+            (= urls info!urls))))
+(function (a) {
+    return send_request({}, info(), a = info.urls)
+})({});
+
+
+> (test (use dom chrome))
+
+> (test (let urls {}
+          (send-request {} (info)
+            (= urls info!urls))
+\
+          (on DOMContentLoaded ()
+            (each x (css "span.thumb > a[href]")
+              (style x
+                display        "-webkit-box"
+                webkitBoxAlign "center"
+                webkitBoxPack  "center")
+\
+              (= x x!firstElementChild)
+\
+              (if (ref urls x!href)
+                (style x!firstElementChild
+                  width    "10px !important"
+                  height   "10px !important"
+                  border   "5px solid grey !important"
+                  cssFloat "left !important"))))))
+(function (a) {
+    chrome.extension.sendRequest({}, function (b) {
+        return a = b.urls
+    });
+    return addEventListener("DOMContentLoaded", function () {
+        var b = document.querySelectorAll("span.thumb > a[href]"),
+            c = b.length,
+            d = 0,
+            e,
+            f;
+        while (d < c) {
+            e = b[d];
+            e.style.display = "-webkit-box";
+            e.style.webkitBoxAlign = "center";
+            e.style.webkitBoxPack = "center";
+            e = e.firstElementChild;
+            a[e.href] && (f = e.firstElementChild.style, f.width = "10px !important", f.height = "10px !important", f.border = "5px solid grey !important", f.cssFloat = "left !important");
+            ++d
+        }
+    }, false)
+})({});
+
+
+
+> (test (= (ref foo bar) "qux"))
+foo[bar] = "qux";
+
+> (test (= (ref foo 'bar) "qux"))
+foo.bar = "qux";
+
+> (test (= (ref foo 'bar.qux) "qux"))
+foo["bar.qux"] = "qux";
+
+> (test (= (ref foo 'bar-qux) "qux"))
+foo["bar-qux"] = "qux";
+
+
+> (test (= a 'b
+           c 'd
+           e 'f))
+var a = "b";
+\
+var c = "d";
+\
+var e = "f";
+
+
+> (test (= a 'b c 'd e))
+var a = "b";
+\
+var c = "d";
+\
+var e;
+
+
+> (test (= a))
+var a;
+
+
+
+> (test (= foo!bar qux))
+foo.bar = qux;
+
+> (test (= (foo 'bar) qux))
+foo.bar = qux;
+
+
+> (test (= foo!bar-qux corge))
+foo["bar-qux"] = corge;
+
+> (test (= (foo 'bar-qux) corge))
+foo["bar-qux"] = corge;
+
+
+> (test (= 1!toString (fn ())))
+1..toString = function () {};
+
+> (test (= (1 'toString) (fn ())))
+1..toString = function () {};
+
+
+> (test (= 1!foo-bar (fn ())))
+1["foo-bar"] = function () {};
+
+> (test (= (1 'foo-bar) (fn ())))
+1["foo-bar"] = function () {};
+
+
+> (test (= foo!bar!qux corge))
+foo.bar.qux = corge;
+
+> (test (= ((foo 'bar) 'qux) corge))
+foo.bar.qux = corge;
+
+
+> (test (= foo!bar-qux!qux-corge foobar))
+foo["bar-qux"]["qux-corge"] = foobar;
+
+> (test (= ((foo 'bar-qux) 'qux-corge) foobar))
+foo["bar-qux"]["qux-corge"] = foobar;
+
+
+> (test (= (ref (ref foo 'bar) 'qux) corge))
+foo["bar-qux"]["qux-corge"] = foobar;u
+
+> (test (= (ref (ref foo 'bar-qux) 'qux-corge) foobar))
+foo["bar-qux"]["qux-corge"] = foobar;u
+
+
+> (test (foo bar)!qux)
+foo(bar)[qux];u
+
+> (test (ref (foo bar) qux))
+foo(bar)[qux];
+
+> (test (ref (foo (bar qux)) corge))
+foo(bar(qux))[corge];
+
+
+> (test (sref (foo 'bar) corge 'qux))
+foo.bar.qux = corge;
+
+
+
+> (test (for i 0 (len x)
+          (do a b c d)))
+(function (e) {
+    while (e < x.length) {
+        a;
+        b;
+        c;
+        d;
+        ++e
+    }
+})(0);
+
+
+> (test (for i 0 (len x)
+          (let a (+ i 10)
+            b
+            c
+            d
+            (foo:fn () a))))
+(function (a) {
+    while (a < x.length) {
+        (function (a) {
+            var e = a + 10;
+            b;
+            c;
+            d;
+            return foo(function () {
+                return e
+            })
+        })(a);
+        ++a
+    }
+})(0);
+
+
+> (test (for i 0 (len x)
+          (let a (+ i 10)
+            (/ i 5)
+            (foo:fn () a))))
+(function (a) {
+    while (a < x.length) {
+        (function (a) {
+            var b = a + 10;
+            a / 5;
+            return foo(function () {
+                return b
+            })
+        })(a);
+        ++a
+    }
+})(0);
+
+
+> (test (foo (do a b c d)))
+foo((a, b, c, d));
+
+
+
+> (test (w/div x test "yes"
+          (div foo "bar"
+            (div qux "corge")
+            (div corge (+ (x!getAttribute "test") "no")))))
+(function (a) {
+    a.setAttribute("test", "yes");
+    var b = document.createElement("div"),
+        c,
+        d;
+    b.setAttribute("foo", "bar");
+    c = document.createElement("div");
+    c.setAttribute("qux", "corge");
+    b.appendChild(c);
+    d = document.createElement("div");
+    d.setAttribute("corge", a.getAttribute("test") + "no");
+    b.appendChild(d);
+    a.appendChild(b);
+    return a
+})(document.createElement("div"));
+
+
+> (test (fn ()
+          (w/div x test "yes"
+            (div foo "bar"
+              (div qux "corge")
+              (div corge (+ (x!getAttribute "test") "no"))))))
+function () {
+    var a = document.createElement("div");
+    a.setAttribute("test", "yes");
+    var b = document.createElement("div"),
+        c,
+        d;
+    b.setAttribute("foo", "bar");
+    c = document.createElement("div");
+    c.setAttribute("qux", "corge");
+    b.appendChild(c);
+    d = document.createElement("div");
+    d.setAttribute("corge", a.getAttribute("test") + "no");
+    b.appendChild(d);
+    a.appendChild(b);
+    return a
+};
+
+
+> (w/optimize? nil
+    (test (fn ()
+            (w/div x test "yes"
+              (div foo "bar"
+                (div qux "corge")
+                (div corge (+ (x!getAttribute "test") "no")))))))
+function () {
+    return (function (a) {
+        a.setAttribute("test", "yes");
+        a.appendChild((function (b) {
+            b.setAttribute("foo", "bar");
+            b.appendChild((function (a) {
+                a.setAttribute("qux", "corge");
+                return a
+            })(document.createElement("div")));
+            b.appendChild((function (b) {
+                b.setAttribute("corge", a.getAttribute("test") + "no");
+                return b
+            })(document.createElement("div")));
+            return b
+        })(document.createElement("div")));
+        return a
+    })(document.createElement("div"))
+};
+
+
+> (test (w/div x test "yes"
+          (div foo "bar"
+            (div qux "corge")
+            (div corge (+ (x!getAttribute "test") "no")))))
+(function (a) {
+    a.setAttribute("test", "yes");
+    var b = document.createElement("div"),
+        c,
+        d;
+    b.setAttribute("foo", "bar");
+    c = document.createElement("div");
+    c.setAttribute("qux", "corge");
+    b.appendChild(c);
+    d = document.createElement("div");
+    d.setAttribute("corge", a.getAttribute("test") + "no");
+    b.appendChild(d);
+    a.appendChild(b);
+    return a
+})(document.createElement("div"));
+
+
+> (test (let x (document!createElement "div")
+          (x!setAttribute "test" "yes")
+          (x!appendChild
+            (let self (document!createElement "div")
+              (self!setAttribute "foo" "bar")
+              (self!appendChild
+                (let self (document!createElement "div")
+                  (self!setAttribute "qux" "corge")
+                  self))
+              (self!appendChild
+                (let self (document!createElement "div")
+                  (self!setAttribute "corge" (+ (x!getAttribute "test") "no"))
+                  self))
+              self))
+          x))
+(function (a) {
+    a.setAttribute("test", "yes");
+    var b = document.createElement("div"),
+        c,
+        d;
+    b.setAttribute("foo", "bar");
+    c = document.createElement("div");
+    c.setAttribute("qux", "corge");
+    b.appendChild(c);
+    d = document.createElement("div");
+    d.setAttribute("corge", a.getAttribute("test") + "no");
+    b.appendChild(d);
+    a.appendChild(b);
+    return a
+})(document.createElement("div"));
+
+
+> (test (append document!body
+          (div style (height          50px
+                      width           50px
+                      backgroundColor black)
+\
+               on    (click (e)
+                       (alert "foo")))
+\
+          (div style (height          50px
+                      width           50px
+                      backgroundColor green)
+\
+               on    (click (e)
+                       (alert "bar")))))
+(function (a) {
+    var b = document.createElement("div");
+    b.style.height = "50px";
+    b.style.width = "50px";
+    b.style.backgroundColor = "black";
+    b.addEventListener("click", function (a) {
+        return alert("foo")
+    }, true);
+    a.appendChild(b);
+    var c = document.createElement("div");
+    c.style.height = "50px";
+    c.style.width = "50px";
+    c.style.backgroundColor = "green";
+    c.addEventListener("click", function (a) {
+        return alert("bar")
+    }, true);
+    a.appendChild(c);
+    return a
+})(document.body);
+
+
+> (test (append (div foo "bar")
+          (div style (height          50px
+                      width           50px
+                      backgroundColor black)
+\
+               on    (click (e)
+                       (alert "foo")))
+\
+          (div style (height          50px
+                      width           50px
+                      backgroundColor green)
+\
+               on    (click (e)
+                       (alert "bar")))))
+(function (a) {
+    a.setAttribute("foo", "bar");
+    var b,
+        c;
+    b = document.createElement("div");
+    b.style.height = "50px";
+    b.style.width = "50px";
+    b.style.backgroundColor = "black";
+    b.addEventListener("click", function (a) {
+        return alert("foo")
+    }, true);
+    a.appendChild(b);
+    c = document.createElement("div");
+    c.style.height = "50px";
+    c.style.width = "50px";
+    c.style.backgroundColor = "green";
+    c.addEventListener("click", function (a) {
+        return alert("bar")
+    }, true);
+    a.appendChild(c);
+    return a
+})(document.createElement("div"));
+
+
+> (test (fn ()
+          (append (div foo "bar")
+            (div style (height          50px
+                        width           50px
+                        backgroundColor black)
+\
+                 on    (click (e)
+                         (alert "foo")))
+\
+            (div style (height          50px
+                        width           50px
+                        backgroundColor green)
+\
+                 on    (click (e)
+                         (alert "bar"))))))
+function () {
+    var a = document.createElement("div");
+    a.setAttribute("foo", "bar");
+    var b,
+        c;
+    b = document.createElement("div");
+    b.style.height = "50px";
+    b.style.width = "50px";
+    b.style.backgroundColor = "black";
+    b.addEventListener("click", function (a) {
+        return alert("foo")
+    }, true);
+    a.appendChild(b);
+    c = document.createElement("div");
+    c.style.height = "50px";
+    c.style.width = "50px";
+    c.style.backgroundColor = "green";
+    c.addEventListener("click", function (a) {
+        return alert("bar")
+    }, true);
+    a.appendChild(c);
+    return a
+};
+
+
+
+> (test (let a 10
+          (with (b (+ a 2)
+                 c 10)
+            (do a b c d)
+            (let a a
+              (let b 10
+                (+ a b)))
+            (let d 21
+              (+ c 50))
+            [a b])
+          (+ a b)))
+(function (a) {
+    var c = a + 2,
+        e = 10;
+    a;
+    c;
+    e;
+    d;
+    var f = a,
+        g = 10;
+    f + g;
+    var h = 21;
+    e + 50;
+    [a, c];
+    return a + b
+})(10);
+
+
+> (w/optimize? nil
+    (test (let a 10
+            (with (b (+ a 2)
+                   c 10)
+              (do a b c d)
+              (let a a
+                (let b 10
+                  (+ a b)))
+              (let d 21
+                (+ c 50))
+              [a b])
+            (+ a b))))
+(function (a) {
+    (function (b, c) {
+        (function () {
+            a;
+            b;
+            c;
+            return d
+        })();
+        (function (a) {
+            return (function (b) {
+                return a + b
+            })(10)
+        })(a);
+        (function (a) {
+            return c + 50
+        })(21);
+        return [a, b]
+    })(a + 2, 10);
+    return a + b
+})(10);
+
+
+
+> (test (mac testfn ()
+          `(fn (let) (list let 1 2 3))))
+\
+
+
+> (test (testfn))
+function (a) {
+    return [a, 1, 2, 3]
+};
+
+
+> (test (let + 10 +))
+(function (a) {
+    return a
+})(10);
+
+
+> (test (let each 10 each))
+(function (a) {
+    return a
+})(10);
+
+
+> (test (let mac 10 mac))
+(function (a) {
+    return a
+})(10);
+
+
+> (test (let use 10 use))
+(function (a) {
+    return a
+})(10);
+
+
+> (test (let let 10 let))
+(function (a) {
+    return a
+})(10);
+
+
+> (test (let foobar 10 foobar))
+(function (a) {
+    return a
+})(10);
+
+
+> (test (let testfn 10 testfn))
+(function (a) {
+    return a
+})(10);
+
+
+
+> (test (let foobar 10
+          (with (b (+ foobar 2)
+                 c 10)
+            (do foobar b c d)
+            (let foobar foobar
+              (let b 10
+                (+ foobar b)))
+            (let d 21
+              (+ c 50))
+            [foobar b])
+          (+ foobar b)))
+(function (a) {
+    var c = a + 2,
+        e = 10;
+    a;
+    c;
+    e;
+    d;
+    var f = a,
+        g = 10;
+    f + g;
+    var h = 21;
+    e + 50;
+    [a, c];
+    return a + b
+})(10);
+
+
+> (w/shorten? nil
+    (test (let foobar 10
+            (with (b (+ foobar 2)
+                   c 10)
+              (do foobar b c d)
+              (let foobar foobar
+                (let b 10
+                  (+ foobar b)))
+              (let d 21
+                (+ c 50))
+              [foobar b])
+            (+ foobar b))))
+(function (foobar) {
+    var __g1 = foobar + 2,
+        __g2 = 10;
+    foobar;
+    __g1;
+    __g2;
+    d;
+    var __g3 = foobar,
+        __g4 = 10;
+    __g3 + __g4;
+    var __g5 = 21;
+    __g2 + 50;
+    [foobar, __g1];
+    return foobar + b
+})(10);
+
+
+> (w/optimize? nil
+    (w/shorten? nil
+      (test (let foobar 10
+              (with (b (+ foobar 2)
+                     c 10)
+                (do foobar b c d)
+                (let foobar foobar
+                  (let b 10
+                    (+ foobar b)))
+                (let d 21
+                  (+ c 50))
+                [foobar b])
+              (+ foobar b)))))
+(function (foobar) {
+    (function (b, c) {
+        (function () {
+            foobar;
+            b;
+            c;
+            return d
+        })();
+        (function (foobar) {
+            return (function (b) {
+                return foobar + b
+            })(10)
+        })(foobar);
+        (function (d) {
+            return c + 50
+        })(21);
+        return [foobar, b]
+    })(foobar + 2, 10);
+    return foobar + b
+})(10);
+
+
+
+> (test (fn ()
+          (fn ()
+            (+ this!name "foo"))))
+function () {
+    return function () {
+        return this.name + "foo"
+    }
+};
+
+
+> (test (fn ()
+          ((fn ()
+             (+ name "foo")))))
+function () {
+    return name + "foo"
+};
+
+
+> (test (fn ()
+          ((fn ()
+             (+ this!name "foo")))))
+function () {
+    return this.name + "foo"
+};
+
+
+> (w/optimize? nil
+    (test (fn ()
+            ((fn ()
+               (+ this!name "foo"))))))
+function () {
+    return (function () {
+        return this.name + "foo"
+    }).call(this)
+};
+
+
+> (w/optimize? nil
+    (test (fn ()
+            (let a 10
+              (+ this!name "foo")))))
+function () {
+    return (function (a) {
+        return this.name + "foo"
+    }).call(this, 10)
+};
+
+
+> (test (fn ()
+          (if a (do (+ this!name "foo")))))
+function () {
+    return a && this.name + "foo"
+};
+
+
+> (test (fn ()
+          (if a (do (+ this!name "foo")
+                    (+ this!foo "bar")))))
+function () {
+    return a && (this.name + "foo", this.foo + "bar")
+};
+
+
+> (test (fn ()
+          (if a ((fn () (+ this!name "foo"))))))
+function () {
+    return a && this.name + "foo"
+};
+
+
+> (w/optimize? nil
+    (test (fn ()
+            (if a (let a 10 (+ name "foo"))))))
+function () {
+    return a && (function (a) {
+        return name + "foo"
+    })(10)
+};
+
+
+> (test (fn ()
+          (if a (let a 10 (+ name "foo")))))
+function () {
+    var b;
+    return a && (b = 10, name + "foo")
+};
+
+
+> (w/optimize? nil
+    (test (fn ()
+            (if a (let a 10 (+ this!name "foo"))))))
+function () {
+    return a && (function (a) {
+        return this.name + "foo"
+    }).call(this, 10)
+};
+
+
+> (test (fn ()
+          (if a (let a 10 (+ this!name "foo")))))
+function () {
+    var b;
+    return a && (b = 10, this.name + "foo")
+};
+
+
+
+> (test (fn ()
+          (let a 5 a)))
+function () {
+    var a = 5;
+    return a
+};
+
+
+> (test (fn ()
+          ((list 1 2 3) (let a 5 a))))
+function () {
+    var a = 5;
+    return [1, 2, 3](a)
+};
+
+
+> (test (fn ()
+          ((list 1 2 3) (let a 5 a)
+                        (let a 10 a))))
+function () {
+    var a = 5,
+        b;
+    return [1, 2, 3](a, (b = 10, b))
+};
+
+
+> (test (fn ()
+          ((list 1 2 3)!forEach (let a 5 a))))
+function () {
+    var a = 5;
+    return [1, 2, 3].forEach(a)
+};
+
+
+> (test (fn ()
+          ((list 1 2 3)!forEach (let a 5 a)
+                                (let a 10 a))))
+function () {
+    var a = 5,
+        b;
+    return [1, 2, 3].forEach(a, (b = 10, b))
+};
+
+
+> (test (fn ()
+          (foo (let a 5 a))))
+function () {
+    var a = 5;
+    return foo(a)
+};
+
+
+> (test (fn ()
+          (foo (let a 5 (+ a 10)))))
+function () {
+    var a = 5;
+    return foo(a + 10)
+};
+
+
+> (test (fn ()
+          (foo (prn a)
+               (let a (prn b) a)
+               (prn c)
+               (let a (prn d) a))))
+function () {
+    var e,
+        f;
+    return foo(console.log(a), (e = console.log(b), e), console.log(c), (f = console.log(d), f))
+};
+
+
+> (test (fn ()
+          (foo (let a 5 (++ a 10) a))))
+function () {
+    var a = 5;
+    a += 10;
+    return foo(a)
+};
+
+
+> (test (fn ()
+          (foo a (let a 5 (++ a 10) a))))
+function () {
+    var b;
+    return foo(a, (b = 5, b += 10, b))
+};
+
+
+> (test (fn ()
+          (foo a (with (a 5
+                        b 10
+                        c 15)
+                   (list a b c)))))
+function () {
+    var b,
+        c,
+        d;
+    return foo(a, (b = 5, c = 10, d = 15, [b, c, d]))
+};
+
+
+> (test (fn ()
+          (foo a (let a 5 a))))
+function () {
+    var b;
+    return foo(a, (b = 5, b))
+};
+
+
+> (test (fn ()
+          (foo a (bar (let a 5 a)))))
+function () {
+    var b;
+    return foo(a, bar((b = 5, b)))
+};
+
+
+> (test (fn ()
+          (foo (let a 5 a)
+               (let a 10 a)
+               (let a 15 a))))
+function () {
+    var a = 5,
+        b,
+        c;
+    return foo(a, (b = 10, b), (c = 15, c))
+};
+
+
+> (test (fn ()
+          (if (let a 5 a)
+              (let a 10 a)
+              (let a 15 a))))
+function () {
+    var a = 5,
+        b,
+        c;
+    return a ? (b = 10, b) : (c = 15, c)
+};
+
+
+> (test (fn ()
+          (if (let a 5 a)
+              (let a 10 a)
+              (let a 15 a)
+              (let a 20 a))))
+function () {
+    var a = 5,
+        b,
+        c,
+        d;
+    return a ? (b = 10, b) : (c = 15, c) && (d = 20, d)
+};
+
+
+> (test (fn ()
+          (and (let a 5 a)
+               (let a 10 a)
+               (let a 15 a))))
+function () {
+    var a = 5,
+        b,
+        c;
+    return a && (b = 10, b) && (c = 15, c)
+};
+
+
+> (test (foo (let a 10 a)))
+(function (a) {
+    return foo(a)
+})(10);
+
+
+> (test (foo (let a 10 a)
+             (let a 15 a)))
+(function (a, b) {
+    return foo(a, (b = 15, b))
+})(10);
+
+
+> (test (foo (let a 10 a)
+             (let a 15 a)
+             (let a 20 a)))
+(function (a, b, c) {
+    return foo(a, (b = 15, b), (c = 20, c))
+})(10);
+
+
+> (test (foo (let a 10 a)
+             (let a 15 a)
+             (bar (let a 20 a))))
+(function (a, b, c) {
+    return foo(a, (b = 15, b), bar((c = 20, c)))
+})(10);
+
+
+> (test (let a (let a 5
+                 (+ a 15)
+                 a)
+          (+ a 10)
+          a))
+(function (a) {
+    var b;
+    a + 15;
+    b = a;
+    b + 10;
+    return b
+})(5);
+
+
+
+> (test (document!create-element "div"))
+document.createElement("div");
+
+
+> (test (div foo   "bar"
+             style (backgroundColor green
+                    display         webkit-box
+                    webkitBoxFlex   1
+                    cssFloat        left)))
+(function (a) {
+    a.setAttribute("foo", "bar");
+    a.style.backgroundColor = "green";
+    a.style.display = "webkit-box";
+    a.style.webkitBoxFlex = "1";
+    a.style.cssFloat = "left";
+    return a
+})(document.createElement("div"));
+
+
+> (test (div foo   "bar"
+             style (background-color  green
+                    display           webkit-box
+                    webkit-box-flex   1
+                    css-float         left)))
+(function (a) {
+    a.setAttribute("foo", "bar");
+    a.style.backgroundColor = "green";
+    a.style.display = "webkit-box";
+    a.style.webkitBoxFlex = "1";
+    a.style.cssFloat = "left";
+    return a
+})(document.createElement("div"));
+
+
+
+> (test (fn ()
+          (let a 5
+            (let b a
+              (+ b 5)))))
+?
+
+
+
+> (test (mac send-request (x parms . body)
+          `(chrome!extension!sendRequest ,x (fn ,parms ,@body))))
+\
+
+
+> (test (mac w/element (n x . body)
+          `(let ,n (document!createElement ,x)
+             (do ,@body)
+             ,n)))
+\
+
+
+> (test (mac w/div (x . body)
+          `(w/element ,x "div" ,@body)))
+\
+
+
+> (w/optimize? nil
+    (test (w/div x
+            (x!appendChild
+              (w/div x
+                (x!setAttribute "foo" "bar"))))))
+(function (a) {
+    a.appendChild((function (a) {
+        a.setAttribute("foo", "bar");
+        return a
+    })(document.createElement("div")));
+    return a
+})(document.createElement("div"));
+
+
+> (test (w/div x
+          (x!appendChild
+            (w/div x
+              (x!setAttribute "foo" "bar")))))
+(function (a) {
+    var b = document.createElement("div");
+    b.setAttribute("foo", "bar");
+    a.appendChild(b);
+    return a
+})(document.createElement("div"));
+
+
+
+> (test (var foo "bar"))
+var foo = "bar";
+
+
+> (test (var foo "bar"
+             bar "qux"))
+var foo = "bar",
+    bar = "qux";
+
+
+> (test (fn ()
+          (var foo "bar")))
+function () {
+    var a = "bar"
+};
+
+
+> (test (fn ()
+          (let a 5
+            (var a 10)
+            a)))
+function () {
+    var a = 5;
+    a = 10;
+    return a
+};
+
+
+> (test (fn ()
+          (let a 5
+            (var a 10)
+            a)
+          a))
+u
+
+
+> (test (fn ()
+          (let a 5 a)
+          (var a 10)))
+function () {
+    var a = 5;
+    a;
+    var b = 10
+};
+
+
+> (test (fn ()
+          (var foo "bar")
+          foo))
+function () {
+    var a = "bar";
+    return a
+};
+
+
+> (test (fn ()
+          (var foo "bar"
+               bar "qux")
+          (list foo bar)))
+function () {
+    var a = "bar",
+        b = "qux";
+    return [a, b]
+};
+
+
+> (test (fn ()
+          (var foo (fn (x) x))
+          foo))
+function () {
+    var a = function (a) {
+        return a
+    };
+    return a
+};
+
+
+> (test (fn ()
+          (var foo { foo (fn (x) x)
+                     bar (fn (y) y) })
+          foo))
+function () {
+    var a = {
+        foo: function (a) {
+            return a
+        },
+        bar: function (a) {
+            return a
+        }
+    };
+    return a
+};
+
+
+> (test (fn ()
+          (qux (var foo "bar"))))
+function () {
+    var a = "bar";
+    return qux(a)
+};
+
+
+> (test (fn ()
+          (qux (var foo "bar"
+                    bar "qux"))
+          (+ foo 10)))
+function () {
+    var a = "bar",
+        b = "qux";
+    qux(b);
+    return a + 10
+};
+
+
+> (w/optimize? nil
+    (test (fn ()
+            (qux (var foo "bar"
+                      bar "qux"))
+            (+ foo 10))))
+function () {
+    var a = "bar",
+        b = "qux";
+    qux(b);
+    return a + 10
+};
+
+
+> (test (fn ()
+          (qux a (var foo "bar"))))
+function () {
+    var b;
+    return qux(a, b = "bar")
+};
+
+
+> (test (fn ()
+          (qux a (var foo "bar"))
+          (+ foo 20)))
+function () {
+    var b;
+    qux(a, b = "bar");
+    return b + 20
+};
+
+
+> (test (fn ()
+          (qux a (var foo "bar"
+                      bar "qux"))))
+function () {
+    var b,
+        c;
+    return qux(a, (b = "bar", c = "qux"))
+};
+
+
+> (test (fn ()
+          (corge (qux (var foo "bar")))))
+function () {
+    var a = "bar"
+    return corge(qux(a))
+};
+
+
+> (test (fn ()
+          foo
+          (var foo "bar")
+          foo))
+function () {
+    foo;
+    var a = "bar";
+    return a
+};
+
+
+> (test (fn ()
+          a
+          (var a "bar")
+          a))
+function () {
+    a;
+    var b = "bar";
+    return b
+};
+
+
+> (test (fn ()
+          (let a 10
+            (var b a)
+            (+ b 20))))
+function () {
+    var a = 10;
+    var b = a;
+    return b + 20
+};
+
+
+
+> (test (instanceof x Foo))
+x instanceof Foo;
+
+
+> (test (instanceof x Foo Bar Qux))
+x instanceof Foo || x instanceof Bar || x instanceof Qux;
+
+
+> (test (when (instanceof x Foo)
+          a
+          b
+          c))
+x instanceof Foo && (a, b, c);
+
+
+> (test (when (instanceof x Foo Bar Qux)
+          a
+          b
+          c))
+x instanceof Foo || x instanceof Bar || x instanceof Qux && (a, b, c);
