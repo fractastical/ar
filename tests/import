@@ -1,4 +1,5 @@
-> (use import)
+> (use del import)
+t
 
 
 ==============================================================================
@@ -70,10 +71,12 @@ error: undefined variable: +
 15
 
 
-> (w/namespace (table) (eval '(+ 5 10)))
+> (w/eval (table)
+    (+ 5 10))
 error: undefined variable: +
 
-> (w/namespace (obj + +) (eval '(+ 5 10)))
+> (w/eval (obj + +)
+    (+ 5 10))
 15
 
 
@@ -88,6 +91,10 @@ error: undefined variable: +
 15
 
 > (w/namespace 'nou (eval '(+ 5 10)))
+u
+
+> (w/eval 'nou
+    (+ 5 10))
 error: Can't coerce nou #<fn:g...>
 
 
@@ -99,17 +106,21 @@ error: Can't coerce nou #<fn:g...>
 
 
 > bar
-error: reference to undefined identifier: bar
+error: undefined variable: bar
 
 > (foo 'bar)
 nil
 
 
-> (w/namespace foo (eval '(assign bar 'qux)))
+> (w/eval foo
+    (assign bar 'qux))
 qux
 
 > bar
-error: reference to undefined identifier: bar
+error: undefined variable: bar
+
+> (w/eval foo bar)
+qux
 
 > (foo 'bar)
 qux
@@ -119,17 +130,18 @@ nil
 
 
 > (eval 'bar)
-error: reference to undefined identifier: bar
+error: undefined variable: bar
 
-> (w/namespace foo (eval 'bar))
+> (w/eval foo bar)
 qux
 
 > bar
-error: reference to undefined identifier: bar
+error: undefined variable: bar
 
 
 
-> (w/namespace foo (eval '(assign yesm bar)))
+> (w/eval foo
+    (assign yesm bar))
 qux
 
 > (foo 'yesm)
@@ -138,56 +150,57 @@ qux
 
 
 > (eval 'yesm)
-error: reference to undefined identifier: yesm
+error: undefined variable: yesm
 
-> (w/namespace foo (eval 'yesm))
+> (w/eval foo yesm)
 qux
 
 > yesm
-error: reference to undefined identifier: yesm
+error: undefined variable: yesm
 
 
 
-> (w/namespace foo (eval '(let a 5 a)))
+> (w/eval foo (let a 5 a))
 5
 
 > (eval 'a)
-error: reference to undefined identifier: a
+error: undefined variable: a
 
 > (foo 'a)
 nil
 
-> (w/namespace foo (eval 'a))
+> (w/eval foo a)
 error: undefined variable: a
 
 
 
-> (w/namespace foo (eval '(let a 5 (assign a 10) a)))
+> (w/eval foo
+    (let a 5 (assign a 10) a))
 10
 
 > (eval 'a)
-error: reference to undefined identifier: a
+error: undefined variable: a
 
 > (foo 'a)
 nil
 
-> (w/namespace foo (eval 'a))
+> (w/eval foo a)
 error: undefined variable: a
 
 
 
 > (eval 'ppr)
-error: reference to undefined identifier: ppr
+error: undefined variable: ppr
 
-> (import pprint "../arc3.1/pprint.arc")
+> (import-as pprint "../arc3.1/pprint.arc")
 nil
 
 > (eval 'ppr)
-error: reference to undefined identifier: ppr
+error: undefined variable: ppr
 
 
 > pprint
-<namespace>
+#<namespace>
 
 > pprint!ppr
 #<fn>
@@ -218,20 +231,20 @@ error: reference to undefined identifier: ppr
 
 
 > (eval 'ppr)
-error: reference to undefined identifier: ppr
+error: undefined variable: ppr
 
 
 ==============================================================================
 
 
 > (= foo (new-namespace))
-<namespace>
+#<namespace>
 
 > foo!+
 #<fn:+>
 
 > a
-error: reference to undefined identifier: a
+error: undefined variable: a
 
 > (= foo!a 50)
 50
@@ -240,19 +253,19 @@ error: reference to undefined identifier: a
 50
 
 > a
-error: reference to undefined identifier: a
+error: undefined variable: a
 
 > (w/namespace foo (+ a 50))
-error: reference to undefined identifier: a
+error: undefined variable: a
 
-> (w/namespace foo (eval '(+ a 27)))
+> (w/eval foo (+ a 27))
 77
 
 > a
-error: reference to undefined identifier: a
+error: undefined variable: a
 
 > (foo!+ a 50)
-error: reference to undefined identifier: a
+error: undefined variable: a
 
 
 > (= foo!bar (fn () qux))
@@ -262,25 +275,26 @@ error: reference to undefined identifier: a
 #<fn>
 
 > (foo!bar)
-error: reference to undefined identifier: qux
+error: undefined variable: qux
 
 > (= foo!qux "hiya!")
 "hiya!"
 
 > (foo!bar)
-"hiya!"
+error: undefined variable: qux
 
 > foo!qux
 "hiya!"
 
 > (w/namespace foo (foo!bar))
-"hiya!"
+error: undefined variable: qux
 
 
 > (del foo!qux)
 "hiya!"
 
-> (w/namespace foo (eval '(= bar (fn () qux))))
+> (w/eval foo
+    (= bar (fn () qux)))
 #<fn>
 
 > foo!bar
@@ -301,14 +315,14 @@ error: undefined variable: qux
 > (w/namespace foo (foo!bar))
 "hiya!"
 
-> (w/namespace foo (eval '(foo!bar)))
+> (w/eval foo (foo!bar))
 "hiya!"
 
 > qux
-error: reference to undefined identifier: qux
+error: undefined variable: qux
 
 > (eval 'qux)
-error: reference to undefined identifier: qux
+error: undefined variable: qux
 
 
 ==============================================================================
@@ -357,16 +371,16 @@ error: reference to undefined identifier: qux
 > (w/eval bar
     (w/namespace foo
       (something)))
-error: namespace-variable-value: something is not defined
+error: undefined variable: something
 
 > (w/eval bar
     (w/eval namespace
       (something)))
-error: undefined variable something
+error: undefined variable: something
 
 > (w/eval bar
     (something))
-error: undefined variable something
+error: undefined variable: something
 
 > (w/eval bar
     (= something foo!something))
@@ -377,9 +391,18 @@ error: undefined variable something
 15
 
 > (w/eval bar
+    (something))
+15
+
+> (w/eval bar
     (w/eval namespace
       (something)))
-error: undefined variable helper
+15
+
+> (w/eval bar
+    (w/namespace namespace
+      (something)))
+15
 
 
 ==============================================================================
@@ -408,3 +431,103 @@ error: undefined variable: +
 
 > (w/eval (table) 5)
 5
+
+
+==============================================================================
+
+
+> (w/eval (new-namespace)
+    random-name)
+error: undefined variable: random-name
+
+
+> (w/eval (new-namespace)
+    +)
+#<fn:+>
+
+
+> (w/eval (new-namespace)
+    namespace)
+#<namespace>
+
+
+> (w/eval (new-namespace)
+    w/namespace)
+#<mac>
+
+
+> (w/eval (new-namespace)
+    (w/namespace "foo"
+      namespace))
+"foo"
+
+
+> (w/eval (new-namespace)
+    stdin)
+#<input-port:stdin>
+
+
+> (w/eval (new-namespace)
+    (w/stdin "foo"))
+error: current-input-port: expects argument of type <input-port>; given "foo"
+
+
+> (w/eval (new-namespace)
+    (w/stdin (instring "foo")))
+nil
+
+
+> (w/eval (new-namespace)
+    (w/stdin (instring "foo") stdin))
+#<input-port:string>
+
+
+> (w/eval (new-namespace)
+    (w/stdin (instring "foo")
+      (allchars stdin)))
+"foo"
+
+
+==============================================================================
+
+
+> ((new-namespace) '+)
+#<fn:+>
+
+
+> ((new-namespace nil) '+)
+error: Function call on inappropriate object nil {+ nil . nil}
+
+
+> ((new-namespace (obj + +
+                       - -
+                       / /
+                       * *))
+   '+)
+#<fn:+>
+
+
+> ((new-namespace (new-namespace)) '+)
+#<fn:+>
+
+> ((new-namespace (new-namespace (obj + 5))) '+)
+5
+
+
+==============================================================================
+
+
+> (= foo (new-namespace))
+#<namespace>
+
+> (w/eval foo
+    (dynamic bar (imac (a b c) `(+ ,a ,b ,c)))
+    bar)
+#<mac>
+
+> (w/eval foo bar)
+#<mac>
+
+> (w/eval foo
+    (bar 1 2 3))
+6

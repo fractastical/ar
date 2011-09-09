@@ -1,5 +1,83 @@
 (use arc)
 
+(def debug args (apply prn (intersperse " " args)))
+
+(redef sym args
+  (coerce (apply string args) 'sym))
+
+
+;; TODO: should really be in ac.arc...
+(redef ac-assign1 (a b1 env)
+  (unless (ar-tnil racket-symbol?.a)
+    (err "First arg to assign must be a symbol" a))
+  (let result (ac b1 env)
+    `(racket-begin ,(if (ac-lex? a env)
+                          (list 'racket-set! a result)
+                        (ac-global-assign a result))
+                   ,result)))
+
+;; TODO: should really be in ac.arc...
+(redef ar-apply-non-fn (x args)
+  ;(debug type.x args)
+  (case type.x
+    list   (racket-mlist-ref x car.args)
+    string (racket-string-ref x car.args)
+    table  (racket-hash-ref x car.args cadr.args)
+           (err "Function call on inappropriate object" x args)))
+
+;=============================================================================
+;  Should be in strings.arc
+;=============================================================================
+
+(def splitmatch1 (pat seq)
+  ;; TODO: clunky
+  (let x string.seq
+    (iflet pivot (posmatch pat x)
+            ;; TODO: clunky
+      (list (coerce (cut x 0 pivot)           type.seq)
+            (coerce (cut x (+ len.pat pivot)) type.seq)))))
+
+;; TODO: should be faster
+;; TODO: should handle symbols as well as strings
+;; TODO: clunky
+(def splitmatch (pat seq)
+  (let l len.pat
+    ((afn (x)
+       (let pivot (posmatch pat x)
+         (cons (cut x 0 pivot)
+               (when pivot
+                 (self:cut x (+ l pivot))))))
+     seq)))
+
+#|(def splitmatch (pat seq)
+  (let l len.pat
+    ((afn (x)
+       (let pivot (posmatch pat x)
+         (prn x pivot)
+         (= pivot (split x pivot))
+         (zap self cadr.pivot)
+         pivot))
+     seq)))|#
+
+;; TODO: tests
+;;
+;; > (splitmatch1 "foo" "barfoobarfoobar")
+;; ("bar" "barfoobar")
+;;
+;; > (splitmatch1 "foo" "barquxcorge")
+;; nil
+;;
+;; > (splitmatch "foo" "barfoobarfoobar")
+;; ("bar" "bar" "bar")
+;;
+;; > (splitmatch "foo" "barufooquxufoocorgeu")
+;; ("baru" "quxu" "corgeu")
+;;
+;; > (splitmatch "foo" "barufoofoofooquxufoocorgeu")
+;; ("baru" "" "" "quxu" "corgeu")
+;; ?????
+
+
 ;=============================================================================
 ;  Should be in alias.arc
 ;=============================================================================
@@ -70,6 +148,16 @@
 ;  Should be in arc.arc
 ;=============================================================================
 
+;; TODO: funny, but somewhat inaccurate name
+;;       donil sounds awkward
+(mac dont body
+  `(do ,@body nil))
+
+(mac retif (name x)
+  `(iflet ,name ,x
+     ,name
+     ,name))
+
 #|
 ;; TODO: haha, not needed
 (def nthcar (n xs)
@@ -80,17 +168,60 @@
      (= ,var ,expr)
      ,@body))
 
-(mac mapeach (var expr . body)
+(mac buildeach (name f)
+  (w/uniq args
+    `(mac ,name ,args
+       ;; TODO: clunky, shouldn't use car, cadr, and cddr
+       `(,,f (fn (,(car ,args)) ,@(cddr ,args)) ,(cadr ,args)))))
+
+(buildeach mapeach  map)
+(buildeach mappeach mappend)
+(buildeach someach  some)
+(buildeach keepeach keep)
+
+#|(mac mapeach (var expr . body)
   `(map (fn (,var) ,@body) ,expr))
 
 (mac mappeach (var expr . body)
   `(mappend (fn (,var) ,@body) ,expr))
 
+(mac someach (var expr . body)
+  `(some (fn (,var) ,@body) ,expr))|#
+
 ;; TODO: def, mac, and extend should use = rather than assign
-;; TODO: redef should call sref before assign
 (mac remac (name parms . body)
-  `(do (= (sig ',name) ',parms)
-       (= ,name (annotate 'mac (fn ,parms ,@body)))))
+  `(let orig (rep ,name)
+     (= (sig ',name) ',parms)
+     (= ,name (annotate 'mac (fn ,parms ,@body)))))
+
+(remac redef (name args . body)
+  `(let orig ,name
+     (= (sig ',name) ',args)
+     (= ,name (fn ,args ,@body))))
+
+
+(def carref (x y)
+  (and cons?.y (x car.y)))
+
+
+(redef empty (seq)
+  (or (no seq)
+      (is seq '||)
+      (is len.seq 0)))
+
+
+(mac collect (x)
+  `(accum yield ,x))
+
+
+(redef dedup (xs (o f idfn))
+  (collect:let h (obj)
+    (each x xs
+      (let k f.x
+        (unless h.k
+          (yield x)
+          (= h.k t))))))
+
 
 (mac ^ args
   `(fn ((o _)) ,@args))
@@ -174,9 +305,6 @@
 
 (mac require (x)
   `(ail-code (racket-require (racket-prefix-in racket- ,x))))
-
-(mac collect (x)
-  `(accum yield ,x))
 
 
 (def 1+ (x)
@@ -305,8 +433,8 @@
      (list (if g 'racket-regexp-replace*
                  'racket-regexp-replace)
            (str from)
-           (if rest (self rest) x)
-           (str to)))
+           (if rest self.rest x)
+           (if sym?.to str.to to)))
    (rev args)))
 
 (def re-split (x y)

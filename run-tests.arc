@@ -1,9 +1,9 @@
 #! /usr/bin/env arc
 
-(use arc cwd io strings path) ; test-by-example)
+(use arc io tester) ; test-by-example)
 
-(w/cwd "../old/lib/"
-  (load "tester.arc"))
+#|(w/cwd "../old/lib/"
+  (load "tester.arc"))|#
 
 #|(def test-file (x)
   (w/infile file x
