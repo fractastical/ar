@@ -2,6 +2,30 @@
 
 (def debug args (apply prn (intersperse " " args)))
 
+;; TODO: def, mac, and extend should use = rather than assign
+(mac remac (name parms . body)
+  `(let orig (rep ,name)
+     (= (sig ',name) ',parms)
+     (= ,name (annotate 'mac (fn ,parms ,@body)))))
+
+(remac redef (name args . body)
+  `(let orig ,name
+     (= (sig ',name) ',args)
+     (= ,name (fn ,args ,@body))))
+
+(remac extend (name arglist test . body)
+  (w/uniq args
+    `(let orig ,name
+       (= ,name (fn ,args
+                       ;; TODO: hacky
+                  (aif (apply (fn ,arglist ,test) ,args)
+                         (apply (fn ,arglist ,@body) ,args)
+                       (apply orig ,args)))))))
+
+#| TODO: doesn't work
+(redef err args
+  (apply racket-error (map ar-toarc args)))|#
+
 (redef sym args
   (coerce (apply string args) 'sym))
 
@@ -11,6 +35,7 @@
   (unless (ar-tnil racket-symbol?.a)
     (err "First arg to assign must be a symbol" a))
   (let result (ac b1 env)
+    ;(debug a result "\n")
     `(racket-begin ,(if (ac-lex? a env)
                           (list 'racket-set! a result)
                         (ac-global-assign a result))
@@ -23,7 +48,9 @@
     list   (racket-mlist-ref x car.args)
     string (racket-string-ref x car.args)
     table  (racket-hash-ref x car.args cadr.args)
-           (err "Function call on inappropriate object" x args)))
+           (orig x args)))
+
+;(err "Function call on inappropriate object" x args)
 
 ;=============================================================================
 ;  Should be in strings.arc
@@ -120,12 +147,16 @@
 (make-predicate sym)
 (make-predicate table)
 
+(def parameter? (x)
+  (ar-tnil:racket-parameter? x))
+
 
 ;=============================================================================
 ;  Should be in ar.arc
 ;=============================================================================
 
-(= racket-#f (ail-code #f))
+(= racket-#t (ail-code #t)
+   racket-#f (ail-code #f))
 
 
 ;=============================================================================
@@ -168,16 +199,10 @@
      (= ,var ,expr)
      ,@body))
 
-(mac buildeach (name f)
-  (w/uniq args
-    `(mac ,name ,args
-       ;; TODO: clunky, shouldn't use car, cadr, and cddr
-       `(,,f (fn (,(car ,args)) ,@(cddr ,args)) ,(cadr ,args)))))
-
-(buildeach mapeach  map)
+#|(buildeach mapeach  map)
 (buildeach mappeach mappend)
 (buildeach someach  some)
-(buildeach keepeach keep)
+(buildeach keepeach keep)|#
 
 #|(mac mapeach (var expr . body)
   `(map (fn (,var) ,@body) ,expr))
@@ -187,17 +212,6 @@
 
 (mac someach (var expr . body)
   `(some (fn (,var) ,@body) ,expr))|#
-
-;; TODO: def, mac, and extend should use = rather than assign
-(mac remac (name parms . body)
-  `(let orig (rep ,name)
-     (= (sig ',name) ',parms)
-     (= ,name (annotate 'mac (fn ,parms ,@body)))))
-
-(remac redef (name args . body)
-  `(let orig ,name
-     (= (sig ',name) ',args)
-     (= ,name (fn ,args ,@body))))
 
 
 (def carref (x y)
@@ -359,7 +373,7 @@
 (def none (x y)
   (no:some x y))
 
-(extend * (x . args) (or (sym? x) (isa x 'string)) ;(str? x)
+(extend * (x . args) (isa x 'sym 'string) ;(or (sym? x) (isa x 'string)) ;(str? x)
   (apply sym (n-of (apply + args) x)))
 
 (mac and= args

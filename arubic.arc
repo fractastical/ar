@@ -1,4 +1,14 @@
-(use arc defcall re strings)
+(use import)
+
+;(= namespace (new-namespace namespace))
+
+(zap new-namespace namespace)
+
+;(debug "hiya!" racket-hash-ref loaded*)
+
+(use utils re strings) ;ssyntax
+
+;(debug defcall rep.defcall)
 
 ;(require scheme/package)
 
@@ -15,10 +25,7 @@
       "secret qux!")))|#
 
 (let string string
-  (redef sym args
-    (coerce (apply string args) 'sym))
-
-  (use utils)
+  ;(use utils)
 
   (extend len (x) (sym? x)
     (orig:string x))
@@ -26,7 +33,7 @@
   (defcall sym (x y)
     (sym (string.x y)))
 
-  (extend print (primitive x port) (sym? x)
+  (extend print (primitive x port) sym?.x
     (let s string.x
       ;; TODO: write unit tests for this
       ;; TODO: better regexp literal support...
@@ -34,6 +41,11 @@
       (if (re-match "^[0-9]+\\.?[0-9]+$|[ \\(\\)\\[\\]\\{\\}\",'`;\\\\]" s)
             (primitive s port)
           (primitive x port))))
+
+  #|(extend print (primitive x port) ar-tagged.x ;(ar-tnil:racket-vector? x)
+    ;(racket-vector->list x)
+    (disp (annotate type.x (ar-toarc rep.x)) port)
+    )|#
 
   #|(extend coerce (x type . r) (sym? x)
     (if (is type 'sym) ; 'string 'char)
@@ -52,12 +64,48 @@
 ;(extend map1 (f x) (sym? x) (disp "map1 ") (disp x) x)
 
 (redef map1 (f xs)
-  (if (cons? xs)
+  (if cons?.xs
         (cons (f car.xs) (map1 f cdr.xs))
       xs))
 
-(extend prn args (cdr args)
+
+
+#|
+;; TODO: a bit odd, should automate
+(=         mapfn      map
+           somefn     some
+           mappendfn  mappend
+           keepfn     keep)
+
+(buildeach map        mapfn)
+(buildeach mappend    mappendfn)
+(buildeach some       somefn)
+(buildeach keep       keepfn)|#
+
+(mac buildeach (name f)
+  (w/uniq args
+    `(remac ,name ,args
+       ;; TODO: clunky, shouldn't use car, cadr, and cddr
+       `(,,f (fn (,(car ,args)) ,@(cddr ,args)) ,(cadr ,args)))))
+
+(mac fnify args
+  `(do ,@(mappend (fn (x)
+                    (let f (sym x 'fn)
+                      `((= ,f ,x)
+                        (buildeach ,x ,f))))
+                  args)))
+
+(fnify map mappend some all keep)
+
+;(prn extend)
+
+(extend prn args cdr.args
   (apply orig (intersperse " " args)))
+
+
+;(extend car (x) str?.x (prn "foo!" x) (x 0))
+;(extend cdr (x) str?.x (cut x 1))
+;(extend is (x y) (and (orig x "") (orig x nil)) t)
 
 #|(mac square-bracket (x . args)
   (if (cons? x)
@@ -85,8 +133,12 @@
 
 ;; should move `keys` and `sort` into base.arc
 
+;(debug "hiya!")
+
 (defrule print (isa x 'table)
   (w/indent-level (+ indent-level 1)
     (disp "#hash(" port)
     (printwith-table primitive x (keys x) port) ; (sort < (keys x))
     (disp ")" port)))
+
+;(debug "hiya2!")
