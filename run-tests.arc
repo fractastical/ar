@@ -1,6 +1,6 @@
 #! /usr/bin/env arc
 
-(use arc io tester) ; test-by-example)
+(use arubic io tester) ; test-by-example)
 
 #|(w/cwd "../old/lib/"
   (load "tester.arc"))|#
@@ -12,4 +12,5 @@
 
 (w/cwd "tests"
   (each x (dir ".")
-    (test-file x)))
+    (w/eval (new-namespace)
+      (test-file x))))

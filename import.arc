@@ -1,6 +1,8 @@
 (use del fail)
 
-(implicit namespace (annotate 'namespace list.runtime*))
+(= arc3-namespace (annotate 'namespace list.runtime*))
+
+(implicit namespace arc3-namespace)
 
 (use runtime)
 
@@ -15,12 +17,12 @@
 (extend ar-apply-non-fn (x args) (isa x 'mac)
   )|#
 
-(defcall mac (x . args)
+#|(defcall mac (x . args)
   (debug "apply mac!" x args)
   (zap rep:rep x)
   (if acons.x
         (eval (apply car.x args) cadr.x)
-      (eval (apply x args) runtime*)))
+      (eval (apply x args) runtime*)))|#
 
 #|(redef ac-mac-call (m args env)
   ;(debug "ac-mac-call!" m args env)
@@ -32,7 +34,7 @@
 ;; TODO: incredibly hacky
 (defcall mac-wrapper (x . args)
 ;(extend ar-apply-non-fn (x args) (isa x 'mac-wrapper)
-  ;(debug "apply wrapper!" x args)
+  ;(prn "apply wrapper!" x args)
   (apply (car rep.x) args))
 
 ;; TODO: incredibly hacky
@@ -83,19 +85,20 @@
 
 
 (def lookup-in-namespace (it k)
-  ;(debug rep.it k (it k))
+  ;(prn rep.it " " k " ") ;(it k)
   (isnt/fail val (it k fail)
     (do ;(debug "get" rep.it k val parameter?.val)
         val)
     (err "undefined variable:" k)))
 
 (extend ar-var (k (o d)) namespace
-  ;(debug "ar-var" it k d)
+  ;(prn "ar-var" rep.it " " k " " d)
   (it k d))
 
 (extend ac-global (k) namespace
+  ;(prn rep.it k)
   ;; TODO: should this use the value or name of lookup-in-namespace ?
-  (let x `(,lookup-in-namespace ,it (racket-quote ,k))
+  (let x `(lookup-in-namespace ,it (racket-quote ,k))
     (if ac-zeroarg*.k  `(,x)
                         x)))
 
@@ -110,6 +113,10 @@
 (mac w/eval (x . body)
   `(eval '(do ,@body) ,x))
 
+(mac w/arc3 body
+  `(w/eval arc3-namespace ,@body))
+
+;; TODO: it should understand directory listings
 (mac import args
   (w/uniq env
     `(do ,@(map (fn (x)
@@ -125,7 +132,7 @@
                   `(let ,env (new-namespace)
                      ;; TODO: (dletif namespace ,env (load ,v)) ?
                      (w/namespace ,env (load ,v))
-                     (= ,@(if cons?.n
+                     (= ,@(if acons.n
                                 (map (fn (x)
                                        `(,x (,env ',x)))
                                      n)

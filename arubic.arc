@@ -4,9 +4,99 @@
 
 (zap new-namespace namespace)
 
+#|(= disp runtime*!disp)
+
+(redef print (primitive x port)
+  (primitive "foooooo" port)
+  nil)|#
+
+(use fixes alias re strings)
+
+#|(remac fn (parms . body)
+  (prn parms " " body)
+  (apply orig parms body))|#
+
+#| TODO: doesn't work
+(redef err args
+  (apply racket-error (map ar-toarc args)))|#
+
+;(err "Function call on inappropriate object" x args)
+
 ;(debug "hiya!" racket-hash-ref loaded*)
 
-(use utils re strings) ;ssyntax
+;(use re strings) ;ssyntax
+
+(alias cons? acons)
+(alias list? alist)
+(alias pow   expt)
+(alias str   string) ;;
+(alias str?  string?) ;;
+(alias uniq? auniq)
+
+
+;=============================================================================
+;  Should be in re.arc
+;=============================================================================
+
+(mac re-multi-replace (x . args)
+  ;; TODO: can this use afneach?
+  ((afn (((from to (o g)) . rest))
+     ;(debug "re-multi-replace" from to g)
+     (list (if g 'racket-regexp-replace*
+                 'racket-regexp-replace)
+           (str from)
+           (if rest self.rest x)
+           (if sym?.to str.to to)))
+   (rev args)))
+
+(def re-split (x y)
+  (ar-r/list-toarc:racket-regexp-split (regexp x) y))
+
+
+;=============================================================================
+;  Should be in predicate.arc
+;=============================================================================
+
+(mac make-predicate (x (o y x))
+  `(def ,(sym x "?") (x)
+     (isa x ',y)))
+
+(make-predicate char) ;;
+;(make-predicate cons)
+(make-predicate fn)
+(make-predicate int)
+(make-predicate mac)
+(make-predicate num)
+(make-predicate string) ;;
+(make-predicate sym)
+(make-predicate table)
+
+(def parameter? (x)
+  (ar-tnil:racket-parameter? x))
+
+
+;=============================================================================
+;  Should be in ar.arc
+;=============================================================================
+
+(= racket-#t (ail-code #t)
+   racket-#f (ail-code #f))
+
+
+;=============================================================================
+;  curly-bracket macro
+;=============================================================================
+
+(def ar-read-curly-brackets (ch port src line col pos)
+  `(curly-bracket ,@(racket-read/recursive port #\{ racket-#f)))
+
+(def ar-curly-bracket-readtable (x)
+  (racket-make-readtable x #\{ 'terminating-macro ar-read-curly-brackets))
+
+(zap ar-curly-bracket-readtable arc-readtable*)
+
+(mac curly-bracket args
+  `(obj ,@args))
 
 ;(debug defcall rep.defcall)
 
@@ -35,6 +125,7 @@
 
   (extend print (primitive x port) sym?.x
     (let s string.x
+      (prn "print" s)
       ;; TODO: write unit tests for this
       ;; TODO: better regexp literal support...
       ;; http://docs.racket-lang.org/reference/printing.html?q=symbol&q=identifier#%28part._print-symbol%29
@@ -102,6 +193,8 @@
 (extend prn args cdr.args
   (apply orig (intersperse " " args)))
 
+(= debug prn)
+
 
 ;(extend car (x) str?.x (prn "foo!" x) (x 0))
 ;(extend cdr (x) str?.x (cut x 1))
@@ -135,10 +228,10 @@
 
 ;(debug "hiya!")
 
-(defrule print (isa x 'table)
+(extend print (primitive x port) table?.x
   (w/indent-level (+ indent-level 1)
     (disp "#hash(" port)
-    (printwith-table primitive x (keys x) port) ; (sort < (keys x))
+    (printwith-table primitive x keys.x port) ; (sort < (keys x))
     (disp ")" port)))
 
 ;(debug "hiya2!")

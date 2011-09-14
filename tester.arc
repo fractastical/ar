@@ -1,4 +1,4 @@
-(use cwd strings path re utils)
+(use cwd path) ; re strings
 
 ;; options
 (implicit verbose)
@@ -23,7 +23,7 @@
 
 
 (def debug args
-  (push (tostring:map disp (intersperse " " args))
+  (push (tostring:mapfn disp (intersperse " " args))
         debug-statements))
 
 #|
@@ -96,7 +96,7 @@
                 (prn expect)
                 )|#
           (let x (readuntil in #\newline)
-            (= x (re-multi-replace x ("\n\\\\\n"  "\n\n" g)))
+            (zap re-multi-replace x ("\n\\\\\n"  "\n\n" g))
             (let c (count #\newline x)
               (zap instring x)
               ;(cons ... (parse-string in))
@@ -116,10 +116,9 @@
 
 
 (def backescape (str)
-  (map (fn (x)
-         (list (string x)
-               (+ "\\" x)))
-       (coerce str 'cons)))
+  (map x (coerce str 'cons)
+    (list (string x)
+          (+ "\\" x))))
 
 
 (def escape (x)
@@ -146,11 +145,10 @@
                     (errdet:eval run))
         (when expect
           (when expects-strings
-            ;; TODO: use zap
-            (= result (re-multi-replace result ("\\\\\""  "\"" g)
-                                               ("\\\\n"   "\n" g)
-                                               ("^\""     ""    )
-                                               ("\"$"     ""    )))
+            (zap re-multi-replace result ("\\\\\""  "\"" g)
+                                         ("\\\\n"   "\n" g)
+                                         ("^\""     ""    )
+                                         ("\"$"     ""    ))
             #|(zap re-multi-replace result '("\\\\\"|\\\\\n"  "" g)
                                          '("^\""            ""  )
                                          '("\"$"            ""  ))|#
@@ -164,9 +162,8 @@
 
           ;(= expect (subst "\n\n" "\n\\\n" expect))
 
-          ;; TODO: use zap
-          (= expect (re-multi-replace expect ("\n\\\\\n"   "\n\n" g)
-                                             ("^\\\\$"     ""      )))
+          (zap re-multi-replace expect ("\n\\\\\n"   "\n\n" g)
+                                       ("^\\\\$"     ""      ))
 
           ;(prn result expect)
 
@@ -189,7 +186,7 @@
                     (prn result)
                     (when debug-statements
                       (prn "\n- Debug:")
-                      (map prn (rev debug-statements)))
+                      (eachfn prn rev.debug-statements))
                     (prn "\n" (newstring separator-width #\=))
                     nil)))))))
 

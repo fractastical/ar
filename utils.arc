@@ -1,57 +1,5 @@
 (use arc)
 
-(def debug args (apply prn (intersperse " " args)))
-
-;; TODO: def, mac, and extend should use = rather than assign
-(mac remac (name parms . body)
-  `(let orig (rep ,name)
-     (= (sig ',name) ',parms)
-     (= ,name (annotate 'mac (fn ,parms ,@body)))))
-
-(remac redef (name args . body)
-  `(let orig ,name
-     (= (sig ',name) ',args)
-     (= ,name (fn ,args ,@body))))
-
-(remac extend (name arglist test . body)
-  (w/uniq args
-    `(let orig ,name
-       (= ,name (fn ,args
-                       ;; TODO: hacky
-                  (aif (apply (fn ,arglist ,test) ,args)
-                         (apply (fn ,arglist ,@body) ,args)
-                       (apply orig ,args)))))))
-
-#| TODO: doesn't work
-(redef err args
-  (apply racket-error (map ar-toarc args)))|#
-
-(redef sym args
-  (coerce (apply string args) 'sym))
-
-
-;; TODO: should really be in ac.arc...
-(redef ac-assign1 (a b1 env)
-  (unless (ar-tnil racket-symbol?.a)
-    (err "First arg to assign must be a symbol" a))
-  (let result (ac b1 env)
-    ;(debug a result "\n")
-    `(racket-begin ,(if (ac-lex? a env)
-                          (list 'racket-set! a result)
-                        (ac-global-assign a result))
-                   ,result)))
-
-;; TODO: should really be in ac.arc...
-(redef ar-apply-non-fn (x args)
-  ;(debug type.x args)
-  (case type.x
-    list   (racket-mlist-ref x car.args)
-    string (racket-string-ref x car.args)
-    table  (racket-hash-ref x car.args cadr.args)
-           (orig x args)))
-
-;(err "Function call on inappropriate object" x args)
-
 ;=============================================================================
 ;  Should be in strings.arc
 ;=============================================================================
@@ -106,76 +54,6 @@
 
 
 ;=============================================================================
-;  Should be in alias.arc
-;=============================================================================
-
-(def defvar (n x y)
-  ;; TODO: I don't like varset, because it uses eval
-  (varset n x)
-  (= (ac-var-assigner* n) y)
-  (ac-zeroarg n))
-
-(mac alias (x y)
-  (w/uniq u
-    `(defvar ',x
-       (fn ()   ,y)
-       (fn (,u) (= ,y ,u)))))
-
-(alias cons? acons)
-(alias list? alist)
-(alias pow   expt)
-(alias str   string) ;;
-(alias str?  string?) ;;
-(alias uniq? auniq)
-
-
-;=============================================================================
-;  Should be in predicate.arc
-;=============================================================================
-
-(mac make-predicate (x (o y x))
-  `(def ,(sym x "?") (x)
-     (isa x ',y)))
-
-(make-predicate char) ;;
-;(make-predicate cons)
-(make-predicate fn)
-(make-predicate int)
-(make-predicate mac)
-(make-predicate num)
-(make-predicate string) ;;
-(make-predicate sym)
-(make-predicate table)
-
-(def parameter? (x)
-  (ar-tnil:racket-parameter? x))
-
-
-;=============================================================================
-;  Should be in ar.arc
-;=============================================================================
-
-(= racket-#t (ail-code #t)
-   racket-#f (ail-code #f))
-
-
-;=============================================================================
-;  curly-bracket macro
-;=============================================================================
-
-(def ar-read-curly-brackets (ch port src line col pos)
-  `(curly-bracket ,@(racket-read/recursive port #\{ racket-#f)))
-
-(def ar-curly-bracket-readtable (x)
-  (racket-make-readtable x #\{ 'terminating-macro ar-read-curly-brackets))
-
-(zap ar-curly-bracket-readtable arc-readtable*)
-
-(mac curly-bracket args
-  `(obj ,@args))
-
-
-;=============================================================================
 ;  Should be in arc.arc
 ;=============================================================================
 
@@ -218,23 +96,8 @@
   (and cons?.y (x car.y)))
 
 
-(redef empty (seq)
-  (or (no seq)
-      (is seq '||)
-      (is len.seq 0)))
-
-
 (mac collect (x)
   `(accum yield ,x))
-
-
-(redef dedup (xs (o f idfn))
-  (collect:let h (obj)
-    (each x xs
-      (let k f.x
-        (unless h.k
-          (yield x)
-          (= h.k t))))))
 
 
 (mac ^ args
@@ -245,19 +108,13 @@
 #|(mac isa (x . args)
   `(in (type ,x) ,@args))|#
 
-(redef isa (x y . args)
-  ;(assign x (type x))
-  (zap type x)
-  (or (is x y)
-      ;; can't use `some`, because that causes an infinite loop
-      (if args (reclist (^:is x car._) args))))
-
 #|(def isa (x . args)
   (some x args))|#
 
 
+#| TODO: figure out why this is here
 (redef empty (x)
-  (errsafe:is len.x 0))
+  (errsafe:is len.x 0))|#
 
 
 ;; TODO: rewrite code to use dopair
@@ -286,17 +143,8 @@
                (err "cannot create variable" x))))))
 
 
-;; TODO: should this use dopair...?
-(remac in (x . choices)
-  (if (cdr choices)
-        (w/uniq g
-          `(let ,g ,x
-             (or ,@(map1 (fn (c) `(is ,g ,c)) choices))))
-      `(is ,x ,(car choices))))
-
-
 ;; TODO: inefficient
-(def zip args args
+(def zip args
   ;; TODO: this causes it to stop when all the lists are empty.
   ;;       however, in Python, it stops when the first list is
   ;;       empty. I'm not sure which is the better semantic.
@@ -364,12 +212,6 @@
   `(= ,var (,x ,y ,var ,@args)))
 ;  `(zap (^:apply ,x ,y _ ,args) ,var))
 
-(redef expand=list (terms)
-  (if (cddr terms)
-        `(do ,@(mapeach (p v) (pair terms)
-                 (expand= p v)))
-      (apply expand= terms)))
-
 (def none (x y)
   (no:some x y))
 
@@ -394,8 +236,6 @@
 (def thunk (x)
   `(fn () ,x))
 
-(redef avg ns (/ (apply + ns) (len ns)))
-
 (def square (x) (expt x 2))
 
 (def readlines (x)
@@ -407,15 +247,6 @@
 
 (def ceil (x)
   (racket-ceiling x))
-
-
-(extend coerce (x y . r) (and (table? x)
-                              (is y 'cons))
-  (tablist x))
-
-(extend coerce (x y . r) (and (cons? x)
-                              (is y 'table))
-  (listtab x))
 
 
 ;=============================================================================
@@ -434,25 +265,6 @@
   (cons (name x)
         (cons (fn-args x)
               (fn-body x))))
-
-
-;=============================================================================
-;  Should be in re.arc
-;=============================================================================
-
-(mac re-multi-replace (x . args)
-  ;; TODO: can this use afneach?
-  ((afn (((from to (o g)) . rest))
-     ;(debug "re-multi-replace" from to g)
-     (list (if g 'racket-regexp-replace*
-                 'racket-regexp-replace)
-           (str from)
-           (if rest self.rest x)
-           (if sym?.to str.to to)))
-   (rev args)))
-
-(def re-split (x y)
-  (ar-r/list-toarc:racket-regexp-split (regexp x) y))
 
 
 ;=============================================================================
