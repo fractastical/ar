@@ -150,7 +150,7 @@
 ;  Binary functions
 ;=============================================================================
 
-(mac case-fn args
+#|(mac case-fn args
   `(%nocompile
      (racket-case-lambda
        ,@(map1 (fn (x)
@@ -159,32 +159,17 @@
                                           `((assign ,n (racket-list->mlist ,n))
                                             ,@(cdr x))
                                         (cdr x))))))
-               args))))
-
-(def ac-binary (bin red)
-  (case-fn
-    ((x y) (bin x y))
-    (args  (red bin args))))
-
-
-#|(def + args
-  (if (no args)
-        0
-      (or (char? (car args))
-          (string? (car args)))
-        (apply string args)
-      (list? (car args))
-        (apply join args)
-      (apply racket-+ args)))|#
+               args))))|#
 
 
 (def +-2 (x y)
-  (if (or (char? x)
-          (string? x))
+  (if (num? x)
+        (racket-+ x y)
+      (or (string? x)
+          (char? x))
         (string x y)
       (list? x)
-        (join x y)
-      (racket-+ x y)))
+        (join x y)))
 
 (def <2 (x y)
   (ac-tnil
@@ -210,9 +195,10 @@
           (racket-char>? x y)
         (err "Can't >" x y)))
 
-(assign + (ac-binary +-2 reduce))
-(assign < (ac-binary  <2 ac-pairwise))
-(assign > (ac-binary  >2 ac-pairwise))
+(assign +  (ac-binary +-2 reduce))
+(assign <  (ac-binary  <2 ac-pairwise))
+(assign >  (ac-binary  >2 ac-pairwise))
+(assign is (ac-binary is2 ac-pairwise))
 
 
 ;=============================================================================

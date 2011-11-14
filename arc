@@ -5,11 +5,6 @@
 
 (define namespace (make-base-empty-namespace))
 
-#|(define (ac-eval runtime x)
-  (print x)
-  (eval x runtime)
-  )|#
-
 (define namespace-get
   (case-lambda
    ((runtime varname)
@@ -39,28 +34,9 @@
                   (lambda (ch port src line col pos)
                     (list->mlist (read/recursive port #\( #f)))))|#
 
-#|(define ac-eval '())
-
-(let ((eval eval))
-  (set! ac-eval (lambda (x)
-    (print (syntax->datum x))
-    (parameterize ((current-eval eval))
-      (eval x (current-namespace)))
-    )))|#
-
-#|(define (ac-eval x)
-  (print x))|#
-
-#|(define (ac-compile x y)
-  (print (syntax->datum x))
-  (compile x))|#
-
 (parameterize ((current-namespace             namespace)
                (compile-allow-set!-undefined  #t)
                ;(compile-enforce-module-constants #f)
-               ;(current-compile                  ac-compile)
-               ;(current-eval                     ac-eval)
-               ;(current-readtable                ac-read)
                )
   (namespace-require '(only scheme/base #%app #%datum #%top)) ;#%top-interaction
   (namespace-require '(prefix racket- scheme/base))
@@ -72,13 +48,6 @@
   (namespace-set namespace 'namespace-set namespace-set)
 
   (namespace-set namespace 'ac-eval-all   ac-eval-all)
-  ;(namespace-set namespace 'ac-eval       ac-eval)
   (namespace-set namespace 'ac-load       ac-load)
-  ;(namespace-set namespace 'ac-read       ac-read)
-  ;(namespace-set namespace 'sread         read)
-  ;(namespace-set namespace 'eval          eval)
 
-  (ac-load "compiler.arc" namespace)
-  ;(ac-load "arc.arc" namespace)
-  ;(read-eval-print-loop)
-  )
+  (ac-load "compiler.arc" namespace))
