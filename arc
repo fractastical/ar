@@ -41,7 +41,9 @@
   (namespace-require '(only scheme/base #%app #%datum #%top)) ;#%top-interaction
   (namespace-require '(prefix racket- scheme/base))
   (namespace-require '(prefix racket- scheme/mpair))
-  (namespace-require '(prefix racket- scheme/stxparam))
+  (namespace-require '(prefix racket- scheme/system))
+  (namespace-require '(prefix racket- scheme/foreign))
+  ;(namespace-require '(prefix racket- scheme/stxparam))
 
   (namespace-set namespace 'namespace     namespace)
   (namespace-set namespace 'namespace-get namespace-get)

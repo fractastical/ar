@@ -1,4 +1,4 @@
-Nu is an Arc compiler which is derived from ar, but differs significantly in certain ways.
+Nu is an Arc compiler which is derived from ar, but differs significantly in certain ways. Large chunks of the compiler were copied from ar, but a lot was written by me.
 
 The current differences are as follows:
 
@@ -14,5 +14,8 @@ The current differences are as follows:
   * repl.arc contains a simple REPL written in a more limited form of Arc
  * Code is organized into different sections, making it easier to navigate the code base
  * Nu does not hardcode any symbols whatsoever. All special forms (fn, assign, quote, etc.) are implemented as macros. This makes Arc much simpler and easier to reason about, without any cost in code maintenance
- * All binary operators (is, +, <, etc.) are implemented in terms of case-lambda for increased speed, as suggested by waterhouse
+ * All binary operators (is, +, <, etc.) are implemented in terms of case-lambda for increased speed, as suggested by waterhouse (https://sites.google.com/site/arclanguagewiki/arc-3_1/optimizations)
  * nil is a global variable that contains the Racket null value '() This is not noticable in Arc code, but makes the compiler implementation much simpler
+ * A lot of built-in functions are defined in Arc, rather than in ar.arc and ac.arc. This results in much shorter and clearer code
+ * Can include literal Racket values like #t and #f in code, without needing to wrap them in ail-code or %nocompile
+ * (coerce 2 'num) returns 2.0 rather than 2

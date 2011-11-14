@@ -136,7 +136,8 @@
     ((ac-no x)
       (disp "nil" port))
     (racket-else
-      (primitive x port))))
+      (primitive x port)))
+  nil)
 
 
 ;=============================================================================
@@ -156,12 +157,10 @@
   (racket-flush-output port))
 
 (racket-define (disp x (port (stdout)))
-  (print ac-disp x port)
-  nil)
+  (print ac-disp x port))
 
 (racket-define (write x (port (stdout)))
-  (print ac-write x port)
-  nil)
+  (print ac-write x port))
 
 (racket-define (sread input (eof nil))
   (racket-let ((v (racket-read input)))
@@ -277,30 +276,30 @@
 ;  Function/Macro calls
 ;=============================================================================
 
-(racket-define (ac-funcall0 fn)
-  (racket-if (racket-procedure? fn)
-               (fn)
-             (ac-apply fn)))
+(racket-define (ac-funcall0 f)
+  (racket-if (racket-procedure? f)
+               (f)
+             (ac-apply f)))
 
-(racket-define (ac-funcall1 fn arg1)
-  (racket-if (racket-procedure? fn)
-               (fn arg1)
-             (ac-apply fn arg1)))
+(racket-define (ac-funcall1 f arg1)
+  (racket-if (racket-procedure? f)
+               (f arg1)
+             (ac-apply f arg1)))
 
-(racket-define (ac-funcall2 fn arg1 arg2)
-  (racket-if (racket-procedure? fn)
-               (fn arg1 arg2)
-             (ac-apply fn arg1 arg2)))
+(racket-define (ac-funcall2 f arg1 arg2)
+  (racket-if (racket-procedure? f)
+               (f arg1 arg2)
+             (ac-apply f arg1 arg2)))
 
-(racket-define (ac-funcall3 fn arg1 arg2 arg3)
-  (racket-if (racket-procedure? fn)
-               (fn arg1 arg2 arg3)
-             (ac-apply fn arg1 arg2 arg3)))
+(racket-define (ac-funcall3 f arg1 arg2 arg3)
+  (racket-if (racket-procedure? f)
+               (f arg1 arg2 arg3)
+             (ac-apply f arg1 arg2 arg3)))
 
-(racket-define (ac-funcall4 fn arg1 arg2 arg3 arg4)
-  (racket-if (racket-procedure? fn)
-               (fn arg1 arg2 arg3 arg4)
-             (ac-apply fn arg1 arg2 arg3 arg4)))
+(racket-define (ac-funcall4 f arg1 arg2 arg3 arg4)
+  (racket-if (racket-procedure? f)
+               (f arg1 arg2 arg3 arg4)
+             (ac-apply f arg1 arg2 arg3 arg4)))
 
 (racket-define (ac-macro? f)
   (racket-cond
