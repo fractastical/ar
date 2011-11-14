@@ -1,0 +1,111 @@
+> ((cadr (car (ac-compile ''(1 2 3) nil))))
+(1 2 3)
+
+
+> (list*)
+()
+
+> (list* 1)
+1
+
+> (list* 1 2)
+(1 . 2)
+
+> (list* 1 2 3)
+(1 2 . 3)
+
+> (list* 1 2 (list 3 4 5))
+(1 2 3 4 5)
+
+> (list* (list 1 2 3))
+(1 2 3)
+
+
+> (fn (x) 5)
+#<fn>
+
+> ((fn (x) 5))
+error:
+
+> ((fn (x) 5) 10)
+5
+
+
+> ('(1 2 3) -1)
+error:
+
+> ('(1 2 3) 0)
+1
+
+> ('(1 2 3) 1)
+2
+
+> ('(1 2 3) 2)
+3
+
+> ('(1 2 3) 3)
+error:
+
+
+> (racket-parameterize ((racket-current-namespace (racket-current-namespace)))
+    (racket-current-namespace))
+#<namespace:0>
+
+
+> (ar-compile '(fn args args) nil)
+(racket-lambda args (racket-set! args (#<fn:list->mlist> args)) args)
+
+
+> (ar-compile '(fn (a b c) (list a b c)) nil)
+(racket-lambda (a b c) (#<fn:ar-funcall3> list a b c))
+
+
+> (ar-compile '(fn (a (o b 5) c) (list a b c)) nil)
+error:
+
+> (ar-compile '(fn (a b (o c 5)) (list a b c)) nil)
+(racket-lambda (a b (c 5)) (#<fn:ar-funcall3> list a b c))
+
+> (ar-compile '(fn (a b (o c nil)) (list a b c)) nil)
+(racket-lambda (a b (c nil)) (#<fn:ar-funcall3> list a b c))
+
+> (ar-compile '(fn (a b (o c)) (list a b c)) nil)
+(racket-lambda (a b (c nil)) (#<fn:ar-funcall3> list a b c))
+
+
+> (ar-compile '(fn (a b . c) (list a b c)) nil)
+u
+
+
+> (ar-compile '(fn (a b (c (d e f (g)))) (list a b c d e f g)) nil)
+(racket-lambda (a b (c nil)) (#<fn:ar-funcall3> list a b c))
+
+
+> (fn ())
+#<fn>
+
+> ((fn ()))
+nil
+
+
+> (list nil nil nil)
+u
+
+
+> (ac-compile '(%nocompile 5 10 (foo 10) (bar (qux (%compile (corge)))) (%compile (foo 10)) (%compile 5)) nil)
+(racket-begin 5 10 (foo 10) (bar (qux (#<fn:ac-funcall0> corge))) (#<fn:ac-funcall1> foo 10) 5)
+
+> (%nocompile (racket-parameterize ((racket-current-namespace (racket-current-namespace))) (racket-current-namespace)))
+#<namespace:0>
+
+> (%nocompile (racket-parameterize ((racket-current-namespace (racket-current-namespace)))
+    (%compile (+ 10 5) (+ 15 20))))
+#<namespace:0>
+
+> (let ac-compile nil
+    (%nocompile (+ 10 5)))
+15
+
+> (let %nocompile nil
+    (%nocompile (+ 10 5)))
+error:
