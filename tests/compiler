@@ -203,3 +203,51 @@ error:
 
 > (let (a b) (list 1 2) c)
 error:
+
+
+> ((fn (:a b c) (list a b c)) 1)
+error:
+
+> ((fn (:a b c) (list a b c)) 1 2)
+(nil 1 2)
+
+> ((fn (:a b c) (list a b c)) 1 2 3)
+error:
+
+> ((fn (:a b c) (list a b c)) 1 2 :a 3)
+(3 1 2)
+
+> ((fn (:a b c) (list a b c)) :a 3 1 2)
+(3 1 2)
+
+
+> ((fn ((o :a) b c) (list a b c)) 1 2)
+(nil 1 2)
+
+> ((fn ((o :a) b c) (list a b c)) 1 2 :a 10)
+(10 1 2)
+
+> ((fn ((o :a 15) b c) (list a b c)) 1 2)
+(15 1 2)
+
+> ((fn ((o :a 15) b c) (list a b c)) 1 2 :a 3)
+(3 1 2)
+
+> ((fn (b c (o :a 15)) (list a b c)) 1 2)
+(15 1 2)
+
+> ((fn (b c (o :a 15)) (list a b c)) 1 2 :a 3)
+(3 1 2)
+
+
+> ((fn (:a (b c)) (list a b c)))
+(nil nil nil)
+
+> ((fn (:a (b c)) (list a b c)) 1 2)
+error:
+
+> ((fn (:a (b c)) (list a b c)) '(1 2))
+(nil 1 2)
+
+> ((fn (:a (b c)) (list a b c)) '(1 2) :a 5)
+(5 1 2)

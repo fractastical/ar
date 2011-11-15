@@ -392,12 +392,19 @@
 ;  fn
 ;=============================================================================
 
+(racket-define (ac-fn-keyword-args x default)
+  (list x (list (racket-string->symbol (racket-keyword->string x))
+                default)))
+
 (racket-define (ac-fn-opt-args x body env)
-  (list (cadr x)
-        (racket-let ((x (cddr x)))
-          (racket-if (ac-no x)
-            (racket-quote nil)
-            (ac-compile (car x) env)))))
+  (racket-let ((c (cadr x))
+               (default (racket-let ((x (cddr x)))
+                          (racket-if (ac-no x)
+                            (racket-quote nil)
+                            (ac-compile (car x) env)))))
+    (racket-if (racket-keyword? c)
+                 (ac-fn-keyword-args c default)
+               (list (list c default)))))
 
 #|(racket-define (ac-fn-args1 x)
   (racket-cond
@@ -450,8 +457,12 @@
               (racket-set! body (ac-fn-rest-args x body env))
               x)
             ((ac-caris (car x) (racket-quote o))  ;; optional args
-              (cons (ac-fn-opt-args (car x) body env)
-                    (self (cdr x))))
+              (racket-mappend (ac-fn-opt-args (car x) body env)
+                              (self (cdr x))))
+            ((racket-keyword? (car x))            ;; keyword args
+              (racket-mappend (ac-fn-keyword-args (car x)
+                                                  (racket-quote nil))
+                              (self (cdr x))))
             (racket-else                          ;; normal args
               (cons (car x) (self (cdr x))))))
         body))

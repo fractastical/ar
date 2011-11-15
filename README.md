@@ -1,4 +1,4 @@
-Nu is an Arc compiler which is derived from _ar_, but differs significantly in certain ways. Large chunks of the compiler were copied from _ar_, but a lot was written by me.
+_Nu_ is an Arc compiler which is derived from _ar_, but differs significantly in certain ways. Large chunks of the compiler were copied from _ar_, but a lot was written by me.
 
 The current differences are as follows:
 
@@ -31,12 +31,6 @@ The current differences are as follows:
 
 *   Can include literal Racket values like `#t` and `#f` in code, without needing to wrap them in `ail-code` or `%nocompile`
 
-    *   Because of this, keyword arguments are also supported automatically:
-
-            ((fn (#:foo foo) foo) #:foo 50) -> 50
-
-        I'm working on better syntax for it, though
-
 *   `(coerce 2 'num)` returns `2.0` rather than `2`
 
 *   Optional arguments use their defaults when explicitly passed `nil`:
@@ -44,9 +38,25 @@ The current differences are as follows:
         (def foo (a (o b 5) (o c 10))
           (list a b c))
 
-        (foo 1 2 3)     -> (1 2 3)
-        (foo 1 nil 3)   -> (1 5 3)
         (foo 1)         -> (1 5 10)
         (foo 1 nil nil) -> (1 5 10)
+        (foo 1 nil 3)   -> (1 5 3)
+        (foo 1 2 3)     -> (1 2 3)
 
 *   A complex fn is only created when destructuring: default, optional, and rest args are all handled with a plain `racket-lambda`
+
+*   Keyword arguments are supported:
+
+        (def foo (a b #:c)
+          (list a b c))
+
+        (foo 1 2)       -> (1 2 nil)
+        (foo 1 2 #:c 3) -> (1 2 3)
+        (foo #:c 3 1 2) -> (1 2 3)
+
+
+        (def foo (a b (o #:c 5))
+          (list a b c))
+
+        (foo 1 2)       -> (1 2 5)
+        (foo 1 2 #:c 7) -> (1 2 7)

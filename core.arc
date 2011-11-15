@@ -102,12 +102,13 @@
 ;  Types
 ;=============================================================================
 
-(def isa     (x y) (is (type x) y))
-(def cons?   (x)   (isa x 'cons))
-(def int?    (x)   (isa x 'int))
-(def string? (x)   (isa x 'string))
-(def sym?    (x)   (isa x 'sym))
-(def char?   (x)   (isa x 'char))
+(def isa      (x y) (is (type x) y))
+(def cons?    (x)   (isa x 'cons))
+(def int?     (x)   (isa x 'int))
+(def string?  (x)   (isa x 'string))
+(def sym?     (x)   (isa x 'sym))
+(def char?    (x)   (isa x 'char))
+(def keyword? (x)   (isa x 'keyword))
 
 
 (def string1 (x)
@@ -674,6 +675,10 @@
                                         (list* `(,c (racket-mcar ,u))
                                                `(,u (racket-mcdr ,u)) ;; TODO: should I use cdr or racket-mcdr?
                                                (self (cdr x)))
+                                      ;; keyword args
+                                      (keyword? c)
+                                        ;; TODO: fix this
+                                        (err "keyword args not supported with destructuring")
                                       ;; destructuring args
                                       (join (ac-fn-destructuring-args u c)
                                             `((,u (cdr ,u)))
