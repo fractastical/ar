@@ -24,16 +24,16 @@ The current differences are as follows:
 
         ((fn (#:foo foo) foo) #:foo 50) -> 50
 
-    I'm working on better syntax for it, though
+I'm working on better syntax for it, though
  * (coerce 2 'num) returns 2.0 rather than 2
  * Optional arguments use their defaults when explicitly passed nil:
 
-       (def foo (a (o b 5) (o c 10))
-         (list a b c))
+        (def foo (a (o b 5) (o c 10))
+          (list a b c))
 
-       (foo 1 2 3)     -> (1 2 3)
-       (foo 1 nil 3)   -> (1 5 3)
-       (foo 1)         -> (1 5 10)
-       (foo 1 nil nil) -> (1 5 10)
+        (foo 1 2 3)     -> (1 2 3)
+        (foo 1 nil 3)   -> (1 5 3)
+        (foo 1)         -> (1 5 10)
+        (foo 1 nil nil) -> (1 5 10)
 
  * A complex fn is only created when destructuring: default, optional, and rest args are all handled with a plain racket-lambda
