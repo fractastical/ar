@@ -1,4 +1,4 @@
-Nu is an Arc compiler which is derived from ar, but differs significantly in certain ways. Large chunks of the compiler were copied from ar, but a lot was written by me.
+Nu is an Arc compiler which is derived from _ar_, but differs significantly in certain ways. Large chunks of the compiler were copied from _ar_, but a lot was written by me.
 
 The current differences are as follows:
 
