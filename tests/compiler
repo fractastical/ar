@@ -109,3 +109,97 @@ u
 > (let %nocompile nil
     (%nocompile (+ 10 5)))
 error:
+
+
+> ((fn (a (b) (o c 5) (o d) . rest) (list a b c d rest)))
+error:
+
+> ((fn (a (b) (o c 5) (o d) . rest) (list a b c d rest)) 1)
+(1 nil 5 nil nil)
+
+> ((fn (a (b) (o c 5) (o d) . rest) (list a b c d rest)) 1 2)
+error:
+
+> ((fn (a (b) (o c 5) (o d) . rest) (list a b c d rest)) 1 '(2))
+(1 2 5 nil nil)
+
+> ((fn (a (b) (o c 5) (o d) . rest) (list a b c d rest)) 1 '(2 3))
+(1 2 5 nil nil)
+
+> ((fn (a (b) (o c 5) (o d) . rest) (list a b c d rest)) 1 '(2 (3)))
+(1 2 5 nil nil)
+
+> ((fn (a (b) (o c 5) (o d) . rest) (list a b c d rest)) 1 '(2 (3)) nil)
+(1 2 5 nil nil)
+
+> ((fn (a (b) (o c 5) (o d) . rest) (list a b c d rest)) 1 '(2 (3)) nil nil)
+(1 2 5 nil nil)
+
+> ((fn (a (b) (o c 5) (o d) . rest) (list a b c d rest)) 1 '(2 (3)) nil nil 5 6 7)
+(1 2 5 nil (5 6 7))
+
+> ((fn (a (b) (o c 5) (o d) . rest) (list a b c d rest)) 1 '(2 (3)) 3)
+(1 2 3 nil nil)
+
+> ((fn (a (b) (o c 5) (o d) . rest) (list a b c d rest)) 1 '(2 (3)) 3 4)
+(1 2 3 4 nil)
+
+> ((fn (a (b) (o c 5) (o d) . rest) (list a b c d rest)) 1 '(2 (3)) 3 4 5)
+(1 2 3 4 (5))
+
+> ((fn (a (b) (o c 5) (o d) . rest) (list a b c d rest)) 1 '(2 (3)) 3 4 5 6)
+(1 2 3 4 (5 6))
+
+> ((fn (a (b) (o c 5) (o d) . rest) (list a b c d rest)) 1 '(2 (3)) 3 4 5 6 7)
+(1 2 3 4 (5 6 7))
+
+
+> ((fn (a (b (c d (e)))) (list a b c d e)) 1 2)
+error:
+
+> ((fn (a (b (c d (e)))) (list a b c d e)) 1 '(2))
+(1 2 nil nil nil)
+
+> ((fn (a (b (c d (e)))) (list a b c d e)) 1 '(2 3))
+error:
+
+> ((fn (a (b (c d (e)))) (list a b c d e)) 1 '(2 (3)))
+(1 2 3 nil nil)
+
+> ((fn (a (b (c d (e)))) (list a b c d e)) 1 '(2 (3 4)))
+(1 2 3 4 nil)
+
+> ((fn (a (b (c d (e)))) (list a b c d e)) 1 '(2 (3 4 5)))
+error:
+
+> ((fn (a (b (c d (e)))) (list a b c d e)) 1 '(2 (3 4 (5))))
+(1 2 3 4 5)
+
+
+> ((fn (a (b (c d (e) f)) . g) (list a b c d e f g)) 1 2)
+error:
+
+> ((fn (a (b (c d (e) f)) . g) (list a b c d e f g)) 1 '(2 (3 4)))
+(1 2 3 4 nil nil nil)
+
+> ((fn (a (b (c d (e) f)) . g) (list a b c d e f g)) 1 '(2 (3 4 5)))
+error:
+
+> ((fn (a (b (c d (e) f)) . g) (list a b c d e f g)) 1 '(2 (3 4 (5))))
+(1 2 3 4 5 nil nil)
+
+> ((fn (a (b (c d (e) f)) . g) (list a b c d e f g)) 1 '(2 (3 4 (5) 6)))
+(1 2 3 4 5 6 nil)
+
+> ((fn (a (b (c d (e) f)) . g) (list a b c d e f g)) 1 '(2 (3 4 (5) 6)) 7)
+(1 2 3 4 5 6 (7))
+
+
+> (let (a b) (list 1 2) a)
+1
+
+> (let (a b) (list 1 2) b)
+2
+
+> (let (a b) (list 1 2) c)
+error:

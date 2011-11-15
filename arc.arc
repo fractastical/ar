@@ -212,9 +212,6 @@
 (mac defs args
   `(do ,@(map [cons 'def _] (tuples args 3))))
 
-(def caris (x val)
-  (and (acons x) (is (car x) val)))
-
 (def warn (msg . args)
   (disp (+ "Warning: " msg ". "))
   (map [do (write _) (disp " ")] args)

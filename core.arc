@@ -260,6 +260,11 @@
   (racket-set-mcdr! x val)
   val)
 
+(def caris (x val)
+  (and (cons? x) (is (car x) val)))
+
+(def caddr (x) (car (cddr x)))
+
 
 ;=============================================================================
 ;  Strings
@@ -611,3 +616,67 @@
                     ((direct-calls)   (set! direct-calls   flag))
                     ((explicit-flush) (set! explicit-flush flag)))
                   val)))|#
+
+
+;=============================================================================
+;  Complex fn
+;=============================================================================
+
+(def ac-fn-complex-args? (x)
+  (if (no x)
+        nil
+      (sym? x)
+        nil
+      (and (cons? (car x))
+           (no (caris (car x) 'o)))
+        t
+      (ac-fn-complex-args? (cdr x))))
+
+;; TODO: ridiculously complicated and hacky
+(def ac-fn-destructuring-args (u x)
+  (w/uniq v
+    `((,v (car ,u))
+      ,@((afn (x)
+           (if (no x)
+                 nil
+               (cons? (car x))
+                 (join (ac-fn-destructuring-args v (car x))
+                       `((,v (cdr ,v)))
+                       (self (cdr x)))
+               (list* `(,(car x) (car ,v))
+                      `(,v (cdr ,v))
+                      (self (cdr x)))))
+         x))))
+
+;; TODO: ridiculously complicated and hacky
+(def ac-fn-complex-args (x body env)
+  (w/uniq u
+    `(,u (racket-let* ((,u (racket-list->mlist ,u))
+                       ,@((afn (x)
+                                ;; end of the arguments
+                            (if (no x)
+                                  nil
+                                ;; dotted rest args
+                                (sym? x)
+                                  `((,x ,u))
+                                (let c (car x)
+                                      ;; optional args
+                                  (if (caris c 'o)
+                                        (list* `(,(cadr c) (racket-or (ac-nil (car ,u))
+                                                                      (racket-quote ,(caddr c))))
+                                               `(,u (cdr ,u))
+                                               (self (cdr x)))
+                                      ;; normal args
+                                      (sym? c)
+                                        ;; TODO: better error handling
+                                        ;;       when a normal argument
+                                        ;;       is missing
+                                        (list* `(,c (racket-mcar ,u))
+                                               `(,u (racket-mcdr ,u)) ;; TODO: should I use cdr or racket-mcdr?
+                                               (self (cdr x)))
+                                      ;; destructuring args
+                                      (join (ac-fn-destructuring-args u c)
+                                            `((,u (cdr ,u)))
+                                            (self (cdr x)))))))
+                          x))
+           ,@body))))

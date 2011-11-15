@@ -63,6 +63,7 @@
     ((racket-thread? x)       (racket-quote thread))
     ((racket-thread-cell? x)  (racket-quote thread-cell))
     ((racket-semaphore? x)    (racket-quote semaphore))
+    ((racket-keyword? x)      (racket-quote keyword))
     (racket-else              (racket-quote unknown))))
 
 (racket-define (rep x)
@@ -181,6 +182,9 @@
 
 (racket-define (ac-no x)
   (racket-eq? x nil))
+
+(racket-define (ac-nil x)
+  (racket-if (ac-no x) #f x))
 
 (racket-define (ac-true x)
   (racket-not (ac-no x)))
@@ -388,59 +392,84 @@
 ;  fn
 ;=============================================================================
 
-#|(racket-define (ac-destructuring-args? x)
-  ;; TODO: clunky
-  (racket-cond
-    ((ac-no x) #f)
-    ((racket-symbol? x) #f)
-    ((racket-and (racket-mpair? (car x))
-                 (racket-not (ac-caris (car x) (racket-quote o))))
-     #t)
-    (racket-else (ac-destructuring-args? (cdr x)))))|#
+(racket-define (ac-fn-opt-args x body env)
+  (list (cadr x)
+        (racket-let ((x (cddr x)))
+          (racket-if (ac-no x)
+            (racket-quote nil)
+            (ac-compile (car x) env)))))
 
-(racket-define (ac-fn-args1 x)
+#|(racket-define (ac-fn-args1 x)
   (racket-cond
-    ((ac-caris x (racket-quote o))  (list (cadr x)
-                                          (racket-let ((x (cddr x)))
-                                            (racket-if (ac-no x)
-                                              (racket-quote nil)
-                                              (car x)))))
-    (racket-else                    x)))
+    ((ac-caris x (racket-quote o))  (ac-fn-opt-args x body))
+    (racket-else                    x)))|#
 
 (racket-define (ac-fn-rest-args x body env)
   (cons (list (racket-quote racket-set!) x (list racket-list->mlist x))
         body))
 
+(racket-define (ac-fn-complex-args? x) nil)
+
+#|(racket-define (ac-fn-complex-args? x)
+  ;; TODO: clunky
+  (racket-cond
+    ((ac-no x) nil)
+    ((racket-symbol? x) nil)
+    ((racket-and (racket-mpair? (car x))
+                 (racket-not (ac-caris (car x) (racket-quote o))))
+     t)
+    (racket-else (ac-fn-complex-args? (cdr x)))))
+
 (racket-define (ac-fn-complex-args x body env)
+  (racket-let ((u (uniq)))
+    (list u (list* (racket-quote racket-let*)
+                   (racket-let self ((x x))
+                     (racket-let ((n (car x)))
+                       (racket-cond
+                         ((racket-eq? x nil)             ;; end of the arguments
+                           nil)
+                         ((racket-symbol? x)             ;; dotted rest args
+                           (racket-set! body (ac-fn-rest-args x body env))
+                           nil)
+                         ((ac-caris n (racket-quote o))  ;; optional args
+                           (cons (list (cadr n) (if ))
+                                 (self (cdr x))))
+                         ((racket-symbol? n)             ;; normal args
+                           (cons (list n (racket-quote foo))
+                                 (self (cdr x))))
+                         (racket-else                    ;; destructuring args
+                           (self (cdr x))))))
+                   body))))|#
+
+(racket-define (ac-fn-normal-args x body env)
   (cons (racket-let self ((x x))
           (racket-cond
-            ((racket-eq? x nil)
+            ((racket-eq? x nil)                   ;; end of the arguments
               nil)
-            ((racket-symbol? x)
+            ((racket-symbol? x)                   ;; dotted rest args
               (racket-set! body (ac-fn-rest-args x body env))
               x)
-            ((ac-caris (car x) (racket-quote o))
-              (cons (racket-let ((x (car x)))
-                      (list (cadr x)
-                            (racket-let ((x (cddr x)))
-                              (racket-if (ac-no x)
-                                (racket-quote nil)
-                                (car x)))))
+            ((ac-caris (car x) (racket-quote o))  ;; optional args
+              (cons (ac-fn-opt-args (car x) body env)
                     (self (cdr x))))
-            (racket-else
+            (racket-else                          ;; normal args
               (cons (car x) (self (cdr x))))))
         body))
 
 (racket-define (ac-fn-args x body env)
   (racket-when (ac-no body)
     (racket-set! body (list (racket-quote nil))))
+
+  #|(racket-when (ac-no body)
+    (racket-set! body (list nil)))|#
+
   (racket-cond
     ((racket-symbol? x)
      (cons x (ac-fn-rest-args x body env)))
-    #|((ac-destructuring-args? x)
-     (ac-fn-destructure x body env))|#
+    ((ac-true (ac-fn-complex-args? x))
+     (ac-fn-complex-args x body env))
     (racket-else
-     (ac-fn-complex-args x body env))))
+     (ac-fn-normal-args x body env))))
 
 (racket-define (ac-fn x env)
   (cons (racket-quote racket-lambda)
@@ -572,13 +601,13 @@
      (ac-pairwise pred (cdr lst)))
     (racket-else nil)))
 
-(racket-define (ac-binary bin red)
+(racket-define (ac-binary bin reduce)
   (racket-case-lambda
     ((x y) (bin x y))
-    (args  (red bin (racket-list->mlist args)))))
+    (args  (reduce bin (racket-list->mlist args)))))
 
 (racket-define (is2 a b)
-  (ac-tnil (racket-or (racket-eqv? a b)
+  (ac-tnil (racket-or (racket-eqv? a b) ;; TODO: should this use racket-eq?
                       (racket-and (racket-string? a)
                                   (racket-string? b)
                                   (racket-string=? a b)))))
