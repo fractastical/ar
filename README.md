@@ -13,10 +13,11 @@ The current differences are as follows:
     This is similar to quasiquote and unquote
 
 *   arc.arc is now split into multiple files:
- *   compiler.arc contains the absolute bare minimum
- *   core.arc contains very basic things (like def, mac, and let) and implements the rest of compiler.arc
- *   arc.arc contains everything else
- *   repl.arc contains a simple REPL written in a more limited form of Arc
+
+    *   compiler.arc contains the absolute bare minimum
+    *   core.arc contains very basic things (like def, mac, and let) and implements the rest of compiler.arc
+    *   arc.arc contains everything else
+    *   repl.arc contains a simple REPL written in a more limited form of Arc
 
 *   Code is organized into different sections, making it easier to navigate the code base
 
@@ -29,11 +30,12 @@ The current differences are as follows:
 *   A lot of built-in functions are defined in Arc, rather than in ar.arc and ac.arc. This results in much shorter and clearer code
 
 *   Can include literal Racket values like #t and #f in code, without needing to wrap them in ail-code or %nocompile
- *   Because of this, keyword arguments are also supported automatically:
 
-        ((fn (#:foo foo) foo) #:foo 50) -> 50
+    *   Because of this, keyword arguments are also supported automatically:
 
-     I'm working on better syntax for it, though
+            ((fn (#:foo foo) foo) #:foo 50) -> 50
+
+        I'm working on better syntax for it, though
 
 *   (coerce 2 'num) returns 2.0 rather than 2
 
