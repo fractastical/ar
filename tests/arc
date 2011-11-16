@@ -1,0 +1,205 @@
+;=============================================================================
+;  fn
+;=============================================================================
+
+> (fn ())
+#<fn>
+
+> ((fn ()))
+nil
+
+> (fn (x) 5)
+#<fn>
+
+> ((fn (x) 5))
+error: #<procedure>: expects 1 argument, given 0
+
+> ((fn (x) 5) 10)
+5
+
+> ((fn (a (b) c) (list a b c)) 1)
+error: #<procedure>: expects 3 arguments, given 1: 1
+
+> ((fn (a (b) c) (list a b c)) 1 2)
+error: #<procedure>: expects 3 arguments, given 2: 1 2
+
+> ((fn (a (b) c) (list a b c)) 1 2 3)
+error: mcar: expects argument of type <mutable-pair>; given 2
+
+> ((fn (a (b) c) (list a b c)) 1 '(2) 3)
+(1 2 3)
+
+> ((fn (a (b) c) (list a b c)) 1 '(2 4) 3)
+(1 2 3)
+
+
+> ((fn (a (b) (o c 5) (o d) . rest) (list a b c d rest)))
+error: #<case-lambda-procedure>: no clause matching 0 arguments
+
+> ((fn (a (b) (o c 5) (o d) . rest) (list a b c d rest)) 1)
+error: #<case-lambda-procedure>: no clause matching 1 argument: 1
+
+> ((fn (a (b) (o c 5) (o d) . rest) (list a b c d rest)) 1 2)
+error: mcar: expects argument of type <mutable-pair>; given 2
+
+> ((fn (a (b) (o c 5) (o d) . rest) (list a b c d rest)) 1 '(2))
+(1 2 5 nil nil)
+
+> ((fn (a (b) (o c 5) (o d) . rest) (list a b c d rest)) 1 '(2 3))
+(1 2 5 nil nil)
+
+> ((fn (a (b) (o c 5) (o d) . rest) (list a b c d rest)) 1 '(2 (3)))
+(1 2 5 nil nil)
+
+> ((fn (a (b) (o c 5) (o d) . rest) (list a b c d rest)) 1 '(2 (3)) nil)
+(1 2 nil nil nil)
+
+> ((fn (a (b) (o c 5) (o d) . rest) (list a b c d rest)) 1 '(2 (3)) nil nil)
+(1 2 nil nil nil)
+
+> ((fn (a (b) (o c 5) (o d) . rest) (list a b c d rest)) 1 '(2 (3)) nil nil 5 6 7)
+(1 2 nil nil (5 6 7))
+
+> ((fn (a (b) (o c 5) (o d) . rest) (list a b c d rest)) 1 '(2 (3)) 3)
+(1 2 3 nil nil)
+
+> ((fn (a (b) (o c 5) (o d) . rest) (list a b c d rest)) 1 '(2 (3)) 3 4)
+(1 2 3 4 nil)
+
+> ((fn (a (b) (o c 5) (o d) . rest) (list a b c d rest)) 1 '(2 (3)) 3 4 5)
+(1 2 3 4 (5))
+
+> ((fn (a (b) (o c 5) (o d) . rest) (list a b c d rest)) 1 '(2 (3)) 3 4 5 6)
+(1 2 3 4 (5 6))
+
+> ((fn (a (b) (o c 5) (o d) . rest) (list a b c d rest)) 1 '(2 (3)) 3 4 5 6 7)
+(1 2 3 4 (5 6 7))
+
+
+> ((fn (a (b (c d (e)))) (list a b c d e)) 1 2)
+error: mcar: expects argument of type <mutable-pair>; given 2
+
+> ((fn (a (b (c d (e)))) (list a b c d e)) 1 '(2))
+(1 2 nil nil nil)
+
+> ((fn (a (b (c d (e)))) (list a b c d e)) 1 '(2 3))
+error: mcar: expects argument of type <mutable-pair>; given 3
+
+> ((fn (a (b (c d (e)))) (list a b c d e)) 1 '(2 (3)))
+(1 2 3 nil nil)
+
+> ((fn (a (b (c d (e)))) (list a b c d e)) 1 '(2 (3 4)))
+(1 2 3 4 nil)
+
+> ((fn (a (b (c d (e)))) (list a b c d e)) 1 '(2 (3 4 5)))
+error: mcar: expects argument of type <mutable-pair>; given 5
+
+> ((fn (a (b (c d (e)))) (list a b c d e)) 1 '(2 (3 4 (5))))
+(1 2 3 4 5)
+
+
+> ((fn (a (b (c d (e) f)) . g) (list a b c d e f g)) 1 2)
+error: mcar: expects argument of type <mutable-pair>; given 2
+
+> ((fn (a (b (c d (e) f)) . g) (list a b c d e f g)) 1 '(2 (3 4)))
+(1 2 3 4 nil nil nil)
+
+> ((fn (a (b (c d (e) f)) . g) (list a b c d e f g)) 1 '(2 (3 4 5)))
+error: mcar: expects argument of type <mutable-pair>; given 5
+
+> ((fn (a (b (c d (e) f)) . g) (list a b c d e f g)) 1 '(2 (3 4 (5))))
+(1 2 3 4 5 nil nil)
+
+> ((fn (a (b (c d (e) f)) . g) (list a b c d e f g)) 1 '(2 (3 4 (5) 6)))
+(1 2 3 4 5 6 nil)
+
+> ((fn (a (b (c d (e) f)) . g) (list a b c d e f g)) 1 '(2 (3 4 (5) 6)) 7)
+(1 2 3 4 5 6 (7))
+
+
+> ((fn (a (b (c d)) e) (list a b c d e)))
+error: #<procedure>: expects 3 arguments, given 0
+
+> ((fn (a (b (c d)) e) (list a b c d e)) 1)
+error: #<procedure>: expects 3 arguments, given 1: 1
+
+> ((fn (a (b (c d)) e) (list a b c d e)) 1 2)
+error: #<procedure>: expects 3 arguments, given 2: 1 2
+
+> ((fn (a (b (c d)) e) (list a b c d e)) 1 2 3)
+error: mcar: expects argument of type <mutable-pair>; given 2
+
+> ((fn (a (b (c d)) e) (list a b c d e)) 1 '(2) 3)
+(1 2 nil nil 3)
+
+> ((fn (a (b (c d)) e) (list a b c d e)) 1 '(2 3) 3)
+error: mcar: expects argument of type <mutable-pair>; given 3
+
+> ((fn (a (b (c d)) e) (list a b c d e)) 1 '(2 (3)) 3)
+(1 2 3 nil 3)
+
+> ((fn (a (b (c d)) e) (list a b c d e)) 1 '(2 (3 (4))) 3)
+(1 2 3 (4) 3)
+
+> ((fn (a (b (c d)) e) (list a b c d e)) 1 '(2 (3 4)) 3)
+(1 2 3 4 3)
+
+> ((fn (a (b (c d)) e) (list a b c d e)) 1 '(2 (3 4 5)) 3)
+(1 2 3 4 3)
+
+> ((fn (a (b (c d)) e) (list a b c d e)) 1 '(2 (3 4 (5))) 3)
+(1 2 3 4 3)
+
+
+> (def foo (a (o b 5) (o c 10))
+    (list a b c))
+
+> (foo 1)
+(1 5 10)
+
+> (foo 1 nil nil)
+(1 nil nil)
+
+> (foo 1 nil 3)
+(1 nil 3)
+
+> (foo 1 2 3)
+(1 2 3)
+
+
+;=============================================================================
+;  let
+;=============================================================================
+
+> (let (a b) (list 1 2) a)
+1
+
+> (let (a b) (list 1 2) b)
+2
+
+> (let (a b) (list 1 2) c)
+error: reference to undefined identifier: c
+
+
+;=============================================================================
+;  Lists
+;=============================================================================
+
+> (list nil nil nil)
+(nil nil nil)
+
+
+> ('(1 2 3) -1)
+error:
+
+> ('(1 2 3) 0)
+1
+
+> ('(1 2 3) 1)
+2
+
+> ('(1 2 3) 2)
+3
+
+> ('(1 2 3) 3)
+error:

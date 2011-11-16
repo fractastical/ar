@@ -1,96 +1,52 @@
+;=============================================================================
+;  Compiler specific things
+;=============================================================================
+
 > ((cadr (car (ac-compile ''(1 2 3) nil))))
 (1 2 3)
 
 
-> (list*)
-()
-
-> (list* 1)
-1
-
-> (list* 1 2)
-(1 . 2)
-
-> (list* 1 2 3)
-(1 2 . 3)
-
-> (list* 1 2 (list 3 4 5))
-(1 2 3 4 5)
-
-> (list* (list 1 2 3))
-(1 2 3)
-
-
-> (fn (x) 5)
-#<fn>
-
-> ((fn (x) 5))
-error:
-
-> ((fn (x) 5) 10)
-5
-
-
-> ('(1 2 3) -1)
-error:
-
-> ('(1 2 3) 0)
-1
-
-> ('(1 2 3) 1)
-2
-
-> ('(1 2 3) 2)
-3
-
-> ('(1 2 3) 3)
-error:
-
-
 > (racket-parameterize ((racket-current-namespace (racket-current-namespace)))
     (racket-current-namespace))
-#<namespace:0>
+error: racket-parameterize: bad syntax in: racket-parameterize
 
 
-> (ar-compile '(fn args args) nil)
+;=============================================================================
+;  fn
+;=============================================================================
+
+> (ac-compile '(fn args args) nil)
 (racket-lambda args (racket-set! args (#<fn:list->mlist> args)) args)
 
 
-> (ar-compile '(fn (a b c) (list a b c)) nil)
-(racket-lambda (a b c) (#<fn:ar-funcall3> list a b c))
+> (ac-compile '(fn (a b c) (list a b c)) nil)
+(racket-lambda (a b c) (#<fn:ac-funcall3> list a b c))
 
 
-> (ar-compile '(fn (a (o b 5) c) (list a b c)) nil)
+> (ac-compile '(fn (a (o b 5) c) (list a b c)) nil)
 error:
 
-> (ar-compile '(fn (a b (o c 5)) (list a b c)) nil)
-(racket-lambda (a b (c 5)) (#<fn:ar-funcall3> list a b c))
+> (ac-compile '(fn (a b (o c 5)) (list a b c)) nil)
+(racket-lambda (a b (c 5)) (#<fn:ac-funcall3> list a b c))
 
-> (ar-compile '(fn (a b (o c nil)) (list a b c)) nil)
-(racket-lambda (a b (c nil)) (#<fn:ar-funcall3> list a b c))
+> (ac-compile '(fn (a b (o c nil)) (list a b c)) nil)
+(racket-lambda (a b (c nil)) (#<fn:ac-funcall3> list a b c))
 
-> (ar-compile '(fn (a b (o c)) (list a b c)) nil)
-(racket-lambda (a b (c nil)) (#<fn:ar-funcall3> list a b c))
-
-
-> (ar-compile '(fn (a b . c) (list a b c)) nil)
-u
+> (ac-compile '(fn (a b (o c)) (list a b c)) nil)
+(racket-lambda (a b (c nil)) (#<fn:ac-funcall3> list a b c))
 
 
-> (ar-compile '(fn (a b (c (d e f (g)))) (list a b c d e f g)) nil)
-(racket-lambda (a b (c nil)) (#<fn:ar-funcall3> list a b c))
+> (ac-compile '(fn (a b . c) (list a b c)) nil)
+(racket-lambda (a b . c) (racket-set! c (#<fn:list->mlist> c)) (#<fn:ac-funcall3> list a b c))
 
 
-> (fn ())
-#<fn>
-
-> ((fn ()))
-nil
+> (ac-compile '(fn (a b (c (d e f (g)))) (list a b c d e f g)) nil)
+(racket-lambda (a b (c nil)) (#<fn:ac-funcall3> list a b c))
 
 
-> (list nil nil nil)
-u
-
+;=============================================================================
+;  %nocompile
+;=============================================================================
 
 > (ac-compile '(%nocompile 5 10 (foo 10) (bar (qux (%compile (corge)))) (%compile (foo 10)) (%compile 5)) nil)
 (racket-begin 5 10 (foo 10) (bar (qux (#<fn:ac-funcall0> corge))) (#<fn:ac-funcall1> foo 10) 5)
@@ -111,99 +67,9 @@ u
 error:
 
 
-> ((fn (a (b) (o c 5) (o d) . rest) (list a b c d rest)))
-error:
-
-> ((fn (a (b) (o c 5) (o d) . rest) (list a b c d rest)) 1)
-(1 nil 5 nil nil)
-
-> ((fn (a (b) (o c 5) (o d) . rest) (list a b c d rest)) 1 2)
-error:
-
-> ((fn (a (b) (o c 5) (o d) . rest) (list a b c d rest)) 1 '(2))
-(1 2 5 nil nil)
-
-> ((fn (a (b) (o c 5) (o d) . rest) (list a b c d rest)) 1 '(2 3))
-(1 2 5 nil nil)
-
-> ((fn (a (b) (o c 5) (o d) . rest) (list a b c d rest)) 1 '(2 (3)))
-(1 2 5 nil nil)
-
-> ((fn (a (b) (o c 5) (o d) . rest) (list a b c d rest)) 1 '(2 (3)) nil)
-(1 2 5 nil nil)
-
-> ((fn (a (b) (o c 5) (o d) . rest) (list a b c d rest)) 1 '(2 (3)) nil nil)
-(1 2 5 nil nil)
-
-> ((fn (a (b) (o c 5) (o d) . rest) (list a b c d rest)) 1 '(2 (3)) nil nil 5 6 7)
-(1 2 5 nil (5 6 7))
-
-> ((fn (a (b) (o c 5) (o d) . rest) (list a b c d rest)) 1 '(2 (3)) 3)
-(1 2 3 nil nil)
-
-> ((fn (a (b) (o c 5) (o d) . rest) (list a b c d rest)) 1 '(2 (3)) 3 4)
-(1 2 3 4 nil)
-
-> ((fn (a (b) (o c 5) (o d) . rest) (list a b c d rest)) 1 '(2 (3)) 3 4 5)
-(1 2 3 4 (5))
-
-> ((fn (a (b) (o c 5) (o d) . rest) (list a b c d rest)) 1 '(2 (3)) 3 4 5 6)
-(1 2 3 4 (5 6))
-
-> ((fn (a (b) (o c 5) (o d) . rest) (list a b c d rest)) 1 '(2 (3)) 3 4 5 6 7)
-(1 2 3 4 (5 6 7))
-
-
-> ((fn (a (b (c d (e)))) (list a b c d e)) 1 2)
-error:
-
-> ((fn (a (b (c d (e)))) (list a b c d e)) 1 '(2))
-(1 2 nil nil nil)
-
-> ((fn (a (b (c d (e)))) (list a b c d e)) 1 '(2 3))
-error:
-
-> ((fn (a (b (c d (e)))) (list a b c d e)) 1 '(2 (3)))
-(1 2 3 nil nil)
-
-> ((fn (a (b (c d (e)))) (list a b c d e)) 1 '(2 (3 4)))
-(1 2 3 4 nil)
-
-> ((fn (a (b (c d (e)))) (list a b c d e)) 1 '(2 (3 4 5)))
-error:
-
-> ((fn (a (b (c d (e)))) (list a b c d e)) 1 '(2 (3 4 (5))))
-(1 2 3 4 5)
-
-
-> ((fn (a (b (c d (e) f)) . g) (list a b c d e f g)) 1 2)
-error:
-
-> ((fn (a (b (c d (e) f)) . g) (list a b c d e f g)) 1 '(2 (3 4)))
-(1 2 3 4 nil nil nil)
-
-> ((fn (a (b (c d (e) f)) . g) (list a b c d e f g)) 1 '(2 (3 4 5)))
-error:
-
-> ((fn (a (b (c d (e) f)) . g) (list a b c d e f g)) 1 '(2 (3 4 (5))))
-(1 2 3 4 5 nil nil)
-
-> ((fn (a (b (c d (e) f)) . g) (list a b c d e f g)) 1 '(2 (3 4 (5) 6)))
-(1 2 3 4 5 6 nil)
-
-> ((fn (a (b (c d (e) f)) . g) (list a b c d e f g)) 1 '(2 (3 4 (5) 6)) 7)
-(1 2 3 4 5 6 (7))
-
-
-> (let (a b) (list 1 2) a)
-1
-
-> (let (a b) (list 1 2) b)
-2
-
-> (let (a b) (list 1 2) c)
-error:
-
+;=============================================================================
+;  Keyword args
+;=============================================================================
 
 > ((fn (:a b c) (list a b c)) 1)
 error:
@@ -251,3 +117,56 @@ error:
 
 > ((fn (:a (b c)) (list a b c)) '(1 2) :a 5)
 (5 1 2)
+
+
+;=============================================================================
+;  Optional args
+;=============================================================================
+
+> (def foo (a (o b 5) (o c 10))
+    (list a b c))
+
+> (foo 1)
+(1 5 10)
+
+> (foo 1 nil nil)
+(1 5 10)
+
+> (foo 1 nil 3)
+(1 5 3)
+
+> (foo 1 2 3)
+(1 2 3)
+
+
+> ((fn (a (b) (o c 5) (o d) . rest) (list a b c d rest)) 1 '(2 (3)) nil)
+(1 2 5 nil nil)
+
+> ((fn (a (b) (o c 5) (o d) . rest) (list a b c d rest)) 1 '(2 (3)) nil nil)
+(1 2 5 nil nil)
+
+> ((fn (a (b) (o c 5) (o d) . rest) (list a b c d rest)) 1 '(2 (3)) nil nil 5 6 7)
+(1 2 5 nil (5 6 7))
+
+
+;=============================================================================
+;  Lists
+;=============================================================================
+
+> (list*)
+nil
+
+> (list* 1)
+1
+
+> (list* 1 2)
+(1 . 2)
+
+> (list* 1 2 3)
+(1 2 . 3)
+
+> (list* 1 2 (list 3 4 5))
+(1 2 3 4 5)
+
+> (list* (list 1 2 3))
+(1 2 3)

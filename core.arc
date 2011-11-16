@@ -595,16 +595,6 @@
 
 
 ;=============================================================================
-;  Ssyntax
-;=============================================================================
-
-;(xdef ssyntax (lambda (x) (tnil (ssyntax? x))))
-
-;(xdef ssexpand (lambda (x)
-;                  (if (symbol? x) (expand-ssyntax x) x)))
-
-
-;=============================================================================
 ;  Compiler
 ;=============================================================================
 
@@ -623,6 +613,7 @@
 ;  Complex fn
 ;=============================================================================
 
+#|
 (def ac-fn-complex-args? (x)
   (if (no x)
         nil
@@ -685,3 +676,37 @@
                                             (self (cdr x)))))))
                           x))
            ,@body))))
+|#
+
+
+;=============================================================================
+;  square-bracket/curly-bracket
+;=============================================================================
+
+(def ac-readtable-square-bracket (readtable)
+  (racket-make-readtable readtable #\[ 'terminating-macro
+    (fn (ch port src line col pos)
+      (racket-cons 'square-bracket (racket-read/recursive port #\[ #f)))))
+
+(def ac-readtable-curly-bracket (readtable)
+  (racket-make-readtable readtable #\{ 'terminating-macro
+    (fn (ch port src line col pos)
+      (racket-cons 'curly-bracket (racket-read/recursive port #\{ #f)))))
+
+;; TODO: should the old readtable be stored somewhere...?
+(racket-current-readtable
+  (ac-readtable-square-bracket
+    (ac-readtable-curly-bracket #f)))
+
+(mac square-bracket body
+  `(fn ((o _)) (,@body)))
+
+
+;=============================================================================
+;  ssyntax
+;=============================================================================
+
+;(xdef ssyntax (lambda (x) (tnil (ssyntax? x))))
+
+;(xdef ssexpand (lambda (x)
+;                  (if (symbol? x) (expand-ssyntax x) x)))
