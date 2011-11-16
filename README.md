@@ -21,7 +21,7 @@ The current differences are as follows:
 
 *   Code is organized into different sections, making it easier to navigate the code base
 
-*   _Nu_ does not hardcode *any* symbols _whatsoever_. All special forms (`fn`, `assign`, `quote`, etc.) are implemented as macros. This makes Arc much simpler and easier to reason about, without any cost in code maintenance
+*   _Nu_ does not hardcode **any** symbols _whatsoever_. All special forms (`fn`, `assign`, `quote`, etc.) are implemented as macros. This makes Arc much simpler and easier to reason about, without any cost in code maintenance
 
 *   All binary operators (`is`, `+`, `<`, etc.) are implemented in terms of `case-lambda` for increased speed, [as suggested by waterhouse](https://sites.google.com/site/arclanguagewiki/arc-3_1/optimizations)
 
@@ -43,7 +43,7 @@ The current differences are as follows:
         (foo 1 nil 3)   -> (1 5 3)
         (foo 1 2 3)     -> (1 2 3)
 
-*   There are no [_"complex fn"_s](#complexfn) in _Nu_: everything is done with a plain `racket-lambda`. This should hopefully be faster while also providing better error messages
+*   There are no ["complex fn"](#complexfn)s in _Nu_: everything is done with a plain `racket-lambda`. This should hopefully be faster while also providing better error messages
 
 *   Keyword arguments are supported:
 
@@ -64,6 +64,7 @@ The current differences are as follows:
 *   `{a b c}` expands into `(curly-bracket a b c)` which lets you write a macro/fn to change the behavior of the `{}` syntax
 
 
+<span id="complexfn">
 Complex fns
 ===========
 
@@ -122,4 +123,5 @@ As you can see, it creates a function that takes any number of arguments, and th
                         (d  (car g2)))
             ...))
 
-    This code is just as efficient as if you had done the destructuring by hand! This means that unlike _Arc 3.1_ and _ar_, there is no extra overhead from destructuring arguments: everything is compiled very efficiently by Racket.
+    This code is just as efficient as if you had done the destructuring by hand!
+</span>
