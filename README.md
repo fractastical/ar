@@ -63,10 +63,6 @@ The current differences are as follows:
 
 *   `{a b c}` expands into `(curly-bracket a b c)` which lets you write a macro/fn to change the behavior of the `{}` syntax
 
-*   It is easy to specify that all arguments to a function should be optional: just parameterize `ac-fn-required-args?` to `nil`. Likewise, it's easy to specify that destructuring should be rigid by setting `ac-fn-rigid-destructuring?` to `t`.
-
-    Note: rigid destructuring means that `(let (a b) (list 1) a)` will fail because an insufficient number of arguments were passed.
-
 *   It is easy to change the behavior of function arguments by changing parameters:
 
     *   `ac-fn-required-args?` specifies whether required arguments are allowed, or whether all arguments are optional
@@ -122,15 +118,6 @@ As you can see, it creates a function that takes any number of arguments, and th
     Is compiled into this (where `g1` through `g4` are gensyms):
 
         (racket-lambda (a g1 e)
-          (racket-let* ((b  (car g1))
-                        (g1 (cdr g1))
-                        (g2 (car g1))
-                        (c  (car g2))
-                        (g2 (cdr g2))
-                        (d  (car g2)))
-            ...))
-
-        (racket-lambda (a g1 e)
           (apply (racket-lambda ((b nil) (g2 nil) . g4)
                    (apply (racket-lambda ((c nil) (d nil) . g3)
                             ...)
@@ -138,5 +125,3 @@ As you can see, it creates a function that takes any number of arguments, and th
                  g1))
 
     I'm using a rather interesting technique here. I realized that `(fn (a (b)) ...)` could be statically translated into `(fn (a _) (apply (fn (b) ...) _))` In other words, by applying nested functions, you end up destructuring the arguments. But in Arc, destructuring is very lax: if you supply a smaller or bigger list than expected, it'll just return nil rather than error. That's why the `racket-lambda`s above are more complicated. This can be changed by parameterizing `ac-fn-rigid-destructuring?`.
-
-    This code is just as efficient as if you had done the destructuring by hand!
