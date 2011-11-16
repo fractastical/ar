@@ -88,11 +88,6 @@
 
 (def alist (x) (or (no x) (is (type x) 'cons)))
 
-(mac in (x . choices)
-  (w/uniq g
-    `(let ,g ,x
-       (or ,@(map1 (fn (c) `(is ,g ,c)) choices)))))
-
 ; Could take n args, but have never once needed that.
 
 (def iso (x y)

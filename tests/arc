@@ -151,6 +151,26 @@ error: mcar: expects argument of type <mutable-pair>; given 3
 (1 2 3 4 3)
 
 
+> ((fn (a (b c d) c) (fn (a b c) (list a b c))) 1)
+error: #<procedure>: expects 3 arguments, given 1: 1
+
+> ((fn (a (b c d) c) (fn (a b c) (list a b c))) 1 2)
+error: #<procedure>: expects 3 arguments, given 2: 1 2
+
+> ((fn (a (b c d) c) (fn (a b c) (list a b c))) 1 2 3)
+error: mcar: expects argument of type <mutable-pair>; given 2
+
+> ((fn (a (b c d) c) (fn (a b c) (list a b c))) 1 '(2))
+error: #<procedure>: expects 3 arguments, given 2: 1 {2}
+
+> ((fn (a (b c d) c) (fn (a b c) (list a b c))) 1 '(2) 3)
+#<fn>
+
+> (((fn (a (b c d) c) (fn (a b c) (list a b c))) 1 '(2) 3) 4 5 6)
+(4 5 6)
+
+
+
 > (def foo (a (o b 5) (o c 10))
     (list a b c))
 
@@ -181,6 +201,24 @@ error: mcar: expects argument of type <mutable-pair>; given 3
 error: reference to undefined identifier: c
 
 
+> (let (a (o b 3)) (list 1) a)
+1
+
+> (let (a (o b 3)) (list 1) b)
+3
+
+
+> (let (a . b) (list 1 2) a)
+1
+
+> (let (a . b) (list 1 2) b)
+(2)
+
+
+> (let (a) (list 1 2) a)
+1
+
+
 ;=============================================================================
 ;  Lists
 ;=============================================================================
@@ -203,3 +241,25 @@ error:
 
 > ('(1 2 3) 3)
 error:
+
+
+;=============================================================================
+;  ssyntax
+;=============================================================================
+
+
+;=============================================================================
+;  +
+;=============================================================================
+
+> (+)
+0
+
+> (+ 1)
+1
+
+> (+ 1 2)
+3
+
+> (+ 1 2 3)
+6

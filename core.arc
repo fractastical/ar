@@ -217,6 +217,12 @@
             (if ,g ,g (or ,@(cdr args)))))))
 
 
+(mac in (x . choices)
+  (w/uniq g
+    `(let ,g ,x
+       (or ,@(map1 (fn (c) `(is ,g ,c)) choices)))))
+
+
 
 (def num?    (x)   (or (int? x) (isa x 'num)))
 (def list?   (x)   (or (no x)   (cons? x)))
@@ -302,7 +308,7 @@
                args))))|#
 
 
-(def +-2 (x y)
+(def +-2 ((o x 0) (o y 0))
   (if (num? x)
         (racket-+ x y)
       (or (string? x)
@@ -589,9 +595,19 @@
 ;  Macros
 ;=============================================================================
 
-;(xdef macex (lambda (e) (ac-macex (ac-denil e))))
+(def macex1 (x)
+  (if (cons? x)
+        (let m (ac-macro? (car x))
+          (if (is m #f)
+                x
+              (apply m (cdr x))))
+      x))
 
-;(xdef macex1 (lambda (e) (ac-macex (ac-denil e) 'once)))
+(def macex (x)
+  (let y (macex1 x)
+    (if (is x y)
+          y
+        (macex y))))
 
 
 ;=============================================================================
@@ -599,14 +615,6 @@
 ;=============================================================================
 
 (ac-notimpl declare)
-
-#|(xdef declare (lambda (key val)
-                (let ((flag (not (ar-false? val))))
-                  (case key
-                    ((atstrings)      (set! atstrings      flag))
-                    ((direct-calls)   (set! direct-calls   flag))
-                    ((explicit-flush) (set! explicit-flush flag)))
-                  val)))|#
 
 
 ;=============================================================================
@@ -706,7 +714,266 @@
 ;  ssyntax
 ;=============================================================================
 
-;(xdef ssyntax (lambda (x) (tnil (ssyntax? x))))
+(def reclist (f xs)
+  (and xs (or (f xs) (reclist f (cdr xs)))))
 
-;(xdef ssexpand (lambda (x)
-;                  (if (symbol? x) (expand-ssyntax x) x)))
+(def recstring (test s (o start 0))
+  ((afn (i)
+     (and (< i (len s))
+          (or (test i)
+              (self (+ i 1)))))
+   start))
+
+(def ssyntax (x)
+  (and (sym? x)
+       ;(no (in x '+ '++ '_))
+       ;; TODO: ew
+       (let x (string x)
+         (recstring [in (x _) #\: #\~ #\& #\. #\!] x))))
+       ;(some [in _ #\: #\~ #\& #\. #\!] (string x))
+
+#|(define (has-ssyntax-char? string i)
+  (and (>= i 0)
+       (or (let ((c (string-ref string i)))
+             (or (eqv? c #\:) (eqv? c #\~)
+                 (eqv? c #\&)
+                 ;(eqv? c #\_)
+                 (eqv? c #\.)  (eqv? c #\!)))
+           (has-ssyntax-char? string (- i 1)))))
+
+(define (ssyntax? x)
+  (and (symbol? x)
+       (not (or (eqv? x '+) (eqv? x '++) (eqv? x '_)))
+       (let ((name (symbol->string x)))
+         (has-ssyntax-char? name (- (string-length name) 1)))))|#
+
+(def split-char (x y)
+  (let n (recstring [if (is (y _) x) _] y)
+    (if n (list (racket-substring y 0 n)
+                (racket-substring y (+ n 1))))))
+
+(def split-sym (x y)
+  (map1 sym (split-char x (string y))))
+
+;(basic-split #\. "foo.bar") -> ("foo" "bar")
+
+(assign ssyntax-rules* (list (fn (x y) nil)
+                             (fn (x y) nil)
+                             (fn (x y)
+                               (let x (split-sym #\. x)
+                                 (if x (list x))))
+                                 #| (let y (ssyntax-parse (cadr x))
+                                         (racket-display y)
+                                         (list x y))|#
+                             (fn (x y)
+                               (let x (split-sym #\! x)
+                                 (if x `((,(car x) ',(cadr x))))))
+                             (fn (x y)
+                               (let x (split-sym #\& x)
+                                 (if x `((andf ,@x)))))
+                             (fn (x y)
+                               (let x (split-sym #\: x)
+                                 (if x `((compose ,@x)))))
+                             ))
+
+#|(insym? #\: sym)
+(insym? #\~ sym)
+(insym? #\. sym)
+(insym? #\! sym)
+(insym? #\& sym)
+
+
+(fn (x)
+  (whenlet (l r) (splitmatch1 ":" x)
+    (list `(compose ,l ,r))))|#
+
+#|
+
+5 -> nil
+     nil
+     (1 2) -> nil nil
+              nil nil
+              nil nil
+              nil (3 4) -> nil nil
+                           nil nil
+                           nil nil
+                           nil nil
+
+(1 (3 4))
+
+|#
+
+
+
+
+
+
+#|(assign ssyntax-rules* (list (make-ssyntax : (x y)
+                               `(compose ,x ,y))
+
+                             (make-ssyntax ~ (x)
+                               `(complement ,x))
+
+                             (make-ssyntax . (x y)
+                               `(,x ,y))
+
+                             (make-ssyntax ! (x y)
+                               `(,x ',y))
+
+                             (make-ssyntax & (x y)
+                               `(andf ,x ,y))))|#
+
+
+
+#|
+proc parseE(prec) =
+        initialise p:=parsePrimary();
+        while Priority(input^) >= prec do begin
+                let oper = get(input);
+                let oprec = Priority(oper);
+                p := mknode(p,
+                                        oper,
+                                        parseE(if RightAssoc(oper) then oprec else oprec+1))
+        end;
+        return p
+endproc
+
+proc parsePrimary() =
+        case input^ of
+        "(" :
+                                begin
+                                                get(input);
+                                                let p=E(1);
+                                                if input^ <> ")" then fail fi;
+                                                return p
+                                end;
+        otherwise:
+                                if input^ in ['a'..'z'] then
+                                        return mkleaf(input^)
+                                else
+                                        fail
+                                fi
+        endcase
+endproc
+
+
+(while )
+|#
+
+
+
+#|(def ssyntax-parse (s)
+  ((afn (x acc)
+     (if (no x)
+           acc
+         (let r ((car x) s)
+           (if (no r)
+                 (self (cdr x) acc)
+               (let r (car r)
+                 (if (cons? r)
+                       (do ;(racket-display r)
+                           ;(racket-newline)
+                           (map1 (fn (x)
+                                   (racket-display x)
+                                   (racket-newline)
+                                   (ssyntax-parse x))
+                                 r))
+                     r))))))
+   ssyntax-rules* nil))|#
+
+#|(def ssyntax-parse (s)
+  ((afn (x)
+     (if (no x)
+           s
+         (let r ((car x) s)
+           (if (no r)
+                 (self (cdr x))
+               (let r (car r)
+                 (if (cons? r)
+                       (do ;(racket-display r)
+                           ;(racket-newline)
+                           (map1 (fn (x)
+                                   ;(racket-display x)
+                                   ;(racket-newline)
+                                   (ssyntax-parse x))
+                                 r))
+                     r))))))
+   ssyntax-rules*))|#
+
+
+; foo.bar!qux -> ((foo bar) 'qux)
+; l = (foo bar!qux)
+; r =      (bar 'qux)
+;
+; (join (cons (car l)
+;             (car r))
+;       (cdr r))
+
+
+; foo:bar:qux -> (compose (compose foo bar) qux)
+; l = (compose foo bar:qux)
+; r =              (compose bar qux)
+;
+; (join (cons (cadr l)
+;             (cadr r))
+;       (cddr r))
+
+(def ssyntax-parse (s)
+  ((afn (x)
+     (if (no x)
+           s
+         (let r ((car x) s)
+           (if (no r)
+                 (self (cdr x))
+               (let x (car r)
+                 (if (cons? x)
+                       #|(do (racket-display x)
+                           (racket-newline)
+                           (map1 ssyntax-parse x)
+                             )|#
+                       (let y (ssyntax-parse (x 2))
+                         ;(racket-display y)
+
+                         #|x = (compose foo bar:qux)
+                         y = (compose bar qux)
+
+                         (compose (compose foo bar) qux)|#
+
+                         (if (cons? y)
+                               #|(do (racket-display )
+                                   (racket-newline))|#
+                               (list (x 0) (list (y 1) (x 1) (y 2)) (y 0))
+                               ;(list (x 0) (list (y 0) (x 1) (y 1)) (y 2))
+                               ;(list (y 0) (list (x 0) x (y 1)) (y 2))
+                             (cons y x)
+                             ;y
+                             )
+                         ;(list (x 0) (list (x 1) (y 1)))
+                         ;(list* (car x) (car y) (ssyntax-parse (cadr x)) (ssyntax-parse (cadr (cdr x))))
+                         )
+
+                     r))))))
+   ssyntax-rules*))
+
+#|(if acons.r
+                      (list r.0 (list y l r.1) r.2)
+                      ;(list r.0 (list y l r.1) r.2)
+                    (list y l r))|#
+
+#|(def ssyntax-eval (x)
+  (if acons.x (let (n1 x y) x
+                ;(debug n1 x y)
+                (zap ssyntax-eval x)
+                (zap ssyntax-eval y)
+                (some (fn ((n2 nil f))
+                        (and (is n1 n2) (f x y)))
+                      ssyntax-rules*)
+                #|((alref ssyntax-rules* n) ssyntax-eval.x
+                                          ssyntax-eval.y)|#
+                                          )
+              x))|#
+
+(def ssexpand (x)
+  (if (sym? x)
+        x
+      x))

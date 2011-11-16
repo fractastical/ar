@@ -1,3 +1,9 @@
+> (mac parameterize (x . body)
+    `(%nocompile (racket-parameterize ,(map1 (fn ((x y))
+                                               `(,x (%compile ,y)))
+                                             (pair x))
+                   (%compile ,@body))))
+
 ;=============================================================================
 ;  Compiler specific things
 ;=============================================================================
@@ -42,6 +48,24 @@ error:
 
 > (ac-compile '(fn (a b (c (d e f (g)))) (list a b c d e f g)) nil)
 (racket-lambda (a b (c nil)) (#<fn:ac-funcall3> list a b c))
+
+
+> (test (ac-compile '(fn (a (b) c) (fn (a b c) (list a b c))) nil))
+(racket-lambda (a g1 c) (apply (racket-lambda ((b nil) . g2) (racket-lambda (a b c) (#<fn:ac-funcall3> list a b c))) g1))
+
+> (test (ac-compile '(fn (a (b) c) (fn (a b (c)) (fn (a b c) (list a b c)))) nil))
+(racket-lambda (a g1 c) (apply (racket-lambda ((b nil) . g2) (racket-lambda (a b g3) (apply (racket-lambda ((c nil) . g4) (racket-lambda (a b c) (#<fn:ac-funcall3> list a b c))) g3))) g1))
+
+> (parameterize (ac-fn-required-args? nil
+                 ac-fn-excess-args?   t)
+    (test (ac-compile '(fn (a (b) c) (fn (a b c) (list a b c))) nil)))
+(racket-lambda ((a nil) (g1 nil) (c nil) . g2) (apply (racket-lambda ((b nil) . g3) (racket-lambda ((a nil) (b nil) (c nil) . g4) (#<fn:ac-funcall3> list a b c))) g1))
+
+> (parameterize (ac-fn-required-args?       nil
+                 ac-fn-excess-args?         t
+                 ac-fn-rigid-destructuring? t)
+    (test (ac-compile '(fn (a (b) c) (fn (a b c) (list a b c))) nil)))
+(racket-lambda ((a nil) (g1 nil) (c nil) . g2) (apply (racket-lambda (b) (racket-lambda ((a nil) (b nil) (c nil) . g3) (#<fn:ac-funcall3> list a b c))) g1))
 
 
 ;=============================================================================
