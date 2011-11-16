@@ -64,9 +64,7 @@ The current differences are as follows:
 *   `{a b c}` expands into `(curly-bracket a b c)` which lets you write a macro/fn to change the behavior of the `{}` syntax
 
 
-<span id="complexfn">
-Complex fns
-===========
+<h1 id="complexfn">Complex fns</h1>
 
 Unlike _Arc 3.1_ and _ar_, _Nu_ does not use so-called "complex fn"s. What is a complex fn? Basically, it means that this:
 
@@ -124,4 +122,3 @@ As you can see, it creates a function that takes any number of arguments, and th
             ...))
 
     This code is just as efficient as if you had done the destructuring by hand!
-</span>
