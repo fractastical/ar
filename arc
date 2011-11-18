@@ -52,4 +52,9 @@
   (namespace-set namespace 'ac-eval-all   ac-eval-all)
   (namespace-set namespace 'ac-load       ac-load)
 
-  (ac-load "compiler.arc" namespace))
+  (ac-load "compiler.arc" namespace)
+  (ac-load "core.arc"     namespace)
+  (ac-load "ssyntax.arc"  namespace)
+  (ac-load "compat.arc"  namespace)
+  (ac-load "arc.arc"      namespace)
+  (ac-load "repl.arc"     namespace))

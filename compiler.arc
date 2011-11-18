@@ -189,6 +189,12 @@
 (racket-define (ac-true x)
   (racket-not (ac-no x)))
 
+(racket-define (ac-invert x)
+  (ac-tnil (ac-no x)))
+
+(racket-define (ac-bool x)
+  (racket-if (ac-no x) #f #t))
+
 (racket-define (ac-caris x y)
   (racket-and (racket-mpair? x)
               (racket-eq? (car x) y)))
@@ -447,8 +453,7 @@
   (racket-let ((rigid (ac-fn-rigid-destructuring?)))
     (list (list (racket-quote apply)
                 (racket-parameterize ((ac-fn-required-args? rigid)
-                                      ;; TODO: should figure out something better than (ac-tnil (ac no ...))
-                                      (ac-fn-excess-args?   (ac-tnil (ac-no rigid))))
+                                      (ac-fn-excess-args?   (ac-invert rigid)))
                   #|(racket-display x)
                   (racket-newline)|#
                   (cons (racket-quote racket-lambda)
@@ -532,7 +537,7 @@
 (racket-define (ac-fn-normal-args x body env)
   (cons (racket-let self ((x x))
           (racket-cond
-            ((racket-eq? x nil)                   ;; end of the arguments
+            ((racket-eq? x nil)                   ;; end of the argument list
               (ac-fn-end-of-args x body env))
             ((racket-symbol? x)                   ;; dotted rest args
               (racket-set! body (ac-fn-rest-args x body env))
@@ -761,6 +766,7 @@
 ;=============================================================================
 
 (racket-define (ssexpand x) x)
+(racket-define (ssyntax  x) nil)
 
 
 ;=============================================================================
@@ -785,8 +791,8 @@
       (ac-call (car x) (cdr x) env))
     ((racket-eq? x nil)
      (racket-quote nil))
-    ((racket-symbol? x)
-     (ssexpand x))
+    ((ac-bool (ssyntax x))
+     (ac-compile (ssexpand x) env))
     (racket-else x)))
 
 (racket-define (eval x (runtime nil))
@@ -806,6 +812,3 @@
                  nil
                (racket-begin (eval x)
                              (ac-eval-all in runtime)))))
-
-(ac-load "core.arc")
-(ac-load "repl.arc")

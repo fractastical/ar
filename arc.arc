@@ -21,24 +21,9 @@
 ;  not sure this is a mistake; strings may be subtly different from
 ;  lists of chars
 
-
 (def caar (xs) (car (car xs)))
 
-(def acons (x) (is (type x) 'cons))
-
 (def atom (x) (no (acons x)))
-
-; Can return to this def once Rtm gets ac to make all rest args
-; nil-terminated lists.
-
-; (def list args args)
-
-(def copylist (xs)
-  (if (no xs)
-      nil
-      (cons (car xs) (copylist (cdr xs)))))
-
-;(def list args (copylist args))
 
 (def idfn (x) x)
 
@@ -57,33 +42,6 @@
       `(let ,(car parms) ,(cadr parms)
          (withs ,(cddr parms) ,@body))))
 
-; Ac expands x:y:z into (compose x y z), ~x into (complement x)
-
-; Only used when the call to compose doesn't occur in functional position.
-; Composes in functional position are transformed away by ac.
-
-(mac compose args
-  (let g (uniq)
-    `(fn ,g
-       ,((afn (fs)
-           (if (cdr fs)
-               (list (car fs) (self (cdr fs)))
-               `(apply ,(if (car fs) (car fs) 'idfn) ,g)))
-         args))))
-
-; Ditto: complement in functional position optimized by ac.
-
-(mac complement (f)
-  (let g (uniq)
-    `(fn ,g (no (apply ,f ,g)))))
-
-(def rev (xs)
-  ((afn (xs acc)
-     (if (no xs)
-         acc
-         (self (cdr xs) (cons (car xs) acc))))
-   xs nil))
-
 (def isnt (x y) (no (is x y)))
 
 (def alist (x) (or (no x) (is (type x) 'cons)))
@@ -96,9 +54,6 @@
            (acons y)
            (iso (car x) (car y))
            (iso (cdr x) (cdr y)))))
-
-(mac when (test . body)
-  `(if ,test (do ,@body)))
 
 (mac unless (test . body)
   `(if (no ,test) (do ,@body)))
@@ -114,19 +69,6 @@
       (and (or (is (type seq) 'string) (is (type seq) 'table))
            (is (len seq) 0))))
 
-(def reclist (f xs)
-  (and xs (or (f xs) (reclist f (cdr xs)))))
-
-(def recstring (test s (o start 0))
-  ((afn (i)
-     (and (< i (len s))
-          (or (test i)
-              (self (+ i 1)))))
-   start))
-
-(def testify (x)
-  (if (isa x 'fn) x [is _ x]))
-
 ; Like keep, seems like some shouldn't testify.  But find should,
 ; and all probably should.
 
@@ -138,10 +80,6 @@
 
 (def all (test seq)
   (~some (complement (testify test)) seq))
-
-(def mem (test seq)
-  (let f (testify test)
-    (reclist [if (f:car _) _] seq)))
 
 (def find (test seq)
   (let f (testify test)
@@ -238,7 +176,7 @@
 ; seems meaningful to e.g. (push 1 (pop x)) if (car x) is a cons.
 ; can't in cl though.  could I define a setter for push or pop?
 
-(assign setter (table))
+(= setter (table))
 
 (mac defset (name parms . body)
   (w/uniq gexpr
@@ -340,7 +278,7 @@
   `(do ,@(map (fn ((p v)) (expand= p v))  ; [apply expand= _]
                   (pair terms))))
 
-(mac = args
+(remac = args
   (expand=list args))
 
 (mac loop (start test update . body)
@@ -354,13 +292,13 @@
 (mac for (v init max . body)
   (w/uniq (gi gm)
     `(with (,v nil ,gi ,init ,gm (+ ,max 1))
-       (loop (assign ,v ,gi) (< ,v ,gm) (assign ,v (+ ,v 1))
+       (loop (= ,v ,gi) (< ,v ,gm) (= ,v (+ ,v 1))
          ,@body))))
 
 (mac down (v init min . body)
   (w/uniq (gi gm)
     `(with (,v nil ,gi ,init ,gm (- ,min 1))
-       (loop (assign ,v ,gi) (> ,v ,gm) (assign ,v (- ,v 1))
+       (loop (= ,v ,gi) (> ,v ,gm) (= ,v (- ,v 1))
          ,@body))))
 
 (mac repeat (n . body)
@@ -553,23 +491,6 @@
 
 (mac set args
   `(do ,@(map (fn (a) `(= ,a t)) args)))
-
-; Destructuring means ambiguity: are pat vars bound in else? (no)
-
-(mac iflet (var expr then . rest)
-  (w/uniq gv
-    `(let ,gv ,expr
-       (if ,gv (let ,var ,gv ,then) ,@rest))))
-
-(mac whenlet (var expr . body)
-  `(iflet ,var ,expr (do ,@body)))
-
-(mac aif (expr . body)
-  `(let it ,expr
-     (if it
-         ,@(if (cddr body)
-               `(,(car body) (aif ,@(cdr body)))
-               body))))
 
 (mac awhen (expr . body)
   `(let it ,expr (if it (do ,@body))))
@@ -965,7 +886,7 @@
 (def copy (x . args)
   (let x2 (case (type x)
             sym    x
-            cons   (copylist x) ; (apply (fn args args) x)
+            cons   (apply (fn args args) x)
             string (let new (newstring (len x))
                      (forlen i x
                        (= (new i) (x i)))
@@ -1058,14 +979,13 @@
   (if (no x) y
       (no y) x
       (let lup nil
-        (assign lup
-                (fn (r x y r-x?) ; r-x? for optimization -- is r connected to x?
-                  (if (less? (car y) (car x))
-                    (do (if r-x? (scdr r y))
-                        (if (cdr y) (lup y x (cdr y) nil) (scdr y x)))
-                    ; (car x) <= (car y)
-                    (do (if (no r-x?) (scdr r x))
-                        (if (cdr x) (lup x (cdr x) y t) (scdr x y))))))
+        (= lup (fn (r x y r-x?) ; r-x? for optimization -- is r connected to x?
+                 (if (less? (car y) (car x))
+                   (do (if r-x? (scdr r y))
+                       (if (cdr y) (lup y x (cdr y) nil) (scdr y x)))
+                   ; (car x) <= (car y)
+                   (do (if (no r-x?) (scdr r x))
+                       (if (cdr x) (lup x (cdr x) y t) (scdr x y))))))
         (if (less? (car y) (car x))
           (do (if (cdr y) (lup y x (cdr y) nil) (scdr y x))
               y)
@@ -1288,6 +1208,11 @@
       (when (> v n) (= winner k n v)))
     (list winner n)))
 
+(def rreduce (f xs)
+  (if (cddr xs)
+      (f (car xs) (rreduce f (cdr xs)))
+      (apply f xs)))
+
 (let argsym (uniq)
 
   (def parse-format (str)
@@ -1388,7 +1313,7 @@
 
 (def downcase (x)
   (let downc (fn (c)
-               (let n (int c)
+               (let n (coerce c 'int)
                  (if (or (< 64 n 91) (< 191 n 215) (< 215 n 223))
                      (coerce (+ n 32) 'char)
                      c)))
@@ -1400,7 +1325,7 @@
 
 (def upcase (x)
   (let upc (fn (c)
-             (let n (int c)
+             (let n (coerce c 'int)
                (if (or (< 96 n 123) (< 223 n 247) (< 247 n 255))
                    (coerce (- n 32) 'char)
                    c)))
@@ -1411,7 +1336,7 @@
              (err "Can't upcase" x))))
 
 (def inc (x (o n 1))
-  (coerce (+ (int x) n) (type x)))
+  (coerce (+ (coerce x 'int) n) (type x)))
 
 (def range (start end)
   (if (> start end)

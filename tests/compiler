@@ -1,9 +1,3 @@
-> (mac parameterize (x . body)
-    `(%nocompile (racket-parameterize ,(map1 (fn ((x y))
-                                               `(,x (%compile ,y)))
-                                             (pair x))
-                   (%compile ,@body))))
-
 ;=============================================================================
 ;  Compiler specific things
 ;=============================================================================

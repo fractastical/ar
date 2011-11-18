@@ -6,7 +6,7 @@ The current differences are as follows:
 
 *   Compiler names uniformly start with `ac-` rather than `ac-` and `ar-`
 
-*   Does not provide `(ail-code ...)` Instead, `(%nocompile ...)` causes the expression to not be compiled at all: it passes directly to Racket. This is needed for Racket macros. Unlike `ail-code`, however, you can use `(%compile ...)` within `%nocompile` to cause that expression to be compiled, like so:
+*   Does not provide `(ail-code ...)`. Instead, `(%nocompile ...)` causes the expression to not be compiled at all: it passes directly to Racket. This is needed for Racket macros. Unlike `ail-code`, however, you can use `(%compile ...)` within `%nocompile` to cause that expression to be compiled, like so:
 
         (%nocompile (some-racket-macro ... (%compile ...)))
 
@@ -16,12 +16,16 @@ The current differences are as follows:
 
     *   _compiler.arc_ contains the bare minimum needed to run _core.arc_
     *   _core.arc_ contains very basic things (like `def`, `mac`, and `let`) and implements the rest of _compiler.arc_
+    *   _ssyntax.arc_ implements `ssyntax` and `ssexpand`
+    *   _compat.arc_ serves as a compatibility layer between _Nu_ and _Arc_
     *   _arc.arc_ contains everything else
     *   _repl.arc_ contains a simple REPL written in a more limited form of Arc
 
 *   Code is organized into different sections, making it easier to navigate the code base
 
-*   _Nu_ does not hardcode **any** symbols _whatsoever_. All special forms (`fn`, `assign`, `quote`, etc.) are implemented as macros. This makes Arc much simpler and easier to reason about, without any cost in code maintenance
+*   The _Nu_ compiler does not hardcode **any** symbols _whatsoever_. All special forms (`fn`, `assign`, `quote`, etc.) are implemented as macros. This makes Arc much simpler and easier to reason about, without any cost in code maintenance.
+
+    The *only* exceptions to this are `unquote`, `unquote-splicing`, and `%compile`, which are handled specially by `quasiquote` and `%nocompile`, respectively.
 
 *   All binary operators (`is`, `+`, `<`, etc.) are implemented in terms of `case-lambda` for increased speed, [as suggested by waterhouse](https://sites.google.com/site/arclanguagewiki/arc-3_1/optimizations)
 
@@ -69,6 +73,10 @@ The current differences are as follows:
     *   `ac-fn-excess-args?` specifies whether it's allowed to give a function more arguments than it requires
     *   `ac-fn-rigid-destructuring?` changes whether destructuring allows the supplied list to be bigger or smaller in size than specified
 
+*   Starts up significantly faster than _ar_, but significantly slower than _Arc 3.1_.
+
+
+
 <h1 id="complexfn">Complex fns</h1>
 
 Unlike _Arc 3.1_ and _ar_, _Nu_ does not use so-called "complex fn"s. What is a complex fn? Basically, it means that this:
@@ -111,7 +119,7 @@ As you can see, it creates a function that takes any number of arguments, and th
           (racket-set! c (racket-list->mlist c))
           ...)
 
-    The only issue then is destructuring args, which Racket doesn't support. But that too can use plain old Racket `lambda`s, simply by changing the function's body. Thus, this:
+    The only issue then is destructuring args, which Racket doesn't support. But that too can use plain old Racket `lambda`s, simply by nesting them. Thus, this:
 
         (fn (a (b (c d)) e) ...)
 
@@ -124,4 +132,4 @@ As you can see, it creates a function that takes any number of arguments, and th
                           g2))
                  g1))
 
-    I'm using a rather interesting technique here. I realized that `(fn (a (b)) ...)` could be statically translated into `(fn (a _) (apply (fn (b) ...) _))` In other words, by applying nested functions, you end up destructuring the arguments. But in Arc, destructuring is very lax: if you supply a smaller or bigger list than expected, it'll just return nil rather than error. That's why the `racket-lambda`s above are more complicated. This can be changed by parameterizing `ac-fn-rigid-destructuring?`.
+    I'm using a rather interesting technique here. I realized that `(fn (a (b)) ...)` can be statically translated into `(fn (a _) (apply (fn (b) ...) _))` In other words, by applying nested functions, you end up destructuring the arguments. But in Arc, destructuring is very lax: if you supply a smaller or bigger list than expected, it'll just return `nil` rather than throw an error. That's why the `racket-lambda`s above are more complicated. This can be changed by parameterizing `ac-fn-rigid-destructuring?`.
