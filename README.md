@@ -1,3 +1,12 @@
+How to run it
+=============
+
+Just call `rlwrap ./arc` and you'll get a REPL.
+
+
+Details
+=======
+
 _Nu_ is an Arc compiler which is derived from _ar_, but differs significantly in certain ways. Large chunks of the compiler were copied from _ar_, but a lot was written by me.
 
 The current differences are as follows:
