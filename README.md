@@ -76,7 +76,7 @@ The current differences are as follows:
 
 
 
-<h1 id="complexfn">Complex fns</h1>
+<h2 id="complexfn">Complex fns</h2>
 
 Unlike _Arc 3.1_ and _ar_, _Nu_ does not use so-called "complex fn"s. What is a complex fn? Basically, it means that this:
 
