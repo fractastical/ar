@@ -19,7 +19,7 @@ The current differences are as follows:
     *   _ssyntax.arc_ implements `ssyntax` and `ssexpand`
     *   _compat.arc_ serves as a compatibility layer between _Nu_ and _Arc_
     *   _arc.arc_ contains everything else
-    *   _repl.arc_ contains a simple REPL written in a more limited form of Arc
+    *   _repl.arc_ contains a simple REPL
 
 *   Code is organized into different sections, making it easier to navigate the code base
 
@@ -36,16 +36,6 @@ The current differences are as follows:
 *   Can include literal Racket values like `#t` and `#f` in code, without needing to wrap them in `ail-code` or `%nocompile`
 
 *   `(coerce 2 'num)` returns `2.0` rather than `2`
-
-*   Optional arguments use their defaults when explicitly passed `nil`:
-
-        (def foo (a (o b 5) (o c 10))
-          (list a b c))
-
-        (foo 1)         -> (1 5 10)
-        (foo 1 nil nil) -> (1 5 10)
-        (foo 1 nil 3)   -> (1 5 3)
-        (foo 1 2 3)     -> (1 2 3)
 
 *   There are no ["complex fn"](#complexfn)s in _Nu_: everything is done with a plain `racket-lambda`. This should hopefully be faster while also providing better error messages
 
