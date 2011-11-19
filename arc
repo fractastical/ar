@@ -42,7 +42,7 @@
   (namespace-require '(prefix racket- scheme/base))
   (namespace-require '(prefix racket- scheme/mpair))
   (namespace-require '(prefix racket- scheme/system))
-  (namespace-require '(prefix racket- scheme/foreign))
+  ;(namespace-require '(prefix racket- scheme/foreign))
   ;(namespace-require '(prefix racket- scheme/stxparam))
 
   (namespace-set namespace 'namespace     namespace)
@@ -55,6 +55,7 @@
   (ac-load "compiler.arc" namespace)
   (ac-load "core.arc"     namespace)
   (ac-load "ssyntax.arc"  namespace)
-  (ac-load "compat.arc"  namespace)
+  (ac-load "compat.arc"   namespace)
   (ac-load "arc.arc"      namespace)
+  (ac-load "lib/time.arc"      namespace)
   (ac-load "repl.arc"     namespace))

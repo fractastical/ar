@@ -3,7 +3,10 @@
 ;=============================================================================
 
 (assign do (annotate 'mac
-             (fn args `((fn () ,@args)))))
+             (fn args
+               (if (cdr args)
+                     `((fn () ,@args))
+                   (car args)))))
 
 (assign safeset (annotate 'mac
                   (fn (var val)
@@ -162,6 +165,8 @@
 (def fn?      (x)   (isa x 'fn))
 (def mac?     (x)   (isa x 'mac))
 (def keyword? (x)   (isa x 'keyword))
+(def num?     (x)   (ac-tnil (racket-number? x))) ;(or (int? x) (isa x 'num))
+(def list?    (x)   (if (no x) t (cons? x)))
 
 
 (def testify (x)
@@ -306,11 +311,6 @@
   (w/uniq g
     `(let ,g ,x
        (or ,@(map1 (fn (c) `(is ,g ,c)) choices)))))
-
-
-;; TODO: these should be under "Types"
-(def num?    (x)   (or (int? x) (isa x 'num)))
-(def list?   (x)   (or (no x)   (cons? x)))
 
 
 ;=============================================================================
@@ -472,8 +472,24 @@
 
 
 ;=============================================================================
+;  Parameters
+;=============================================================================
+
+(mac parameterize (x . body)
+  `(%nocompile (racket-parameterize ,(map1 (fn ((x y))
+                                             `(,x (%compile ,y)))
+                                           (pair x))
+                 (%compile ,@body))))
+
+
+;=============================================================================
 ;  I/O
 ;=============================================================================
+
+(mac w/stderr (port . body)
+  `(parameterize (racket-current-error-port ,port)
+     ,@body))
+
 
 (= infile     racket-open-input-file)
 
@@ -488,10 +504,10 @@
 (= inside     racket-get-output-string)
 
 (def call-w/stdout (port thunk)
-  (parameterize ((current-output-port port)) (thunk)))
+  (parameterize (racket-current-output-port port) (thunk)))
 
 (def call-w/stdin (port thunk)
-  (parameterize ((current-input-port port)) (thunk)))
+  (parameterize (racket-current-input-port port) (thunk)))
 
 (= readc  (ac-make-read racket-read-char)
    readb  (ac-make-read racket-read-byte)

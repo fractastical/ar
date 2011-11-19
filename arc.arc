@@ -274,7 +274,13 @@
 
 (def expand=list (terms)
   `(do ,@(map (fn ((p v)) (expand= p v))  ; [apply expand= _]
-                  (pair terms))))
+              (pair terms))))
+
+#|(def expand=list (terms)
+  (if (cddr terms)
+        `(do ,@(map (fn ((p v)) (expand= p v))  ; [apply expand= _]
+                    (pair terms)))
+      (apply expand= terms)))|#
 
 (remac = args
   (expand=list args))
