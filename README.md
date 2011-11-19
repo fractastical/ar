@@ -46,7 +46,7 @@ The current differences are as follows:
 
 *   `(coerce 2 'num)` returns `2.0` rather than `2`
 
-*   There are no ["complex fn"](#complexfn)s in _Nu_: everything is done with a plain `racket-lambda`. This should hopefully be faster while also providing better error messages
+*   There are no ["complex fn"](#complexfn)s in _Nu_: everything is done with a plain `racket-lambda`. This is faster while also providing better error messages
 
 *   `{a b c}` expands into `(curly-bracket a b c)` which lets you write a macro/fn to change the behavior of the `{}` syntax
 
@@ -110,8 +110,8 @@ As you can see, it creates a function that takes any number of arguments, and th
     Is compiled into this:
 
         (racket-lambda (a (b 3) . c)
-          (racket-set! c (racket-list->mlist c))
-          ...)
+          (racket-let ((c (racket-list->mlist c)))
+            ...))
 
     The only issue then is destructuring args, which Racket doesn't support. But that too can use plain old Racket `lambda`s, simply by nesting them. Thus, this:
 
