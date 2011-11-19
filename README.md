@@ -50,19 +50,19 @@ The current differences are as follows:
 
 *   Keyword arguments are supported:
 
-        (def foo (a b #:c)
+        (def foo (a b :c)
           (list a b c))
 
-        (foo 1 2)       -> (1 2 nil)
-        (foo 1 2 #:c 3) -> (1 2 3)
-        (foo #:c 3 1 2) -> (1 2 3)
+        (foo 1 2)      -> (1 2 nil)
+        (foo 1 2 :c 3) -> (1 2 3)
+        (foo :c 3 1 2) -> (1 2 3)
 
 
-        (def foo (a b (o #:c 5))
+        (def foo (a b (o :c 5))
           (list a b c))
 
-        (foo 1 2)       -> (1 2 5)
-        (foo 1 2 #:c 7) -> (1 2 7)
+        (foo 1 2)      -> (1 2 5)
+        (foo 1 2 :c 7) -> (1 2 7)
 
 *   `{a b c}` expands into `(curly-bracket a b c)` which lets you write a macro/fn to change the behavior of the `{}` syntax
 
@@ -80,6 +80,8 @@ The current differences are as follows:
         #<fn:g1>
 
     But in _Nu_, the above function would have the name `foo`, as one would expect
+
+*   Ssyntax is expanded in function arguments. So you can do things like this: `(fn (a.b) ...)` which is the same as `(fn ((a b)) ...)`
 
 
 

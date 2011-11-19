@@ -54,7 +54,9 @@
                         (ac-chars->value tok)))
                   (ac-tokens [is _ #\:] (ac-symbol->chars sym) nil nil nil))
     (if (no (cdr elts))
-          (car elts)
+          (if (sym? (car elts))
+                (keyword (car elts))
+              (car elts))
         (cons compose elts))))
 
 (def ac-expand-and (sym)

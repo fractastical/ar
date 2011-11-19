@@ -476,6 +476,10 @@
 
 (racket-define (ac-fn-normal-args x body env)
   (cons (racket-let self ((x x))
+          ;; TODO: hacky
+          (racket-when (racket-mpair? x)
+            (racket-set-mcar! x (ssexpand (car x))))
+
           (racket-cond
             ((racket-eq? x nil)                   ;; end of the argument list
               (ac-fn-end-of-args x body env))

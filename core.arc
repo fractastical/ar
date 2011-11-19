@@ -231,6 +231,10 @@
         (or (racket-string->number x base)
             (err "Can't coerce" x 'string))))
 
+(def keyword (x)
+  (racket-string->keyword (string x)))
+
+
 ;; TODO: need to figure out a better way to deal with types
 (def coerce (x totype (o base 10))
   (if (ac-tnil (ac-tagged? x))
