@@ -72,7 +72,7 @@ The current differences are as follows:
     *   `ac-fn-excess-args?` specifies whether it's allowed to give a function more arguments than it requires
     *   `ac-fn-rigid-destructuring?` changes whether destructuring allows the supplied list to be bigger or smaller in size than specified
 
-*   Starts up significantly faster than _ar_, but significantly slower than _Arc 3.1_.
+*   Starts up significantly faster than _ar_, but significantly slower than _Arc 3.1_
 
 *   Global functions have names. In _ar_, all global functions are given a gensym as a name:
 
@@ -127,15 +127,13 @@ As you can see, it creates a function that takes any number of arguments, and th
 
     The only issue then is destructuring args, which Racket doesn't support. But that too can use plain old Racket `lambda`s, simply by nesting them. Thus, this:
 
-        (fn (a (b (c d)) e) ...)
+        (fn (a (b) c) ...)
 
-    Is compiled into this (where `g1` through `g4` are gensyms):
+    Is compiled into this (where `g1` and `g2` are gensyms):
 
         (racket-lambda (a g1 e)
-          (apply (racket-lambda ((b nil) (g2 nil) . g4)
-                   (apply (racket-lambda ((c nil) (d nil) . g3)
-                            ...)
-                          g2))
+          (apply (racket-lambda ((b nil) . g2)
+                   ...)
                  g1))
 
-    I'm using a rather interesting technique here. I realized that `(fn (a (b)) ...)` can be statically translated into `(fn (a _) (apply (fn (b) ...) _))` In other words, by applying nested functions, you end up destructuring the arguments. But in Arc, destructuring is very lax: if you supply a smaller or bigger list than expected, it'll just return `nil` rather than throw an error. That's why the `racket-lambda`s above are more complicated. This can be changed by parameterizing `ac-fn-rigid-destructuring?`.
+    I'm using a rather interesting technique here. I realized that `(fn (a (b) c) ...)` can be statically translated into `(fn (a _ c) (apply (fn (b) ...) _))` In other words, by applying nested functions, you end up destructuring the arguments. But in Arc, destructuring is very lax: if you supply a smaller or bigger list than expected, it'll just return `nil` rather than throw an error. That's why the `racket-lambda` above is more complicated. This can be changed by parameterizing `ac-fn-rigid-destructuring?`.
