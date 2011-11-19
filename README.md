@@ -48,22 +48,6 @@ The current differences are as follows:
 
 *   There are no ["complex fn"](#complexfn)s in _Nu_: everything is done with a plain `racket-lambda`. This should hopefully be faster while also providing better error messages
 
-*   Keyword arguments are supported:
-
-        (def foo (a b :c)
-          (list a b c))
-
-        (foo 1 2)      -> (1 2 nil)
-        (foo 1 2 :c 3) -> (1 2 3)
-        (foo :c 3 1 2) -> (1 2 3)
-
-
-        (def foo (a b (o :c 5))
-          (list a b c))
-
-        (foo 1 2)      -> (1 2 5)
-        (foo 1 2 :c 7) -> (1 2 7)
-
 *   `{a b c}` expands into `(curly-bracket a b c)` which lets you write a macro/fn to change the behavior of the `{}` syntax
 
 *   It is easy to change the behavior of function arguments by changing parameters:
