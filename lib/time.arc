@@ -10,6 +10,8 @@
          process-msec current-process-milliseconds
          inexact      num))
 
+;; Originally by waterhouse (http://arclanguage.org/item?id=14186)
+;; Edited to return a list rather than printing the numbers directly
 (mac utime body
   (w/uniq (gtime ggc gmem)
     `(with (,gtime (msec) ,ggc (gc-msec) ,gmem (memory))
@@ -17,6 +19,7 @@
        (list (- (msec) ,gtime)
              (- (gc-msec) ,ggc)
              (- (memory) ,gmem)))))
+
 
 ;; TODO: move this someplace else
 ;; TODO: inefficient
@@ -29,6 +32,7 @@
         nil
       (cons (apply list (map car args))
             (apply zip  (map cdr args)))))
+
 
 (mac timeit (x (o a 1000) (o n 10000))
   `(let (a b c) (map inexact:avg

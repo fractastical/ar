@@ -69,8 +69,6 @@ The current differences are as follows:
 
 *   The `do` macro is smarter: `(do 1)` compiles into `1` rather than `((racket-lambda nil 1))`
 
-*   When compiling a list, _Nu_ optimizes the (very common) case where the car is a global function. In ar, `(+ 1 2)` is compiled into `(#<fn:ar-funcall2> + 1 2)` but in _Nu_ it's just `(+ 1 2)`. _Arc 3.1_ does this optimization too, but only if you specify `(declare direct-calls t)`
-
 
 
 <h2 id="complexfn">Complex fns</h2>

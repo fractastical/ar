@@ -273,7 +273,7 @@
              (,setter ,g))))))
 
 (def expand=list (terms)
-  `(do ,@(map (fn ((p v)) (expand= p v))  ; [apply expand= _]
+  `(do ,@(map [apply expand= _] ; (fn ((p v)) (expand= p v))
               (pair terms))))
 
 #|(def expand=list (terms)
