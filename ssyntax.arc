@@ -2,9 +2,7 @@
   (coerce (coerce x 'string) 'cons))
 
 (def ac-chars->value (x)
-  (sym x)
-  ;(read (coerce x 'string))
-  )
+  (sym x))
 
 (def ac-insym? (char sym)
   (mem char (ac-symbol->chars sym)))

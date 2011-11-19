@@ -189,11 +189,8 @@
 (racket-define (ac-true x)
   (racket-not (ac-no x)))
 
-(racket-define (ac-invert x)
-  (ac-tnil (ac-no x)))
-
 (racket-define (ac-bool x)
-  (racket-if (ac-no x) #f #t))
+  (ac-tnil (ac-no x)))
 
 (racket-define (ac-caris x y)
   (racket-and (racket-mpair? x)
@@ -254,7 +251,7 @@
     (racket-else        (ac-length x))))
 
 (racket-define (ac-mappend f x)
-  (apply racket-mappend (map1 f x))) ;(racket-mlist->list
+  (apply racket-mappend (map1 f x)))
 
 
 ;=============================================================================
@@ -453,9 +450,7 @@
   (racket-let ((rigid (ac-fn-rigid-destructuring?)))
     (list (list (racket-quote apply)
                 (racket-parameterize ((ac-fn-required-args? rigid)
-                                      (ac-fn-excess-args?   (ac-invert rigid)))
-                  #|(racket-display x)
-                  (racket-newline)|#
+                                      (ac-fn-excess-args?   (ac-bool rigid)))
                   (cons (racket-quote racket-lambda)
                         (ac-fn-args x body env))
                   #|(ac-compile (list* (racket-quote fn)
@@ -465,63 +460,11 @@
                               )
                 u))))
 
-#|(map1 (racket-lambda (x)
-                                         (racket-display x)
-                                         (racket-newline)
-                                         (racket-if (racket-symbol? x)
-                                                      (list (racket-quote o)
-                                                            x
-                                                            nil)
-                                                    x))
-                                       x)|#
-
-
-
-#|(racket-define (ac-fn-args1 x)
-  (racket-cond
-    ((ac-caris x (racket-quote o))  (ac-fn-optional-args x body))
-    (racket-else                    x)))|#
-
 (racket-define (ac-fn-rest-args x body env)
   (cons (list (racket-quote racket-set!) x (list racket-list->mlist x))
         body))
 
-;(racket-define (ac-fn-complex-args? x) nil)
-
-#|(racket-define (ac-fn-complex-args? x)
-  ;; TODO: clunky
-  (racket-cond
-    ((ac-no x) nil)
-    ((racket-symbol? x) nil)
-    ((racket-and (racket-mpair? (car x))
-                 (racket-not (ac-caris (car x) (racket-quote o))))
-     t)
-    (racket-else (ac-fn-complex-args? (cdr x)))))
-
-(racket-define (ac-fn-complex-args x body env)
-  (racket-let ((u (uniq)))
-    (list u (list* (racket-quote racket-let*)
-                   (racket-let self ((x x))
-                     (racket-let ((n (car x)))
-                       (racket-cond
-                         ((racket-eq? x nil)             ;; end of the arguments
-                           nil)
-                         ((racket-symbol? x)             ;; dotted rest args
-                           (racket-set! body (ac-fn-rest-args x body env))
-                           nil)
-                         ((ac-caris n (racket-quote o))  ;; optional args
-                           (cons (list (cadr n) (if ))
-                                 (self (cdr x))))
-                         ((racket-symbol? n)             ;; normal args
-                           (cons (list n (racket-quote foo))
-                                 (self (cdr x))))
-                         (racket-else                    ;; destructuring args
-                           (self (cdr x))))))
-                   body))))|#
-
 (racket-define (ac-fn-required-args x body env)
-  ;(racket-display (ac-true (ac-fn-required-args?)))
-  ;(racket-newline)
   (racket-if (ac-true (ac-fn-required-args?))
                x
              (list x (racket-quote nil))))
@@ -530,9 +473,6 @@
   (racket-if (ac-true (ac-fn-excess-args?))
                (uniq)
              nil))
-
-#|(racket-define (ac-fn-required-args x body env)
-  x)|#
 
 (racket-define (ac-fn-normal-args x body env)
   (cons (racket-let self ((x x))
@@ -551,8 +491,6 @@
                               (self (cdr x))))
             ((racket-mpair? (car x))              ;; destructuring args
               (racket-let ((u (uniq)))
-                ;(racket-display (ac-fn-destructuring-args u (car x)))
-                ;(racket-newline)
                 ;(racket-set! body (ac-fn-destructuring-args u (car x) body))
                 #|(racket-set! body (list (list* (racket-quote racket-let*)
                                                (ac-fn-destructuring-args u (car x))
@@ -566,10 +504,6 @@
                                                 env)
                                               u)))|#
                 ;(list `(,racket-apply (fn ,(car x) ,@body) ,u))
-                ;(racket-display body)
-                ;(racket-newline)
-                ;(racket-display (ac-fn-optional-args (list u) body env))
-                ;(racket-newline)
                 #|(racket-mappend (ac-fn-optional-args (list u) body env)
                                 (self (cdr x)))|#
                 (cons (ac-fn-required-args u body env)
@@ -589,8 +523,6 @@
   (racket-cond
     ((racket-symbol? x)
      (cons x (ac-fn-rest-args x body env)))
-    #|((ac-true (ac-fn-complex-args? x))
-     (ac-fn-complex-args x body env))|#
     (racket-else
      (ac-fn-normal-args x body env))))
 
@@ -774,8 +706,6 @@
 ;=============================================================================
 
 (racket-define (ac-compile x env)
-  #|(racket-display x)
-  (racket-newline)|#
   (racket-cond
     ((ac-caris x ac-nocompile)
       (ac-nocompile (cdr x) env))
@@ -791,7 +721,7 @@
       (ac-call (car x) (cdr x) env))
     ((racket-eq? x nil)
      (racket-quote nil))
-    ((ac-bool (ssyntax x))
+    ((ac-true (ssyntax x))
      (ac-compile (ssexpand x) env))
     (racket-else x)))
 

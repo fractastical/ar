@@ -121,10 +121,6 @@
 ;  Multi-value functions
 ;=============================================================================
 
-#|(mac let-values (x y . body)
-  `(%nocompile (racket-let-values ((,x (%compile ,y)))
-                 (%compile ,@body))))|#
-
 (mac values (vars expr . body)
   `(racket-call-with-values (fn () ,expr) (fn ,vars ,@body)))
 
@@ -314,32 +310,6 @@
 
 
 ;=============================================================================
-;  Loops
-;=============================================================================
-
-#|(mac while (test . body)
-  (w/uniq (gf gp)
-    `((rfn ,gf (,gp)
-        (when ,gp ,@body (,gf ,test)))
-      ,test)))
-
-(mac whilet (var test . body)
-  (w/uniq (gf gp)
-    `((rfn ,gf (,gp)
-        (let ,var ,gp
-          (when ,var ,@body (,gf ,test))))
-      ,test)))|#
-
-
-;=============================================================================
-;  Backwards Compatibility
-;=============================================================================
-
-;(alias acons cons?)
-;(alias alist list?)
-
-
-;=============================================================================
 ;  Lists
 ;=============================================================================
 
@@ -415,18 +385,6 @@
 ;=============================================================================
 ;  Binary functions
 ;=============================================================================
-
-#|(mac case-fn args
-  `(%nocompile
-     (racket-case-lambda
-       ,@(map1 (fn (x)
-                 (let n (car x)
-                   `(,n (%compile ,@(if (sym? n)
-                                          `((= ,n (racket-list->mlist ,n))
-                                            ,@(cdr x))
-                                        (cdr x))))))
-               args))))|#
-
 
 (def +-2 ((o x 0) (o y 0))
   (if (num? x)
@@ -538,38 +496,8 @@
 (= writec (ac-make-write racket-write-char)
    writeb (ac-make-write racket-write-byte))
 
-#|(def readc ((o port (stdin)) (o eof))
-  (let c (racket-read-char port)
-    (if (racket-eof-object? c) eof c)))
-
-(def readb ((o port (stdin)) (o eof))
-  (let c (racket-read-byte port)
-    (if (racket-eof-object? c) eof c)))
-
-(def peekc ((o port (stdin)) (o eof))
-  (let c (racket-peek-char port)
-    (if (racket-eof-object? c) eof c)))|#
-
 (def open-socket (num)
   (racket-tcp-listen num 50 #t))
-
-#|
-; the 2050 means http requests currently capped at 2 meg
-; http://list.cs.brown.edu/pipermail/plt-scheme/2005-August/009414.html
-(def socket-accept (s)
-  (with (oc (racket-current-custodian)
-         nc (racket-make-custodian))
-    (racket-current-custodian nc)
-    (racket-call-with-values
-      (fn () (racket-tcp-accept s))
-      (fn (in out)
-        (let in1 (racket-make-limited-input-port in 100000 #t)
-          (racket-current-custodian oc)
-          (racket-associate-custodian nc in1 out)
-          (list in1
-                out
-                (let-values (us them) (racket-tcp-addresses out)
-                  them)))))))|#
 
 (def client-ip (port)
   (values (us them) (racket-tcp-addresses port) them))
@@ -641,6 +569,7 @@
 
 (def dir ((o name "."))
   (map1 racket-path->string (racket-directory-list name)))
+
 
 ; Would def mkdir in terms of make-directory and call that instead
 ; of system in ensure-dir, but make-directory is too weak: it doesn't
@@ -744,73 +673,3 @@
 ;=============================================================================
 
 (ac-notimpl declare)
-
-
-;=============================================================================
-;  Complex fn
-;=============================================================================
-
-#|
-(def ac-fn-complex-args? (x)
-  (if (no x)
-        nil
-      (sym? x)
-        nil
-      (and (cons? (car x))
-           (no (caris (car x) 'o)))
-        t
-      (ac-fn-complex-args? (cdr x))))
-
-;; TODO: ridiculously complicated and hacky
-(def ac-fn-destructuring-args (u x)
-  (w/uniq v
-    `((,v (car ,u))
-      ,@((afn (x)
-           (if (no x)
-                 nil
-               (cons? (car x))
-                 (join (ac-fn-destructuring-args v (car x))
-                       `((,v (cdr ,v)))
-                       (self (cdr x)))
-               (list* `(,(car x) (car ,v))
-                      `(,v (cdr ,v))
-                      (self (cdr x)))))
-         x))))
-
-;; TODO: ridiculously complicated and hacky
-(def ac-fn-complex-args (x body env)
-  (w/uniq u
-    `(,u (racket-let* ((,u (racket-list->mlist ,u))
-                       ,@((afn (x)
-                                ;; end of the arguments
-                            (if (no x)
-                                  nil
-                                ;; dotted rest args
-                                (sym? x)
-                                  `((,x ,u))
-                                (let c (car x)
-                                      ;; optional args
-                                  (if (caris c 'o)
-                                        (list* `(,(cadr c) (racket-or (ac-nil (car ,u))
-                                                                      (racket-quote ,(caddr c))))
-                                               `(,u (cdr ,u))
-                                               (self (cdr x)))
-                                      ;; normal args
-                                      (sym? c)
-                                        ;; TODO: better error handling
-                                        ;;       when a normal argument
-                                        ;;       is missing
-                                        (list* `(,c (racket-mcar ,u))
-                                               `(,u (racket-mcdr ,u)) ;; TODO: should I use cdr or racket-mcdr?
-                                               (self (cdr x)))
-                                      ;; keyword args
-                                      (keyword? c)
-                                        ;; TODO: fix this
-                                        (err "keyword args not supported with destructuring")
-                                      ;; destructuring args
-                                      (join (ac-fn-destructuring-args u c)
-                                            `((,u (cdr ,u)))
-                                            (self (cdr x)))))))
-                          x))
-           ,@body))))
-|#

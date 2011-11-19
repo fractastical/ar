@@ -1,1 +1,2 @@
-(= acons  cons?)
+(= acons  cons?
+   alist  list?)

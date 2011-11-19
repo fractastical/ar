@@ -44,8 +44,6 @@
 
 (def isnt (x y) (no (is x y)))
 
-(def alist (x) (or (no x) (is (type x) 'cons)))
-
 ; Could take n args, but have never once needed that.
 
 (def iso (x y)
