@@ -74,6 +74,13 @@ The current differences are as follows:
 
 *   Starts up significantly faster than _ar_, but significantly slower than _Arc 3.1_.
 
+*   Global functions have names. In _ar_, all global functions are given a gensym as a name:
+
+        > (def foo ())
+        #<fn:g1>
+
+    But in _Nu_, the above function would have the name `foo`, as one would expect
+
 
 
 <h2 id="complexfn">Complex fns</h2>

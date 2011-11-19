@@ -2,7 +2,6 @@
 
 (def repl ()
   (on-err (fn (c)
-            ;(debug "repl" c)
             (prn "error: " (details c))
             (repl))
           (fn ()
