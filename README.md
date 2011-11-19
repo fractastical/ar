@@ -131,7 +131,7 @@ As you can see, it creates a function that takes any number of arguments, and th
 
     Is compiled into this (where `g1` and `g2` are gensyms):
 
-        (racket-lambda (a g1 e)
+        (racket-lambda (a g1 c)
           (apply (racket-lambda ((b nil) . g2)
                    ...)
                  g1))
