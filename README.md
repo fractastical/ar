@@ -3,6 +3,8 @@ How to run it
 
 Just call `./arc` and you'll get a REPL.
 
+If you would like to run all the unit tests in the `tests/` subdirectory, just call `./run-tests | less`
+
 
 Details
 =======
@@ -57,6 +59,7 @@ The current differences are as follows:
     *   `ac-fn-required-args?` specifies whether required arguments are allowed, or whether all arguments are optional
     *   `ac-fn-excess-args?` specifies whether it's allowed to give a function more arguments than it requires
     *   `ac-fn-rigid-destructuring?` changes whether destructuring allows the supplied list to be bigger or smaller in size than specified
+    *   `ac-fn-optional-on-nil?` changes whether `nil` causes optional arguments to trigger their default. In other words, whether `((fn ((o a 5)) a) nil)` should return `5` or `nil`
 
 *   Starts up significantly faster than _ar_, but significantly slower than _Arc 3.1_
 
@@ -171,7 +174,7 @@ As you can see, it creates a function that takes any number of arguments, and th
     Is compiled into this:
 
         (racket-lambda (a (b 3) . c)
-          (racket-let ((c (racket-list->mlist c)))
+          (racket-let* ((c (racket-list->mlist c)))
             ...))
 
     The only issue then is destructuring args, which Racket doesn't support. But that too can use plain old Racket `lambda`s, simply by nesting them. Thus, this:

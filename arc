@@ -2,6 +2,7 @@
 #lang scheme
 
 (require scheme/mpair)
+(provide (all-defined-out))
 
 (define namespace (make-base-empty-namespace))
 
@@ -28,6 +29,14 @@
   (call-with-input-file filename
     (lambda (in)
       ((namespace-get namespace 'ac-eval-all) in runtime))))
+
+
+(define-syntax-rule (ac-eval-in namespace . body)
+  (parameterize ((current-namespace             namespace)
+                 (compile-allow-set!-undefined  #t))
+    ((namespace-get namespace 'eval)
+      ((namespace-get namespace 'ac-deep-toarc)
+        '(do body)))))
 
 
 #|(define ac-read (make-readtable (current-readtable) #\( 'terminating-macro
@@ -59,13 +68,19 @@
 
   ;(load/use-compiled "compiler.arc")
 
-  (ac-load "compiler.arc" namespace)
-  (ac-load "core.arc"     namespace)
-  (ac-load "ssyntax.arc"  namespace)
-  (ac-load "compat.arc"   namespace)
-  (ac-load "arc.arc"      namespace)
-  (ac-load "lib/time.arc" namespace)
-  (ac-load "repl.arc"     namespace)
+  (ac-load "compiler.arc"   namespace)
+  (ac-load "core.arc"       namespace)
+  (ac-load "ssyntax.arc"    namespace)
+  (ac-load "compat.arc"     namespace)
+  (ac-load "arc.arc"        namespace)
+  (ac-load "lib/script.arc" namespace)
+  ;(ac-load "lib/time.arc"   namespace)
+  ;(ac-load "repl.arc"       namespace)
+
+  (let ((cli (current-command-line-arguments)))
+    (when (> (vector-length cli) 0)
+      ;(display cli)
+      (ac-load (vector-ref cli 0) namespace)))
 
   ;; This is to prevent () from being printed when the REPL exits
   (void))

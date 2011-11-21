@@ -62,6 +62,14 @@ error:
 (racket-lambda ((a nil) (g1 nil) (c nil) . g2) (apply (racket-lambda (b) (racket-lambda ((a nil) (b nil) (c nil) . g3) (#<fn:ac-funcall3> list a b c))) g1))
 
 
+> (ac-arglist '(a (b (c d (o e 10) (f) . g)) #:foo (o z 5) (o #:bar 15) . h))
+(a b c d e f g foo z bar h)
+
+
+> (ac-compile '((fn ((o a a)) a)) nil)
+(ac-compile '((fn ((o a (#<fn:ac-lookup-global a))) a)) nil)
+
+
 ;=============================================================================
 ;  %nocompile
 ;=============================================================================
@@ -188,3 +196,34 @@ nil
 
 > (list* (list 1 2 3))
 (1 2 3)
+
+
+;=============================================================================
+;  Parameters
+;=============================================================================
+
+> stdout
+#<output-port:stdout>
+
+> (stdout)
+#<output-port:stdout>
+
+> (= stdout stderr)
+#<procedure:current-error-port>
+
+> stdout
+#<output-port:stderr>
+
+> (stdout)
+#<output-port:stderr>
+
+
+> (w/stdout stderr stdout)
+#<output-port:stderr>
+
+> (w/stdout stderr (stdout))
+#<output-port:stderr>
+
+
+> ((fn ((o a stdout)) a))
+#<output-port:stdout>

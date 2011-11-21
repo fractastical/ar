@@ -572,26 +572,6 @@
 
 (def odd (n) (no (even n)))
 
-(mac after (x . ys)
-  `(protect (fn () ,x) (fn () ,@ys)))
-
-(let expander
-     (fn (f var name body)
-       `(let ,var (,f ,name)
-          (after (do ,@body) (close ,var))))
-
-  (mac w/infile (var name . body)
-    (expander 'infile var name body))
-
-  (mac w/outfile (var name . body)
-    (expander 'outfile var name body))
-
-  (mac w/instring (var str . body)
-    (expander 'instring var str body))
-
-  (mac w/socket (var port . body)
-    (expander 'open-socket var port body))
-  )
 
 (mac w/outstring (var . body)
   `(let ,var (outstring) ,@body))
@@ -615,11 +595,6 @@
   (w/uniq gv
    `(w/instring ,gv ,str
       (w/stdin ,gv ,@body))))
-
-(def readstring1 (s (o eof nil)) (w/instring i s (read i eof)))
-
-(def read ((o x (stdin)) (o eof nil))
-  (if (isa x 'string) (readstring1 x eof) (sread x eof)))
 
 ; inconsistency between names of readfile[1] and writefile
 

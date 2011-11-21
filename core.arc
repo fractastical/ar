@@ -11,9 +11,10 @@
 (assign safeset (annotate 'mac
                   (fn (var val)
                     `(do (if (bound ',var)
-                             (do (disp "*** redefining " (stderr))
-                                 (disp ',var (stderr))
-                                 (disp #\newline (stderr))))
+                             #|(do (disp "*** redefining " stderr)
+                                 (disp ',var stderr)
+                                 (disp #\newline stderr))|#
+                                 )
                          (assign ,var ,val)))))
 
 (assign def (annotate 'mac
@@ -105,12 +106,12 @@
 ;=============================================================================
 
 (def ac-make-read (f)
-  (fn ((o port (stdin)) (o eof))
+  (fn ((o port stdin) (o eof))
     (let c (f port)
       (if (racket-eof-object? c) eof c))))
 
 (def ac-make-write (f)
-  (fn ((o port (stdout))) (f port)))
+  (fn ((o port stdout)) (f port)))
 
 (= ac-the-sema  (racket-make-semaphore 1)
    ac-sema-cell (racket-make-thread-cell #f))
@@ -490,9 +491,72 @@
   `(mac ,(sym "w/" name) (val . body)
      `(parameterize (,',name ,val) ,@body)))
 
-(make-w/ stdin)
-(make-w/ stdout)
-(make-w/ stderr)
+(def parameter (init (o guard))
+  ;; TODO: ew
+  (if guard
+        (racket-make-parameter init guard)
+      (racket-make-parameter init)))
+
+(mac make-implicit (name param)
+  `(do (= ,name ,param)
+       (make-w/ ,name)))
+
+(mac dynamic (name (o init))
+  `(= ,name (parameter ,init)))
+
+(mac implicit (name (o init))
+  `(make-implicit ,name (parameter ,init)))
+
+(make-implicit stdin   racket-current-input-port)
+(make-implicit stdout  racket-current-output-port)
+(make-implicit stderr  racket-current-error-port)
+
+
+(def ac-disp (x port)
+  (racket-display x port)
+  (racket-flush-output port))
+
+(def ac-write (x port)
+  (racket-write x port)
+  (racket-flush-output port))
+
+(def disp (x (o port (stdout)))
+  #|(racket-display port)
+  (racket-newline)|#
+  (print ac-disp x port))
+
+(def write (x (o port (stdout)))
+  (print ac-write x port))
+
+(mac after (x . ys)
+  `(protect (fn () ,x) (fn () ,@ys)))
+
+(let expander
+     (fn (f var name body)
+       `(let ,var (,f ,name)
+          (after (do ,@body) (close ,var))))
+
+  (mac w/infile (var name . body)
+    (expander 'infile var name body))
+
+  (mac w/outfile (var name . body)
+    (expander 'outfile var name body))
+
+  (mac w/instring (var str . body)
+    (expander 'instring var str body))
+
+  (mac w/socket (var port . body)
+    (expander 'open-socket var port body))
+  )
+
+
+(def readstring1 (s (o eof nil))
+  (w/instring i s (read i eof)))
+
+(def read ((o x stdin) (o eof nil))
+  (if (string? x)
+        (readstring1 x eof)
+      (sread x eof)))
 
 #|
 ;; TODO: implement w/stdout and w/stdin here too
@@ -526,12 +590,6 @@
 
 ; use as general fn for looking inside things
 (= inside     racket-get-output-string)
-
-(def call-w/stdout (port thunk)
-  (parameterize (racket-current-output-port port) (thunk)))
-
-(def call-w/stdin (port thunk)
-  (parameterize (racket-current-input-port port) (thunk)))
 
 (= readc  (ac-make-read racket-read-char)
    readb  (ac-make-read racket-read-byte)
@@ -612,7 +670,7 @@
 (ac-notimpl setuid)
 
 (def dir ((o name "."))
-  (map1 racket-path->string (racket-directory-list name)))
+  (map1 racket-path->string (racket-list->mlist (racket-directory-list name))))
 
 
 ; Would def mkdir in terms of make-directory and call that instead
