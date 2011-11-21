@@ -91,7 +91,7 @@ In addition, when inputting an expression that spans multiple lines, pressing th
         (+ 1 2))
     #<fn:foo>
 
-(press the Up key now)
+(press the `Up` key now)
 
     > (def foo ()
         (+ 1 2))
@@ -107,7 +107,7 @@ Lastly, `Ctrl+C` aborts the currently-evaluating expression, but does not exit t
 
     > ((afn () (self)))
 
-(press Ctrl+C now)
+(press `Ctrl+C` now)
 
     ^Cuser break
     >
