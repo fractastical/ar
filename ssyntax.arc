@@ -1,3 +1,5 @@
+;; TODO: better ssyntax system (see ssyntax.arc.bak)
+
 (def ac-symbol->chars (x)
   (coerce (coerce x 'string) 'cons))
 

@@ -36,6 +36,8 @@
 
 (parameterize ((current-namespace             namespace)
                (compile-allow-set!-undefined  #t)
+               ;; TODO: !!! This is super slow !!!
+               ;(use-compiled-file-paths       (list (string->path ".compiled")))
                ;(compile-enforce-module-constants #f)
                )
   (namespace-require '(only scheme/base #%app #%datum #%top)) ;#%top-interaction
@@ -44,6 +46,9 @@
   (namespace-require '(prefix racket- scheme/system))
   ;(namespace-require '(prefix racket- scheme/foreign))
   ;(namespace-require '(prefix racket- scheme/stxparam))
+  (namespace-require '(prefix racket- readline))
+  ;(namespace-require '(prefix racket- readline/pread))
+  ;(namespace-require '(prefix racket- readline/readline))
 
   (namespace-set namespace 'namespace     namespace)
   (namespace-set namespace 'namespace-get namespace-get)
@@ -52,10 +57,15 @@
   (namespace-set namespace 'ac-eval-all   ac-eval-all)
   (namespace-set namespace 'ac-load       ac-load)
 
+  ;(load/use-compiled "compiler.arc")
+
   (ac-load "compiler.arc" namespace)
   (ac-load "core.arc"     namespace)
   (ac-load "ssyntax.arc"  namespace)
   (ac-load "compat.arc"   namespace)
   (ac-load "arc.arc"      namespace)
-  (ac-load "lib/time.arc"      namespace)
-  (ac-load "repl.arc"     namespace))
+  (ac-load "lib/time.arc" namespace)
+  (ac-load "repl.arc"     namespace)
+
+  ;; This is to prevent () from being printed when the REPL exits
+  (void))

@@ -331,6 +331,8 @@
 ;  Function/Macro calls
 ;=============================================================================
 
+(racket-define ac-functional-position? (racket-make-parameter nil))
+
 (racket-define (ac-lex? v env)
   (racket-and (racket-mpair? env)
               (racket-or (racket-eq? v (car env))
@@ -384,7 +386,8 @@
 (racket-define (ac-call f args env)
   (racket-let* ((g  (racket-not (ac-lex? f env)))
                 (m  (racket-and g (ac-macro? f)))
-                (f  (ac-compile f env)))
+                (f  (racket-parameterize ((ac-functional-position? t))
+                      (ac-compile f env))))
     (racket-cond
       (m (ac-mac-call m args env))
       ;; if we're about to call a literal fn such as ((fn (a b) ...) 1 2)
@@ -790,6 +793,28 @@
 
 
 ;=============================================================================
+;  Variables
+;=============================================================================
+
+(racket-define (ac-local-var x env)
+  x)
+
+(racket-define (ac-lookup-global-fn x)
+  x)
+
+(racket-define (ac-lookup-global-arg x)
+  ;; This implements implicit parameters
+  (racket-if (racket-parameter? x)
+               (x)
+             (ac-lookup-global-fn x)))
+
+(racket-define (ac-global-var x env)
+  (racket-if (ac-true (ac-functional-position?))
+               (ac-lookup-global-fn x)
+             (list ac-lookup-global-arg x)))
+
+
+;=============================================================================
 ;  compiler/eval
 ;=============================================================================
 
@@ -811,6 +836,10 @@
      (racket-quote nil))
     ((ac-true (ssyntax x))
      (ac-compile (ssexpand x) env))
+    ((racket-symbol? x)
+     (racket-if (ac-lex? x env)
+                  (ac-local-var x env)
+                (ac-global-var x env)))
     (racket-else x)))
 
 (racket-define (eval x (runtime nil))

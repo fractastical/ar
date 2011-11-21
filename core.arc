@@ -166,7 +166,7 @@
 (def mac?     (x)   (isa x 'mac))
 (def keyword? (x)   (isa x 'keyword))
 (def num?     (x)   (ac-tnil (racket-number? x))) ;(or (int? x) (isa x 'num))
-(def list?    (x)   (if (no x) t (cons? x)))
+(def list?    (x)   (if (no x) t (cons? x))) ;(or (no x) (cons? x))
 
 
 (def testify (x)
@@ -486,9 +486,33 @@
 ;  I/O
 ;=============================================================================
 
+(mac make-w/ (name)
+  `(mac ,(sym "w/" name) (val . body)
+     `(parameterize (,',name ,val) ,@body)))
+
+(make-w/ stdin)
+(make-w/ stdout)
+(make-w/ stderr)
+
+#|
+;; TODO: implement w/stdout and w/stdin here too
 (mac w/stderr (port . body)
   `(parameterize (racket-current-error-port ,port)
      ,@body))
+
+(mac w/stdout (port . body)
+  `(parameterize (racket-current-output-port ,port)
+     ,@body))
+
+(mac w/stdin (port . body)
+  `(parameterize (racket-current-input-port ,port)
+     ,@body))|#
+
+#|(mac w/stdout (str . body)
+  `(call-w/stdout ,str (fn () ,@body)))
+
+(mac w/stdin (str . body)
+  `(call-w/stdin ,str (fn () ,@body)))|#
 
 
 (= infile     racket-open-input-file)
@@ -693,3 +717,11 @@
 ;=============================================================================
 
 (ac-notimpl declare)
+
+
+;=============================================================================
+;  Racket
+;=============================================================================
+
+(mac require (x)
+  `(%nocompile (racket-namespace-require (racket-quote (prefix racket- ,x)))))

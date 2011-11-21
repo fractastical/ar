@@ -1,7 +1,7 @@
 How to run it
 =============
 
-Just call `rlwrap ./arc` and you'll get a REPL.
+Just call `./arc` and you'll get a REPL.
 
 
 Details
@@ -46,6 +46,8 @@ The current differences are as follows:
 
 *   `(coerce 2 'num)` returns `2.0` rather than `2`
 
+*   `sym` accepts multiple arguments: `(sym "foo" "bar")` -> `foobar`
+
 *   There are no ["complex fn"](#complexfn)s in _Nu_: everything is done with a plain `racket-lambda`. This is faster while also providing better error messages
 
 *   `{a b c}` expands into `(curly-bracket a b c)` which lets you write a macro/fn to change the behavior of the `{}` syntax
@@ -68,6 +70,28 @@ The current differences are as follows:
 *   Ssyntax is expanded in function arguments. So you can do things like this: `(fn (a.b) ...)` which is the same as `(fn ((a b)) ...)`
 
 *   The `do` macro is smarter: `(do 1)` compiles into `1` rather than `((racket-lambda nil 1))`
+
+*   [Implicit variables](#implicit) are implemented better
+
+*   The REPL has been improved significantly. GNU readline support is built-in, so you no longer need to call `rlwrap`. As a consequence, you can press `Tab` to activate name autocompletion. In addition, when inputting an expression that spans multiple lines, pressing the `Up` arrow key will bring up the entire expression, rather than the last line. Lastly, `Ctrl+C` aborts the currently-evaluating expression, but does not exit the REPL
+
+
+
+<h2 id="implicit">Implicit variables</h2>
+
+_ar_ contains a very useful feature: Racket parameters do not need to be called to extract their values. In other words, rather than saying `(stdout)` you can instead just say `stdout`. Very convenient! Unfortunately, Arc code doesn't expect this, thus _ar_ is unable to make use of any Arc libraries that use `stdin`, `stdout`, or `stderr`.
+
+There are a couple ways to work around this:
+
+  1. _ar_ could choose to make *most* parameters implicit, but not the `std*` ports
+
+  2. _ar_ could use a compatibility library that would temporarily disable implicit variables (at least for the `std*` ports) when loading _Arc 3.1_ code
+
+I chose a different option for _Nu_, however... here's how it works. When the _Nu_ compiler sees a symbol, it will generate different code depending on whether the variable is global or local. In addition, _Nu_ knows whether the symbol is in functional position or not. Thus, with the Arc code `(foo bar qux)`, _Nu_ can output different code for `foo` and `bar qux`. So the rule is: a global variable that is *not in* functional position is looked up at runtime.
+
+Thus, the above example would compile into `(foo (ac-lookup-global-arg bar) (ac-lookup-global-arg qux))`. What does `ac-lookup-global-arg` do? Why, it checks if its argument is a Racket parameter, and if so, it calls it. Because it only does this for function *arguments* and not for the first element in the list, that means you can either use `stdout` or `(stdout)` and they'll both evaluate to the exact same value.
+
+Thus, _Nu_ has implicit variables, while maintaining backwards compatibility with _Arc 3.1_.
 
 
 
@@ -120,8 +144,10 @@ As you can see, it creates a function that takes any number of arguments, and th
     Is compiled into this (where `g1` and `g2` are gensyms):
 
         (racket-lambda (a g1 c)
-          (apply (racket-lambda ((b nil) . g2)
-                   ...)
-                 g1))
+          (racket-apply (racket-lambda ((b nil) . g2)
+                          ...)
+                        (racket-mlist->list g1)))
 
     I'm using a rather interesting technique here. I realized that `(fn (a (b) c) ...)` can be statically translated into `(fn (a _ c) (apply (fn (b) ...) _))` In other words, by applying nested functions, you end up destructuring the arguments. But in Arc, destructuring is very lax: if you supply a smaller or bigger list than expected, it'll just return `nil` rather than throw an error. That's why the `racket-lambda` above is more complicated. This can be changed by parameterizing `ac-fn-rigid-destructuring?`.
+
+    See [this thread](http://arclanguage.org/item?id=15394) for more details and precise timings.

@@ -605,12 +605,6 @@
 
 ; rename this simply "to"?  - prob not; rarely use
 
-(mac w/stdout (str . body)
-  `(call-w/stdout ,str (fn () ,@body)))
-
-(mac w/stdin (str . body)
-  `(call-w/stdin ,str (fn () ,@body)))
-
 (mac tostring body
   (w/uniq gv
    `(w/outstring ,gv
