@@ -71,9 +71,46 @@ The current differences are as follows:
 
 *   The `do` macro is smarter: `(do 1)` compiles into `1` rather than `((racket-lambda nil 1))`
 
+*   [The REPL](#repl) is implemented better
+
 *   [Implicit variables](#implicit) are implemented better
 
-*   The REPL has been improved significantly. GNU readline support is built-in, so you no longer need to call `rlwrap`. As a consequence, you can press `Tab` to activate name autocompletion. In addition, when inputting an expression that spans multiple lines, pressing the `Up` arrow key will bring up the entire expression, rather than the last line. Lastly, `Ctrl+C` aborts the currently-evaluating expression, but does not exit the REPL
+
+
+<h2 id="repl">Better REPL</h2>
+
+The REPL has been improved significantly. GNU readline support is built-in, so you no longer need to call `rlwrap`. As a consequence, you can press `Tab` to activate name autocompletion:
+
+    > f
+    filechars    fill-table   firstn       flushout     fn?          force-close  fromdisk
+    file-exists  find         flat         fn           for          forlen       fromstring
+
+In addition, when inputting an expression that spans multiple lines, pressing the `Up` arrow key will bring up the entire expression, rather than the last line:
+
+    > (def foo ()
+        (+ 1 2))
+    #<fn:foo>
+
+(press the Up key now)
+
+    > (def foo ()
+        (+ 1 2))
+
+It also accepts multiple expressions, which are evaluated sequentially:
+
+    > "foo" "bar" "qux"
+    "foo"
+    "bar"
+    "qux"
+
+Lastly, `Ctrl+C` aborts the currently-evaluating expression, but does not exit the REPL:
+
+    > ((afn () (self)))
+
+(press Ctrl+C now)
+
+    ^Cuser break
+    >
 
 
 
