@@ -24,6 +24,14 @@
                (cons (f (car xs)) (map1 f (cdr xs)))
              xs))
 
+(racket-define (dottedmap1 f xs)
+  (racket-cond ((racket-mpair? xs)
+                 (cons (f (car xs)) (dottedmap1 f (cdr xs))))
+               ((ac-no xs)
+                 xs)
+               (racket-else
+                 (f xs))))
+
 ;=============================================================================
 ;  Symbols
 ;=============================================================================
@@ -241,8 +249,54 @@
                         (racket-mlength x)
                         )))
 
+#|(racket-define mmappend
+  (racket-case-lambda
+    (() racket-null)
+    ((a) a)
+    ((a b) (racket-let loop ((a a))
+             (racket-if (racket-mpair? a)
+                          (racket-mcons (racket-mcar a) (loop (racket-mcdr a)))
+                        b)))
+    ((a . l) (mmappend a (racket-apply mmappend l)))))|#
+
+#|(racket-define (join . args)
+  (racket-if (ac-no args)
+               nil
+             (racket-let ((a (racket-car args)))
+               (racket-cond
+                 ((racket-mpair? a)
+                    (cons (car a) (racket-apply join (cdr a) (racket-cdr args))))
+                 ((ac-no a)
+                   (racket-apply join (racket-cdr args)))
+                 (racket-else
+                   a)))))|#
+
+;(racket-display (join (list 1 2 3) (list 4 5) (list 6) (list 7 8 9) nil (list 10)))
+;(racket-display (join (list 1 2 3) (list 4 5) (list 6) (list 7 8 9) nil (racket-quote b)))
+;(racket-display (join (list 1 2 3) (list 4 5) (cons 6 (racket-quote a)) (list 7 8 9) nil (racket-quote b)))
+;(racket-newline)
+
+#|((1 2 3) (4 5) (6) (7 8 9) nil (10))
+  ((1 2 3) (4 5) (6) (7 8 9) nil 'b)
+  ((1 2 3) (4 5) (6 . b) (7 8 9) nil . b)
+'(1 2 3 4 5 6 7 8 9 10)|#
+
+#|((1 2 3) (4 5) (6) (7 8 9) nil (10))
+(1 2 3)
+(cons 1 2 3)|#
+
+;((1 2 3) (4 5) (6) (7 8 9) nil (10))
+
+;(cons 1 (cons 2 (cons 3 (cons 4 (cons 5 (cons 6 (cons 7 (cons 8 (cons 9 (cons 10 nil))))))))))
+
 (racket-define (ac-mappend f x)
-  (apply racket-mappend (map1 f x)))
+  ;(racket-display (dottedmap1 f x))
+  ;(racket-newline)
+  ;(apply join (dottedmap1 f x))
+  ;(racket-display x)
+  ;(racket-newline)
+  (apply racket-mappend (dottedmap1 f x))
+  )
 
 
 #|(racket-define (ac-mlist->list x)
@@ -376,37 +430,46 @@
   (ac-compile (apply m args)))
 
 (racket-define (ac-args args)
-  (map1 (racket-lambda (expr)
-          (ac-compile expr))
-        args))
+  (ac-mappend (racket-lambda (x)
+                (racket-let ((c (ac-compile x)))
+                  (racket-if (ac-caris c ac-splice)
+                               (cdr c)
+                             (list c))))
+              args))
 
 (racket-define (ac-call f args)
   (racket-let* ((g  (racket-not (ac-lex? f)))
                 (m  (racket-and g (ac-macro? f)))
                 (f  (racket-parameterize ((ac-functional-position? t))
                       (ac-compile f))))
-    (racket-cond
-      (m (ac-mac-call m args))
-      ;; if we're about to call a literal fn such as ((fn (a b) ...) 1 2)
-      ;; then we know we can just call it in Racket and we don't
-      ;; have to use ac-apply
-      ((ac-caris f (racket-quote racket-lambda))
-       (cons f (ac-args args)))
-      #|
-      ;; if it's a global function, don't bother calling ac-apply or ac-funcall
-      ((racket-and g
-                   (racket-symbol? f)
-                   (racket-procedure? (namespace-get namespace f nil)))
-       (cons f (ac-args args)))|#
-      (racket-else
-       (cons (racket-case (len args)
-               ((0) ac-funcall0)
-               ((1) ac-funcall1)
-               ((2) ac-funcall2)
-               ((3) ac-funcall3)
-               ((4) ac-funcall4)
-               (racket-else ac-apply))
-             (cons f (ac-args args)))))))
+    (racket-if m (ac-mac-call m args)
+      (racket-let ((args (ac-args args)))
+        ;; TODO: ew, mutation
+        (racket-when (ac-caris f ac-splice)
+          (racket-set! args (racket-mappend (cddr f) args))
+          (racket-set! f    (cadr f)))
+
+        (racket-cond
+          ;; if we're about to call a literal fn such as ((fn (a b) ...) 1 2)
+          ;; then we know we can just call it in Racket and we don't
+          ;; have to use ac-apply
+          ((ac-caris f (racket-quote racket-lambda))
+           (cons f args))
+          #|
+          ;; if it's a global function, don't bother calling ac-apply or ac-funcall
+          ((racket-and g
+                       (racket-symbol? f)
+                       (racket-procedure? (namespace-get namespace f nil)))
+           (cons f (ac-args args)))|#
+          (racket-else
+           (cons (racket-case (len args)
+                   ((0) ac-funcall0)
+                   ((1) ac-funcall1)
+                   ((2) ac-funcall2)
+                   ((3) ac-funcall3)
+                   ((4) ac-funcall4)
+                   (racket-else ac-apply))
+                 (cons f args))))))))
 
 
 ;=============================================================================
@@ -419,19 +482,20 @@
           (list (list result (ac-compile b)))
           (list (racket-quote racket-set!) a result)
           result))|#
-  (list (racket-quote racket-set!) a b))
+  (list (racket-quote racket-set!) a
+        (list (racket-quote %compile) b)))
 
 (racket-define (ac-global-assign a b)
-  (list (racket-quote racket-set!) a b))
+  (list (racket-quote racket-set!) a
+        (list (racket-quote %compile) b)))
 
-(racket-define (ac-assign1 a b1)
+(racket-define (ac-assign1 a b)
   (racket-unless (racket-symbol? a)
     (err "First arg to assign must be a symbol" a))
 
-  (racket-let ((result (ac-compile b1)))
-    (racket-if (ac-lex? a)
-                 (ac-local-assign a result)
-               (ac-global-assign a result))))
+  (racket-if (ac-lex? a)
+               (ac-local-assign a b)
+             (ac-global-assign a b)))
 
 (racket-define (ac-assignn x)
   (racket-if (ac-no x)
@@ -448,38 +512,41 @@
 
 (racket-define assign (annotate (racket-quote mac)
                         (racket-lambda args
-                          (cons ac-assign (racket-list->mlist args)))))
+                          (list (racket-quote %nocompile)
+                                (ac-assign (racket-list->mlist args))))))
 
 
 ;=============================================================================
 ;  fn
 ;=============================================================================
 
+;; TODO: tests for this
+(racket-define ac-fn-optional-on-nil?     (racket-make-parameter nil))
 (racket-define ac-fn-required-args?       (racket-make-parameter t))
 (racket-define ac-fn-excess-args?         (racket-make-parameter nil))
 (racket-define ac-fn-rigid-destructuring? (racket-make-parameter nil))
 
-;; TODO: tests for this
-(racket-define ac-fn-optional-on-nil?     (racket-make-parameter nil))
+(racket-define ac-fn-body                 (racket-make-parameter nil))
+(racket-define ac-fn-let*                 (racket-make-parameter nil))
+
+(racket-define (ac-keyword->symbol x)
+  (racket-string->symbol (racket-keyword->string x)))
 
 (racket-define (ac-fn-keyword-args x default)
-  (list x (list (racket-string->symbol (racket-keyword->string x))
-                default)))
+  (list x (list (ac-keyword->symbol x) default)))
 
-(racket-define (ac-fn-optional-args x body)
+(racket-define (ac-fn-optional-args x)
   (racket-let ((c (car x))
                (default (racket-let ((x (cdr x)))
                           (racket-if (ac-no x)
                             (racket-quote nil)
-                            (racket-begin (racket-display (ac-local-env))
-                            (racket-newline)
-                            (ac-compile (car x)))))))
+                            (ac-compile (car x))))))
     (racket-if (racket-keyword? c)
                  (ac-fn-keyword-args c default)
                (list (list c default)))))
 
 ;; TODO: unit tests verifying the minimalness of the destructuring code output
-(racket-define (ac-fn-destructuring-args u x body)
+(racket-define (ac-fn-destructuring-args u x)
   (racket-let ((rigid (ac-fn-rigid-destructuring?)))
     (racket-let self ((x x))
       (racket-cond
@@ -522,7 +589,7 @@
         ((racket-mpair? (car x))              ;; destructuring args
           (racket-let ((v (uniq)))
             (racket-mappend (list (list v (list (racket-quote car) u)))
-                            (ac-fn-destructuring-args v (car x) body)
+                            (ac-fn-destructuring-args v (car x))
                             (racket-if (ac-no (cdr x))
                                          nil
                                        (list (list u (list (racket-quote cdr) u))))
@@ -557,123 +624,119 @@
   (cons (list (racket-quote racket-set!) x (list racket-list->mlist x))
         body))|#
 
-(racket-define (ac-fn-rest-args x body)
+(racket-define (ac-fn-rest-args x)
+  (ac-local-env (racket-mappend (ac-local-env) (list x)))
   (list (list x (list racket-list->mlist x)))
     ;(racket-display (ac-deep-fromarc x))
     ;(racket-newline)
    )
 
-(racket-define (ac-fn-required-args x body)
+(racket-define (ac-fn-required-args x)
   (racket-if (ac-true (ac-fn-required-args?))
                x
              (list x (racket-quote nil))))
 
-(racket-define (ac-fn-end-of-args x body)
+(racket-define (ac-fn-end-of-args x)
   (racket-if (ac-true (ac-fn-excess-args?))
                (uniq)
              nil))
 
-(racket-define (ac-fn-normal-args x body)
-  (racket-let ((l nil))
-    (cons (racket-let self ((x x))
-            ;; TODO: hacky
-            (racket-when (racket-mpair? x)
-              (racket-set-mcar! x (ssexpand (car x))))
+(racket-define (ac-fn-normal-args x)
+  ;; TODO: hacky
+  (racket-when (racket-mpair? x)
+    (racket-set-mcar! x (ssexpand (car x))))
 
-            (racket-cond
-              ((ac-no x)                            ;; end of the argument list
-                (ac-fn-end-of-args x body))
-              ((racket-symbol? x)                   ;; dotted rest args
-                (racket-set! l (racket-mappend (ac-fn-rest-args x body) l))
-                x)
-              ((ac-caris (car x) (racket-quote o))  ;; optional args
-                ;(ac-fn-optional-args (cdr (car x)) body)
-                (racket-let* ((c (car x))
-                              (n (cadr c))
-                              (d (car (cddr c))))
-                  ;(racket-display l)
-                  ;(racket-newline)
-                  #|(cons (list (cadr c) (car (cddr c))) ; (racket-quote nil)
-                        (self (cdr x)))|#
+  (racket-display (ac-local-env))
+  (racket-newline)
 
-                  ;; TODO: really hacky
-                  (racket-if (ac-true (ac-fn-optional-on-nil?))
-                               (racket-begin
-                                 (racket-unless (ac-no d)
-                                   (racket-set! l
-                                     (cons (list n (ac-compile (list (racket-quote if)
+  (racket-cond
+    ((ac-no x)                            ;; end of the argument list
+      (ac-fn-end-of-args x))
+    ((racket-symbol? x)                   ;; dotted rest args
+      (ac-fn-let* (racket-mappend (ac-fn-rest-args x) (ac-fn-let*)))
+      ;(ac-w/local-env (list (ac-keyword->symbol (car x))))
+      x)
+    ((ac-caris (car x) (racket-quote o))  ;; optional args
+      ;(ac-fn-optional-args (cdr (car x)))
+      (racket-let* ((c (car x))
+                    (n (cadr c))
+                    (d (car (cddr c))))
+        ;(racket-display l)
+        ;(racket-newline)
+        #|(cons (list (cadr c) (car (cddr c))) ; (racket-quote nil)
+              (ac-fn-normal-args (cdr x)))|#
+
+        ;; TODO: really hacky
+        (racket-if (ac-true (ac-fn-optional-on-nil?))
+                     (racket-begin
+                       (racket-unless (ac-no d)
+                         (ac-fn-let* (cons (list n (ac-compile (list (racket-quote if)
                                                                      n
                                                                      n
                                                                      d)))
-                                           l)))
-                                 (racket-mappend (list (list n (racket-quote nil)))
-                                                 (self (cdr x))))
-                               (racket-mappend (ac-fn-optional-args (cdr c) body)
-                                               (self (cdr x))))
+                                           (ac-fn-let*))))
+                       (racket-mappend (list (list n (racket-quote nil)))
+                                       (ac-fn-normal-args (cdr x))))
+                     (racket-mappend (ac-fn-optional-args (cdr c))
+                                     (ac-fn-normal-args (cdr x))))
 
-                  #|(racket-mappend (ac-fn-optional-args (car c) body)
-                                  (self (cdr x)))|#
-                        )
-                                )
-              ((racket-keyword? (car x))            ;; keyword args
-                (racket-mappend (ac-fn-keyword-args (car x)
-                                                    (racket-quote nil))
-                                (self (cdr x))))
-              ((racket-mpair? (car x))              ;; destructuring args
-                (racket-let ((u (uniq)))
-                  ;(racket-set! body (ac-fn-destructuring-args u (car x) body))
-                  #|(racket-display y)
-                  (racket-newline)
-                  (racket-newline)|#
-                  ;(racket-set! body (ac-fn-destructuring-args u (car x) body))
-                  #|(racket-set! body (list (list* (racket-quote racket-let*)
-                                                 (ac-fn-destructuring-args u (car x) body)
-                                                 body)))|#
-                  (racket-set! l
-                    (racket-mappend
-                      (ac-fn-destructuring-args u (car x) body)
-                      l))
-                  ;(racket-display l)
-                  ;(racket-newline)
-                  (cons (ac-fn-required-args u body)
-                        (ac-w/local-env nil ;(list (racket-quote a))
-                          (self (cdr x))))))
-              (racket-else                          ;; normal args
-                (cons (ac-fn-required-args (car x) body)
-                      (self (cdr x))))))
-          (racket-let ((x
-          (racket-if (ac-true l)
-                       (list (list* (racket-quote racket-let*)
-                                    l
-                                    body))
-                     body)))
-            #|(racket-display x)
-            (racket-newline)
-            (racket-newline)|#
-            x))))
+        #|(racket-mappend (ac-fn-optional-args (car c))
+                        (ac-fn-normal-args (cdr x)))|#
+              ))
+    ((racket-keyword? (car x))            ;; keyword args
+      (racket-mappend (ac-fn-keyword-args (car x)
+                                          (racket-quote nil))
+                      (ac-w/local-env (list (ac-keyword->symbol (car x)))
+                        (ac-fn-normal-args (cdr x)))))
+    ((racket-mpair? (car x))              ;; destructuring args
+      (racket-let ((u (uniq)))
+        ;(racket-set! body (ac-fn-destructuring-args u (car x) body))
+        #|(racket-display y)
+        (racket-newline)
+        (racket-newline)|#
+        ;(racket-set! body (ac-fn-destructuring-args u (car x) body))
+        #|(racket-set! body (list (list* (racket-quote racket-let*)
+                                       (ac-fn-destructuring-args u (car x) body)
+                                       body)))|#
+        (ac-fn-let* (racket-mappend
+                      (ac-fn-destructuring-args u (car x))
+                      (ac-fn-let*)))
+        ;(racket-display l)
+        ;(racket-newline)
+        (cons (ac-fn-required-args u)
+              (ac-w/local-env (list u)
+                (ac-fn-normal-args (cdr x))))))
+    (racket-else                          ;; normal args
+      (cons (ac-fn-required-args (car x))
+            (ac-w/local-env (list (car x))
+              (ac-fn-normal-args (cdr x)))))))
 
-(racket-define (ac-fn-args x body)
-  (racket-when (ac-no body)
-    (racket-set! body (list (racket-quote nil))))
 
+(racket-define (ac-fn-args x)
   #|(racket-when (ac-no body)
     (racket-set! body (list nil)))|#
-
   (racket-cond
     ((racket-symbol? x)
       ;(cons x (ac-fn-rest-args x body))
-      (cons x (list (list* (racket-quote racket-let)
-                           (ac-fn-rest-args x body)
-                           body)))
-      )
+      (ac-fn-body (list (list* (racket-quote racket-let)
+                               (ac-fn-rest-args x)
+                               (ac-args (ac-fn-body)))))
+      x)
     (racket-else
-      (ac-fn-normal-args x body))))
+      (racket-parameterize ((ac-fn-let* nil))
+        (racket-let ((x (ac-fn-normal-args x)))
+          (ac-fn-body (racket-if (ac-true (ac-fn-let*))
+                                   (list (list* (racket-quote racket-let*)
+                                                (ac-fn-let*)
+                                                (ac-args (ac-fn-body))))
+                                 (ac-args (ac-fn-body))))
+          x)))))
 
 
 #|(racket-define (ac-arglist-normal x)
   (racket-cond
     ((racket-keyword? x)
-      (racket-string->symbol (racket-keyword->string x))) ;; (sym x)
+      (ac-keyword->symbol x)) ;; (sym x)
     (racket-else
       x)))
 
@@ -694,16 +757,27 @@
       (cons (ac-arglist-normal (car x))
             (ac-arglist (cdr x))))))|#
 
-(racket-define (ac-fn x)
+(racket-define (ac-fn parms body)
   ;; TODO: add env support back in, but better
   ;(racket-set! env (racket-mappend (ac-arglist (cadr x)) env))
   (cons (racket-quote racket-lambda)
-        (ac-fn-args (cadr x)
-                    (ac-args (cddr x)))))
+        (racket-parameterize ((ac-fn-body (racket-if (ac-no body)
+                                                       (list (racket-quote nil))
+                                                     body)))
+          (cons (ac-w/local-env nil
+                  (ac-fn-args parms))
+                (ac-fn-body)))))
 
 (racket-define fn (annotate (racket-quote mac)
                     (racket-lambda (parms . body)
-                      (list* ac-fn parms (racket-list->mlist body)))))
+                      (racket-let ((x
+                      (list (racket-quote %nocompile)
+                            (ac-fn parms (racket-list->mlist body)))
+                            ))
+                        ;(racket-display x)
+                        ;(racket-newline)
+                        x
+                            ))))
 
 
 ;=============================================================================
@@ -712,19 +786,23 @@
 
 (racket-define (ac-if args)
   (racket-cond
-   ((ac-no args)
-    (racket-quote nil))
-   ((ac-no (cdr args))
-    (ac-compile (car args)))
-   (racket-else
-    (list (racket-quote racket-if)
-          (list ac-true (ac-compile (car args)))
-          (ac-compile (cadr args))
-          (ac-if (cddr args))))))
+    ((ac-no args)
+      (racket-quote nil))
+    ((ac-no (cdr args))
+      (list (racket-quote %compile)
+            (car args)))
+    (racket-else
+      (list (racket-quote racket-if)
+            (list ac-true (list (racket-quote %compile)
+                                (car args)))
+            (list (racket-quote %compile)
+                  (cadr args))
+            (ac-if (cddr args))))))
 
 (racket-define if (annotate (racket-quote mac)
                     (racket-lambda args
-                      (cons ac-if (racket-list->mlist args)))))
+                      (list (racket-quote %nocompile)
+                            (ac-if (racket-list->mlist args))))))
 
 
 ;=============================================================================
@@ -738,17 +816,21 @@
   #|(list (list (racket-quote racket-quote)
               (racket-lambda () x)))|#
 
+
   (list (racket-lambda () x))
   ;(racket-display x)
   ;(racket-newline)
   #|(list ac-deep-toarc
         (list (racket-quote racket-quote)
               x))|#
-              )
+  )
 
 (racket-define quote (annotate (racket-quote mac)
+                       ;; Could pass ac-quote directly, but then it wouldn't
+                       ;; work if somebody overwrites ac-quote later
                        (racket-lambda (x)
-                         (list ac-quote x))))
+                         (list (racket-quote %nocompile)
+                               (ac-quote x)))))
 
 
 ;=============================================================================
@@ -768,19 +850,22 @@
 
 (racket-define (qq-expand-list x)
   (racket-cond
-   ((ac-caris x (racket-quote unquote))
-    (list list (cadr x)))
-    ;(list (racket-quote list) (cadr x)))
-   ((ac-caris x (racket-quote unquote-splicing))
-    (cadr x))
-   ((ac-caris x (racket-quote quasiquote))
-    (qq-expand-list (qq-expand (cadr x))))
-   ((racket-mpair? x)
-    (list list (qq-expand-pair x)))
-    ;(list (racket-quote list) (qq-expand-pair x)))
-   (racket-else
-    (list quote (list x)))))
-    ;(list (racket-quote quote) (list x)))))
+    ;; TODO: don't hardcode the symbol unquote
+    ((ac-caris x (racket-quote unquote))
+      (list list (cadr x)))
+      ;(list (racket-quote list) (cadr x)))
+    ;; TODO: don't hardcode the symbol unquote-splicing
+    ((ac-caris x (racket-quote unquote-splicing))
+      (cadr x))
+    ;; TODO: don't hardcode the symbol quasiquote
+    ((ac-caris x (racket-quote quasiquote))
+      (qq-expand-list (qq-expand (cadr x))))
+    ((racket-mpair? x)
+      (list list (qq-expand-pair x)))
+      ;(list (racket-quote list) (qq-expand-pair x)))
+    (racket-else
+      (list quote (list x)))))
+      ;(list (racket-quote quote) (list x)))))
 
 (racket-define (qq-expand-pair x)
   (list racket-mappend
@@ -790,16 +875,19 @@
 
 (racket-define (qq-expand x)
   (racket-cond
-   ((ac-caris x (racket-quote unquote))
-    (cadr x))
-   ((ac-caris x (racket-quote unquote-splicing))
-    (err "illegal use of ,@ in non-list quasiquote expansion"))
-   ((ac-caris x (racket-quote quasiquote))
-    (qq-expand (qq-expand (cadr x))))
-   ((racket-mpair? x)
-    (qq-expand-pair x))
-   (racket-else
-    (list quote x))))
+    ;; TODO: don't hardcode the symbol unquote
+    ((ac-caris x (racket-quote unquote))
+      (cadr x))
+    ;; TODO: don't hardcode the symbol unquote-splicing
+    ((ac-caris x (racket-quote unquote-splicing))
+      (err "illegal use of ,@ in non-list quasiquote expansion"))
+    ;; TODO: don't hardcode the symbol quasiquote
+    ((ac-caris x (racket-quote quasiquote))
+      (qq-expand (qq-expand (cadr x))))
+    ((racket-mpair? x)
+      (qq-expand-pair x))
+    (racket-else
+      (list quote x))))
     ;(list (racket-quote quote) x))))
 
 (racket-define quasiquote (annotate (racket-quote mac)
@@ -814,16 +902,16 @@
 
 (racket-define (sref com val ind)
   (racket-cond
-   ((racket-hash? com)
-    (racket-if (ac-no val)
-                 (racket-hash-remove! com ind)
-               (racket-hash-set! com ind val)))
-   ((racket-string? com)
-    (racket-string-set! com ind val))
-   ((racket-mpair? com)
-    (racket-set-mcar! (racket-mlist-tail com ind) val))
-   (racket-else
-    (err "Can't set reference" com ind val)))
+    ((racket-hash? com)
+      (racket-if (ac-no val)
+                   (racket-hash-remove! com ind)
+                 (racket-hash-set! com ind val)))
+    ((racket-string? com)
+      (racket-string-set! com ind val))
+    ((racket-mpair? com)
+      (racket-set-mcar! (racket-mlist-tail com ind) val))
+    (racket-else
+      (err "Can't set reference" com ind val)))
   val)
 
 
@@ -859,12 +947,15 @@
 
 (racket-define (ac-nocompile x)
   (racket-let ((x (racket-let self ((x x))
+                    ;(racket-display x)
+                    ;(racket-newline)
+
                     (ac-mappend (racket-lambda (x)
                                   (racket-cond
+                                    ;; TODO: don't hardcode the symbol %compile
                                     ((ac-caris x (racket-quote %compile))
-                                      (map1 (racket-lambda (x)
-                                              (ac-compile x))
-                                            (cdr x)))
+                                      ;(map1 ac-compile (cdr x))
+                                      (ac-args (cdr x)))
                                     ((racket-mpair? x)
                                       (list (self x)))
                                     (racket-else
@@ -877,6 +968,20 @@
 (racket-define %nocompile (annotate (racket-quote mac)
                             (racket-lambda args
                               (cons ac-nocompile (racket-list->mlist args)))))
+
+
+;=============================================================================
+;  %splice
+;=============================================================================
+
+(racket-define ac-splice (uniq))
+
+(racket-define %splice (annotate (racket-quote mac)
+                         (racket-lambda args
+                           (cons ac-splice (racket-list->mlist args)))))
+
+;(foo (%splice 1 2 3))
+;(foo 1 2 3)
 
 
 ;=============================================================================
@@ -917,24 +1022,26 @@
   (racket-cond
     ((ac-caris x ac-nocompile)
       (ac-nocompile (cdr x)))
-    ((ac-caris x ac-assign)
-      (ac-assign (cdr x)))
-    ((ac-caris x ac-fn)
-      (ac-fn x))
-    ((ac-caris x ac-if)
-      (ac-if (cdr x)))
-    ((ac-caris x ac-quote)
-      (ac-quote (cadr x)))
+    ((ac-caris x ac-splice)
+      x)
+    #|((ac-caris x ac-assign)
+      (ac-assign (cdr x)))|#
+    #|((ac-caris x ac-fn)
+      (ac-fn x))|#
+    #|((ac-caris x ac-if)
+      (ac-if (cdr x)))|#
+    #|((ac-caris x ac-quote)
+      (ac-quote (cadr x)))|#
     ((racket-mpair? x)
       (ac-call (car x) (cdr x)))
     ((racket-eq? x nil)
-     (racket-quote nil))
+      (racket-quote nil))
     ((ac-true (ssyntax x))
-     (ac-compile (ssexpand x)))
+      (ac-compile (ssexpand x)))
     ((racket-symbol? x)
-     (racket-if (ac-lex? x)
-                  (ac-local-var x)
-                (ac-global-var x)))
+      (racket-if (ac-lex? x)
+                   (ac-local-var x)
+                 (ac-global-var x)))
     (racket-else x)))
 
 (racket-define (eval x (runtime nil))
@@ -965,3 +1072,6 @@
                  nil
                (racket-begin (eval x)
                              (ac-eval-all in runtime)))))
+
+;(racket-display (ac-compile (ac-deep-toarc (racket-quote (foo (%splice 1 2 3))))))
+;(racket-newline)

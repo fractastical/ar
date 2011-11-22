@@ -23,6 +23,8 @@ The current differences are as follows:
 
     This is similar to `quasiquote` and `unquote`
 
+*   Also supports a `(%splice ...)` form which splices the items into the list at compile-time. Thus, `(+ (%splice 1 2 3))` is exactly the same as `(+ 1 2 3)`. This is useful within macro expansions.
+
 *   _arc.arc_ is now split into multiple files:
 
     *   _compiler.arc_ contains the bare minimum needed to run _core.arc_
