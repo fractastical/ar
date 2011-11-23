@@ -2,7 +2,7 @@
 ;  Compiler specific things
 ;=============================================================================
 
-> ((cadr (car (ac-compile ''(1 2 3) nil))))
+> ((cadr (car (ac-compile ''(1 2 3)))))
 (1 2 3)
 
 
@@ -12,77 +12,153 @@ error: racket-parameterize: bad syntax in: racket-parameterize
 
 
 ;=============================================================================
+;  compose and complement optimizations
+;=============================================================================
+
+> (ac-compile '(foo:bar 1))
+(#<fn:ac-funcall1> (#<fn:ac-lookup-global> foo) (#<fn:ac-funcall1> (#<fn:ac-lookup-global> bar) 1))
+
+> (ac-compile '(~foo 1))
+(#<fn:ac-funcall1> (#<fn:ac-lookup-global> no) (#<fn:ac-funcall1> (#<fn:ac-lookup-global> foo) 1))
+
+> (ac-compile '(~foo:bar 1))
+(#<fn:ac-funcall1> (#<fn:ac-lookup-global> no) (#<fn:ac-funcall1> (#<fn:ac-lookup-global> foo) (#<fn:ac-funcall1> (#<fn:ac-lookup-global> bar) 1)))
+
+
+;=============================================================================
 ;  fn
 ;=============================================================================
 
-> (ac-compile '(fn args args) nil)
+> (ac-compile '(fn args args))
 (racket-lambda args (racket-set! args (#<fn:list->mlist> args)) args)
 
 
-> (ac-compile '(fn (a b c) (list a b c)) nil)
-(racket-lambda (a b c) (#<fn:ac-funcall3> list a b c))
+> (ac-compile '(fn (a b c) (list a b c)))
+(racket-lambda (a b c) (#<fn:ac-funcall3> (#<fn:ac-lookup-global> list) a b c))
 
 
-> (ac-compile '(fn (a (o b 5) c) (list a b c)) nil)
-error:
+> (ac-compile '(fn (a (o b 5) c) (list a b c)))
+(racket-lambda (a (b 5) c) (#<fn:ac-funcall3> (#<fn:ac-lookup-global> list) a b c))
 
-> (ac-compile '(fn (a b (o c 5)) (list a b c)) nil)
-(racket-lambda (a b (c 5)) (#<fn:ac-funcall3> list a b c))
-
-> (ac-compile '(fn (a b (o c nil)) (list a b c)) nil)
-(racket-lambda (a b (c nil)) (#<fn:ac-funcall3> list a b c))
-
-> (ac-compile '(fn (a b (o c)) (list a b c)) nil)
-(racket-lambda (a b (c nil)) (#<fn:ac-funcall3> list a b c))
+> (fn (a (o b 5) c) (list a b c))
+error: racket-lambda: default-value expression missing at: c in: (racket-lambda (a (b 5) c) (#<procedure:ac-funcall3> (#<procedure:ac-lookup-global> list) a b c))
 
 
-> (ac-compile '(fn (a b . c) (list a b c)) nil)
+> (ac-compile '(fn (a b (o c 5)) (list a b c)))
+(racket-lambda (a b (c 5)) (#<fn:ac-funcall3> (#<fn:ac-lookup-global> list) a b c))
+
+> (ac-compile '(fn (a b (o c nil)) (list a b c)))
+(racket-lambda (a b (c (#<fn:ac-lookup-global-arg> nil))) (#<fn:ac-funcall3> (#<fn:ac-lookup-global> list) a b c))
+
+> (ac-compile '(fn (a b (o c)) (list a b c)))
+(racket-lambda (a b (c nil)) (#<fn:ac-funcall3> (#<fn:ac-lookup-global> list) a b c))
+
+
+> (ac-compile '(fn (a b . c) (list a b c)))
 (racket-lambda (a b . c) (racket-set! c (#<fn:list->mlist> c)) (#<fn:ac-funcall3> list a b c))
 
 
-> (ac-compile '(fn (a b (c (d e f (g)))) (list a b c d e f g)) nil)
-(racket-lambda (a b (c nil)) (#<fn:ac-funcall3> list a b c))
+> (ac-compile '(fn (a b (c (d e f (g)))) (list a b c d e f g)))
+(racket-lambda (a b g1) (racket-let* ((c (#<fn:car> g1)) (g1 (#<fn:cdr> g1)) (g2 (#<fn:car> g1)) (d (#<fn:car> g2)) (g2 (#<fn:cdr> g2)) (e (#<fn:car> g2)) (g2 (#<fn:cdr> g2)) (f (#<fn:car> g2)) (g2 (#<fn:cdr> g2)) (g3 (#<fn:car> g2)) (g (#<fn:car> g3))) (#<fn:ac-apply> (#<fn:ac-lookup-global> list) a b c d e f g)))
 
 
-> (test (ac-compile '(fn (a (b) c) (fn (a b c) (list a b c))) nil))
+> (ac-compile '(fn (a (b) c) (fn (a b c) (list a b c))))
 (racket-lambda (a g1 c) (apply (racket-lambda ((b nil) . g2) (racket-lambda (a b c) (#<fn:ac-funcall3> list a b c))) g1))
 
-> (test (ac-compile '(fn (a (b) c) (fn (a b (c)) (fn (a b c) (list a b c)))) nil))
+> (ac-compile '(fn (a (b) c) (fn (a b (c)) (fn (a b c) (list a b c)))))
 (racket-lambda (a g1 c) (apply (racket-lambda ((b nil) . g2) (racket-lambda (a b g3) (apply (racket-lambda ((c nil) . g4) (racket-lambda (a b c) (#<fn:ac-funcall3> list a b c))) g3))) g1))
 
 > (parameterize (ac-fn-required-args? nil
                  ac-fn-excess-args?   t)
-    (test (ac-compile '(fn (a (b) c) (fn (a b c) (list a b c))) nil)))
+    (ac-compile '(fn (a (b) c) (fn (a b c) (list a b c)))))
 (racket-lambda ((a nil) (g1 nil) (c nil) . g2) (apply (racket-lambda ((b nil) . g3) (racket-lambda ((a nil) (b nil) (c nil) . g4) (#<fn:ac-funcall3> list a b c))) g1))
 
 > (parameterize (ac-fn-required-args?       nil
                  ac-fn-excess-args?         t
                  ac-fn-rigid-destructuring? t)
-    (test (ac-compile '(fn (a (b) c) (fn (a b c) (list a b c))) nil)))
+    (ac-compile '(fn (a (b) c) (fn (a b c) (list a b c)))))
 (racket-lambda ((a nil) (g1 nil) (c nil) . g2) (apply (racket-lambda (b) (racket-lambda ((a nil) (b nil) (c nil) . g3) (#<fn:ac-funcall3> list a b c))) g1))
 
 
-> (ac-arglist '(a (b (c d (o e 10) (f) . g)) #:foo (o z 5) (o #:bar 15) . h))
+> (ac-compile '(fn (a (b (c d (o e 10) (f) . g)) #:foo (o z 5) (o #:bar 15) . h) ac-local-env*)
 (a b c d e f g foo z bar h)
 
 
-> (ac-compile '((fn ((o a a)) a)) nil)
+> (ac-compile '((fn ((o a a)) a)))
+((racket-lambda ((a (#<fn:ac-lookup-global-arg> a))) a))
+
 (ac-compile '((fn ((o a (#<fn:ac-lookup-global a))) a)) nil)
+
+
+> (ac-compile '(fn (a b c) (list a b c)))
+(racket-lambda (a b c) (#<fn:ac-funcall3> (#<fn:ac-lookup-global> list) a b c))
+
+> (ac-compile '(fn (a b (o c 5)) (list a b c)))
+(racket-lambda (a b (c 5)) (#<fn:ac-funcall3> (#<fn:ac-lookup-global> list) a b c))
+
+> (ac-compile '(fn (a (b) (o c 5)) (list a b c)))
+(racket-lambda (a g1 (c 5)) (racket-let* ((b (#<fn:car> g1))) (#<fn:ac-funcall3> (#<fn:ac-lookup-global> list) a b c)))
+
+> (ac-compile '(fn (a (b (c d)) (o c 5)) (list a b c d)))
+(racket-lambda (a g1 (c 5)) (racket-let* ((b (#<fn:car> g1)) (g1 (#<fn:cdr> g1)) (g2 (#<fn:car> g1)) (c (#<fn:car> g2)) (g2 (#<fn:cdr> g2)) (d (#<fn:car> g2))) (#<fn:ac-funcall4> (#<fn:ac-lookup-global> list) a b c d)))
+
+> (ac-compile '(fn (a (b (c d . e)) (o c 5) . f) (list a b c d e f)))
+(racket-lambda (a g1 (c 5) . f) (racket-let* ((f (#<fn:list->mlist> f)) (b (#<fn:car> g1)) (g1 (#<fn:cdr> g1)) (g2 (#<fn:car> g1)) (c (#<fn:car> g2)) (g2 (#<fn:cdr> g2)) (d (#<fn:car> g2)) (g2 (#<fn:cdr> g2)) (e g2)) (#<fn:ac-apply> (#<fn:ac-lookup-global> list) a b c d e f)))
+
+> (ac-compile '(fn (a (b (c (o d 10) . e)) (o c 5) . f) (list a b c d e f)))
+(racket-lambda (a g1 (c 5) . f) (racket-let* ((f (#<fn:list->mlist> f)) (b (#<fn:car> g1)) (g1 (#<fn:cdr> g1)) (g2 (#<fn:car> g1)) (c (#<fn:car> g2)) (g2 (#<fn:cdr> g2)) (d (racket-if (#<fn:ac-true> (#<fn:cdr> g2)) (#<fn:car> g2) 10)) (g2 (#<fn:cdr> g2)) (e g2)) (#<fn:ac-apply> (#<fn:ac-lookup-global> list) a b c d e f)))
+
+> (ac-compile '(fn (a (b (c (o d 10) . e)) :foo (o c 5) . f) (list a b c d e f foo)))
+(racket-lambda (a g1 #:foo (foo nil) (c 5) . f) (racket-let* ((f (#<fn:list->mlist> f)) (b (#<fn:car> g1)) (g1 (#<fn:cdr> g1)) (g2 (#<fn:car> g1)) (c (#<fn:car> g2)) (g2 (#<fn:cdr> g2)) (d (racket-if (#<fn:ac-true> (#<fn:cdr> g2)) (#<fn:car> g2) 10)) (g2 (#<fn:cdr> g2)) (e g2)) (#<fn:ac-apply> (#<fn:ac-lookup-global> list) a b c d e f foo)))
+
+> (ac-compile '(fn (a (b (c (o d 10) . e)) (o :foo 15) (o c 5) . f) (list a b c d e f foo)))
+(racket-lambda (a g1 #:foo (foo 15) (c 5) . f) (racket-let* ((f (#<fn:list->mlist> f)) (b (#<fn:car> g1)) (g1 (#<fn:cdr> g1)) (g2 (#<fn:car> g1)) (c (#<fn:car> g2)) (g2 (#<fn:cdr> g2)) (d (racket-if (#<fn:ac-true> (#<fn:cdr> g2)) (#<fn:car> g2) 10)) (g2 (#<fn:cdr> g2)) (e g2)) (#<fn:ac-apply> (#<fn:ac-lookup-global> list) a b c d e f foo)))
+
+
+> (ac-compile '(fn (a) (fn (b) (list a b c))))
+(racket-lambda (a) (racket-lambda (b) (#<fn:ac-funcall3> (#<fn:ac-lookup-global> list) a b (#<fn:ac-lookup-global-arg> c))))
+
+> (ac-compile '(fn a a))
+(racket-lambda a (racket-let ((a (#<fn:list->mlist> a))) a))
+
+> (ac-compile '(fn (a) a))
+(racket-lambda (a) a)
+
+> (ac-compile '(fn (:a) a))
+(racket-lambda (#:a (a nil)) a)
+
+> (ac-compile '(fn ((o a 5)) a))
+(racket-lambda ((a 5)) a)
+
+> (ac-compile '(fn ((o :a 5)) a))
+(racket-lambda (#:a (a 5)) a)
+
+> (ac-compile '(fn (a . b) (list a b)))
+(racket-lambda (a . b) (racket-let* ((b (#<fn:list->mlist> b))) (#<fn:ac-funcall2> (#<fn:ac-lookup-global> list) a b)))
+
+> (ac-compile '(fn ((a)) a))
+(racket-lambda (g1) (racket-let* ((a (#<fn:car> g1))) a))
+
+> (ac-compile '(fn ((a (o b 5))) (list a b)))
+(racket-lambda (g1) (racket-let* ((a (#<fn:car> g1)) (g1 (#<fn:cdr> g1)) (b (racket-if (#<fn:ac-true> (#<fn:cdr> g1)) (#<fn:car> g1) 5))) (#<fn:ac-funcall2> (#<fn:ac-lookup-global> list) a b)))
+
+> (ac-compile '(fn ((a . b)) (list a b)))
+(racket-lambda (g1) (racket-let* ((a (#<fn:car> g1)) (g1 (#<fn:cdr> g1)) (b g1)) (#<fn:ac-funcall2> (#<fn:ac-lookup-global> list) a b)))
 
 
 ;=============================================================================
 ;  %nocompile
 ;=============================================================================
 
-> (ac-compile '(%nocompile 5 10 (foo 10) (bar (qux (%compile (corge)))) (%compile (foo 10)) (%compile 5)) nil)
-(racket-begin 5 10 (foo 10) (bar (qux (#<fn:ac-funcall0> corge))) (#<fn:ac-funcall1> foo 10) 5)
+> (ac-compile '(%nocompile 5 10 (foo 10) (bar (qux (%compile (corge)))) (%compile (foo 10)) (%compile 5)))
+(racket-begin 5 10 (foo 10) (bar (qux (#<fn:ac-funcall0> (#<fn:ac-lookup-global> corge)))) (#<fn:ac-funcall1> (#<fn:ac-lookup-global> foo) 10) 5)
 
 > (%nocompile (racket-parameterize ((racket-current-namespace (racket-current-namespace))) (racket-current-namespace)))
 #<namespace:0>
 
 > (%nocompile (racket-parameterize ((racket-current-namespace (racket-current-namespace)))
     (%compile (+ 10 5) (+ 15 20))))
-#<namespace:0>
+35
 
 > (let ac-compile nil
     (%nocompile (+ 10 5)))
@@ -90,7 +166,7 @@ error:
 
 > (let %nocompile nil
     (%nocompile (+ 10 5)))
-error:
+error: Function call on inappropriate object () {15}
 
 
 ;=============================================================================
@@ -107,7 +183,7 @@ error:
 21
 
 > (ac-compile '(+ (%splice 1 2 3)))
-(#<fn:ac-funcall1> (#<fn:ac-lookup-global> +) 1 2 3)
+(#<fn:ac-funcall3> (#<fn:ac-lookup-global> +) 1 2 3)
 
 
 ;=============================================================================
@@ -115,13 +191,13 @@ error:
 ;=============================================================================
 
 > ((fn (:a b c) (list a b c)) 1)
-error:
+error: #<procedure>: expects 2 arguments plus an optional argument with keyword #:a, given 1: 1
 
 > ((fn (:a b c) (list a b c)) 1 2)
 (nil 1 2)
 
 > ((fn (:a b c) (list a b c)) 1 2 3)
-error:
+error: #<procedure>: expects 2 arguments plus an optional argument with keyword #:a, given 3: 1 2 3
 
 > ((fn (:a b c) (list a b c)) 1 2 :a 3)
 (3 1 2)
@@ -150,16 +226,74 @@ error:
 
 
 > ((fn (:a (b c)) (list a b c)))
-(nil nil nil)
+error: #<procedure>: expects 1 argument plus an optional argument with keyword #:a, given 0
+
+> ((fn (:a (b c)) (list a b c)) 1)
+error: mcar: expects argument of type <mutable-pair>; given 1
 
 > ((fn (:a (b c)) (list a b c)) 1 2)
-error:
+error: #<procedure>: expects 1 argument plus an optional argument with keyword #:a, given 2: 1 2
 
 > ((fn (:a (b c)) (list a b c)) '(1 2))
 (nil 1 2)
 
 > ((fn (:a (b c)) (list a b c)) '(1 2) :a 5)
 (5 1 2)
+
+
+;=============================================================================
+;  Keyword destructuring
+;=============================================================================
+
+> (let (:a :b :c) (obj a 1 b 2)
+    (list a b c))
+(1 2 nil)
+
+;; TODO: not sure about this
+> (let (:a (:b :c)) (obj a 1 b (obj c 2))
+    (list a b c))
+(list 1 #hash() 2)
+
+> (let (:a :b (o :c 5)) (obj a 1 b 2)
+    (list a b c))
+(1 2 5)
+
+> (let (:a :b (o :c 5) . d) (obj a 1 b 2)
+    (list a b c d))
+(1 2 5 #hash((a . 1) (b . 2)))
+
+> (let (:a :b . c) (obj a 1 b 2)
+    (list a b c))
+(1 2 #hash((a . 1) (b . 2)))
+
+> (let (:a :b :c) (obj a 1 b 2 c 3)
+    (list a b c))
+(1 2 3)
+
+> (let (:a :b :c) (obj a 1 b 2 c 3 d 4)
+    (list a b c))
+(1 2 3)
+
+
+> (ac-compile '(let (:a :b :c) (obj a 1 b 2 c 3)
+                 (list a b c)))
+((racket-lambda (g1) (racket-let* ((a (#<fn:ac-funcall1> g1 (racket-quote a))) (b (#<fn:ac-funcall1> g1 (racket-quote b))) (c (#<fn:ac-funcall1> g1 (racket-quote c)))) (#<fn:ac-funcall3> (#<fn:ac-lookup-global> list) a b c))) (#<fn:ac-funcall1> (#<fn:ac-lookup-global> listtab) (#<fn:ac-funcall3> (#<fn:ac-lookup-global> list) (#<fn:ac-funcall2> (#<fn:ac-lookup-global> list) (#<fn>) 1) (#<fn:ac-funcall2> (#<fn:ac-lookup-global> list) (#<fn>) 2) (#<fn:ac-funcall2> (#<fn:ac-lookup-global> list) (#<fn>) 3))))
+
+> (ac-compile '(let (:a :b . c) (obj a 1 b 2)
+                 (list a b c)))
+((racket-lambda (g1) (racket-let* ((a (#<fn:ac-funcall1> g1 (racket-quote a))) (b (#<fn:ac-funcall1> g1 (racket-quote b))) (c g1)) (#<fn:ac-funcall3> (#<fn:ac-lookup-global> list) a b c))) (#<fn:ac-funcall1> (#<fn:ac-lookup-global> listtab) (#<fn:ac-funcall2> (#<fn:ac-lookup-global> list) (#<fn:ac-funcall2> (#<fn:ac-lookup-global> list) (#<fn>) 1) (#<fn:ac-funcall2> (#<fn:ac-lookup-global> list) (#<fn>) 2))))
+
+> (ac-compile '(let (:a :b (o :c 5)) (obj a 1 b 2)
+                 (list a b c)))
+((racket-lambda (g1) (racket-let* ((a (#<fn:ac-funcall1> g1 (racket-quote a))) (b (#<fn:ac-funcall1> g1 (racket-quote b))) (c (#<fn:ac-funcall2> g1 (racket-quote c) 5))) (#<fn:ac-funcall3> (#<fn:ac-lookup-global> list) a b c))) (#<fn:ac-funcall1> (#<fn:ac-lookup-global> listtab) (#<fn:ac-funcall2> (#<fn:ac-lookup-global> list) (#<fn:ac-funcall2> (#<fn:ac-lookup-global> list) (#<fn>) 1) (#<fn:ac-funcall2> (#<fn:ac-lookup-global> list) (#<fn>) 2))))
+
+
+> (ac-compile '(fn ((:a)) a))
+(racket-lambda (g1) (racket-let* ((a (#<fn:ac-funcall1> g1 (racket-quote a)))) a))
+
+;; TODO: not sure about this
+> (ac-compile '(fn ((a (o :b 5))) (list a b)))
+(racket-lambda (g1) (racket-let* ((a (#<fn:car> g1)) (g1 (#<fn:cdr> g1)) (b (#<fn:ac-funcall2> g1 (racket-quote b) 5))) (#<fn:ac-funcall2> (#<fn:ac-lookup-global> list) a b)))
 
 
 ;=============================================================================
@@ -227,6 +361,48 @@ nil
 
 
 ;=============================================================================
+;  readline
+;=============================================================================
+
+> (readline:instring "\n")
+""
+
+> (readline:instring "foo\r\n")
+"foo"
+
+
+> (= foo (instring "foo\r\n"))
+#<input-port:string>
+
+> (readline foo)
+"foo"
+
+> (peekc foo)
+nil
+
+
+> (= foo (instring "foo\ra"))
+#<input-port:string>
+
+> (readline foo)
+"foo\ra"
+
+> (peekc foo)
+nil
+
+
+> (= foo (instring "foo\r"))
+#<input-port:string>
+
+;; TODO: not sure about this
+> (readline foo)
+"foo\r"
+
+> (peekc foo)
+nil
+
+
+;=============================================================================
 ;  Parameters
 ;=============================================================================
 
@@ -255,3 +431,64 @@ nil
 
 > ((fn ((o a stdout)) a))
 #<output-port:stdout>
+
+
+;=============================================================================
+;  annotate
+;=============================================================================
+
+> annotate
+#<fn:annotate>
+
+> (annotate '(1 2 3) '(4 5 6))
+#(tagged (1 2 3) (4 5 6))
+
+> (annotate + -)
+#(tagged <fn:+> <fn:->)
+
+> assign
+#<mac:assign>
+
+> fn
+#<mac:fn>
+
+> if
+#<mac:if>
+
+> quote
+#<mac:quote>
+
+> quasiquote
+#<mac:quasiquote>
+
+> %nocompile
+#<mac:%nocompile>
+
+> %splice
+#<mac:%splice>
+
+
+;=============================================================================
+;  uniq
+;=============================================================================
+
+> (parameterize (uniq-counter* 1) (uniq))
+g1
+
+> (parameterize (uniq-counter* 1) (uniq "foo"))
+foo1
+
+> (parameterize (uniq-counter* 1) (uniq) uniq-counter*)
+2
+
+> (parameterize (uniq-counter* 1) (uniq "foo") uniq-counter*)
+2
+
+> (parameterize (uniq-counter* 1) (uniq "foo" 5))
+foo5
+
+> (parameterize (uniq-counter* 1) (uniq "foo" 5) uniq-counter*)
+1
+
+> (parameterize (uniq-counter* 1) (uniq) (uniq))
+g2

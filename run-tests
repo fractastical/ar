@@ -1,0 +1,148 @@
+#! /usr/bin/env mzscheme
+#lang scheme
+
+(require "arc")
+
+#|(current-command-line-arguments
+  (list->vector
+    (map (lambda (x)
+           (path->string (build-path (current-directory) x)))
+         (directory-list "."))))|#
+
+(ac-eval-in namespace
+  ;; options
+  (implicit verbose)
+  (implicit expects-strings)
+
+  (implicit debug-statements)
+
+  ;; TODO: remove line-number?
+  (implicit line-number)
+
+  (implicit separator-width 78)
+
+  (def debug args
+    (push (tostring:mapfn disp (intersperse " " args))
+          debug-statements))
+
+  (def writeuntil (str x)
+    (whenlet c readc.str
+      (writec c)
+      (when (isnt c x)
+        (writeuntil str x))))
+
+  (def readuntil (str x)
+    (tostring ((afn ()
+                 (writeuntil str #\newline)
+                 (iflet c peekc.str
+                   (unless (is c x)
+                     (self)))))))
+
+
+  (def parse-string (in)
+    (when peekc.in
+      (if (re-match "^ *>" in)
+                      ;; TODO: hacky
+            (let line (values (x y z) (racket-port-next-location in) x)
+              (let x (readuntil in #\newline)
+                (zap re-multi-replace x ("\n\\\\\n"  "\n\n" g))
+                (let c (count #\newline x)
+                  (zap instring x)
+                  ;(prn line-number " " line " " c)
+                                         ;; TODO: extract the error message if read fails
+                  (do1 (obj eval         (on-err (fn (c) (prn:details c) `(err ,details.c))
+                                                 (fn ()  (read x)))
+                            expects      (errsafe:cut allchars.x 1 -1)
+                            line-number  line
+                                         ;; TODO: fix it so it doesn't call racket-path->string
+                            file-name    (basename:racket-path->string:name in))
+                       (++ line-number c)))))
+
+          (do (readline in)
+              (++ line-number)
+              (parse-string in)))))
+
+
+  (mac errdet (body)
+    `(on-err (fn (e) (pr:+ "error: " details.e))
+             (fn ()  (write ,body))))
+
+
+  (def backescape (str)
+    (map (fn (x)
+           (list (string x)
+             (+ "\\" x)))
+         (coerce str 'cons)))
+
+
+  (def escape (x)
+    (multisubst (backescape "\\.^$*+?{}[]|()") x))
+
+  (def match (x y)
+    (re-match (string "^" (subst ".*" "\\.\\.\\." (escape y)) "$")
+              x))
+
+  (def eval-test (x (o env))
+    (with (run     x!eval
+           expect  x!expects
+           line    x!line-number
+           name    x!file-name)
+      (w/debug-statements nil
+        (let result (parameterize (uniq-counter* 1)
+                      (tostring:w/stderr stdout
+                        (errdet:eval run env)))
+          (when expect
+            (when expects-strings
+              (zap re-multi-replace result ("\\\\\""  "\"" g)
+                                           ("\\\\n"   "\n" g)
+                                           ("^\""     ""    )
+                                           ("\"$"     ""    )))
+
+            (zap re-multi-replace expect ("\n\\\\\n"   "\n\n" g)
+                                         ("^\\\\$"     ""      ))
+
+            (if (match result expect)
+                  (do (when verbose
+                        (prn "\n- Testing example in file \"" name "\" on line " line ":")
+                        (write run)
+                        (prn)
+                        (prn "\n- Success:")
+                        (prn result)
+                        (prn "\n" (newstring separator-width #\=)))
+                      t)
+                  (do (prn "\n- Failed example in file \"" name "\" on line " line ":")
+                      (write run)
+                      (prn)
+                      (prn "\n- Expected:")
+                      (prn expect)
+                      (prn "\n- Got:")
+                      (prn result)
+                      (when debug-statements
+                        (prn "\n- Debug:")
+                        (eachfn prn rev.debug-statements))
+                      (prn "\n" (newstring separator-width #\=))
+                      nil)))))))
+
+  (def test-file (n (o env))
+    (= expects-strings nil)
+    (w/line-number 1
+      (w/cwd (or dirname.n ".") ; dirname
+        (w/infile file basename.n ; basename
+          (whilet x (parse-string file)
+            (eval-test x env))))))
+
+  ;(prn (ac-compile '(w/line-number 1 (prn line-number))))
+
+  #|(def test-files args
+    (each x args
+      (test-file x new-namespace.arc3-namespace)))|#
+
+  (def test-files args
+    (each x args
+      (test-file x namespace)))
+
+  (w/cwd "tests"
+    (apply test-files (dir)))
+)
+
+(void)

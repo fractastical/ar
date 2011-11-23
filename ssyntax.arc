@@ -69,7 +69,6 @@
         (cons andf elts))))
 
 
-
 (redef ssyntax (x)
   (and (sym? x)
        ;; TODO: ew

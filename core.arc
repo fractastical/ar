@@ -11,10 +11,9 @@
 (assign safeset (annotate 'mac
                   (fn (var val)
                     `(do (if (bound ',var)
-                             #|(do (disp "*** redefining " stderr)
+                             (do (disp "*** redefining " stderr)
                                  (disp ',var stderr)
-                                 (disp #\newline stderr))|#
-                                 )
+                                 (disp #\newline stderr)))
                          (assign ,var ,val)))))
 
 (assign def (annotate 'mac
@@ -86,7 +85,7 @@
 ; Ac expands x:y:z into (compose x y z), ~x into (complement x)
 ; Only used when the call to compose doesn't occur in functional position.
 ; Composes in functional position are transformed away by ac.
-(mac compose args
+(remac compose args
   (let g (uniq)
     `(fn ,g
        ,((afn (fs)
@@ -96,7 +95,7 @@
          args))))
 
 ; Ditto: complement in functional position optimized by ac.
-(mac complement (f)
+(remac complement (f)
   (let g (uniq)
     `(fn ,g (no (apply ,f ,g)))))
 
@@ -108,7 +107,7 @@
 (def ac-make-read (f)
   (fn ((o port stdin) (o eof))
     (let c (f port)
-      (if (racket-eof-object? c) eof c))))
+      (if (is c racket-eof) eof c))))
 
 (def ac-make-write (f)
   (fn ((o port stdout)) (f port)))
@@ -368,11 +367,12 @@
 (= newstring  racket-make-string)
 
 (def recstring (test s (o start 0))
-  ((afn (i)
-     (and (< i (len s))
-          (or (test i)
-              (self (+ i 1)))))
-   start))
+  (let l (len s)
+    ((afn (i)
+       (and (< i l)
+            (or (test i)
+                (self (+ i 1)))))
+     start)))
 
 
 ;=============================================================================
@@ -402,27 +402,27 @@
 
 (def <2 (x y)
   (ac-tnil
-    (if (and (num? x) (num? y))
+    (if (num? x) ;(and (num? x) (num? y))
           (racket-< x y)
-        (and (string? x) (string? y))
+        (string? x) ;(and (string? x) (string? y))
           (racket-string<? x y)
-        (and (sym? x) (sym? y))
+        (sym? x) ;(and (sym? x) (sym? y))
           (racket-string<? (sym x) (sym y))
-        (and (char? x) (char? y))
+        (char? x) ;(and (char? x) (char? y))
           (racket-char<? x y)
         (err "Can't <" x y))))
 
 (def >2 (x y)
-  (ar-tnil
-    (if (and (num? x) (num? y))
-          (racket-> x y))
-        (and (string? x) (string? y))
+  (ac-tnil
+    (if (num? x) ;(and (num? x) (num? y))
+          (racket-> x y)
+        (string? x) ;(and (string? x) (string? y))
           (racket-string>? x y)
-        (and (sym? x) (sym? y))
+        (sym? x) ;(and (sym? x) (sym? y))
           (racket-string>? (string x) (string y))
-        (and (char? x) (char? y))
+        (char? x) ;(and (char? x) (char? y))
           (racket-char>? x y)
-        (err "Can't >" x y)))
+        (err "Can't >" x y))))
 
 (= +  (ac-binary +-2 reduce)
    <  (ac-binary  <2 ac-pairwise)
@@ -498,6 +498,7 @@
       (racket-make-parameter init)))
 
 (mac make-implicit (name param)
+                              ;; TODO: hacky
   `(do (= ,name ,param)
        (make-w/ ,name)))
 
@@ -507,9 +508,10 @@
 (mac implicit (name (o init))
   `(make-implicit ,name (parameter ,init)))
 
-(make-implicit stdin   racket-current-input-port)
-(make-implicit stdout  racket-current-output-port)
-(make-implicit stderr  racket-current-error-port)
+;; TODO: figure out a way to not need %nocompile
+(make-implicit stdin   (%nocompile racket-current-input-port))
+(make-implicit stdout  (%nocompile racket-current-output-port))
+(make-implicit stderr  (%nocompile racket-current-error-port))
 
 
 (def ac-disp (x port)
@@ -520,12 +522,12 @@
   (racket-write x port)
   (racket-flush-output port))
 
-(def disp (x (o port (stdout)))
+(def disp (x (o port stdout))
   #|(racket-display port)
   (racket-newline)|#
   (print ac-disp x port))
 
-(def write (x (o port (stdout)))
+(def write (x (o port stdout))
   (print ac-write x port))
 
 (mac after (x . ys)
@@ -676,6 +678,8 @@
 ; Would def mkdir in terms of make-directory and call that instead
 ; of system in ensure-dir, but make-directory is too weak: it doesn't
 ; create intermediate directories like mkdir -p.
+
+;; TODO: racket-make-directory*
 
 (def file-exists (name)
   (if (ac-tnil (racket-file-exists? name)) name))

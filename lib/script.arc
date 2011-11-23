@@ -1,5 +1,5 @@
 (make-implicit cwd
-  (racket-make-derived-parameter racket-current-directory
+  (racket-make-derived-parameter (%nocompile racket-current-directory)
     (fn (v) (zap string v)
             (if empty.v
                   (racket-current-directory)

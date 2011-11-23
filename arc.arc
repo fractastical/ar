@@ -461,7 +461,7 @@
 
 ; E.g. (++ x) equiv to (zap + x 1)
 
-(mac zap (op place . args)
+#|(mac zap (op place . args)
   (with (gop    (uniq)
          gargs  (map [uniq] args)
          mix    (afn seqs
@@ -471,7 +471,10 @@
                          (apply self (map cdr seqs))))))
     (let (binds val setter) (setforms place)
       `(atwiths ,(+ binds (list gop op) (mix gargs args))
-         (,setter (,gop ,val ,@gargs))))))
+         (,setter (,gop ,val ,@gargs))))))|#
+
+(mac zap (f x . args)
+  `(= ,x (,f ,x ,@args)))
 
 ; Can't simply mod pr to print strings represented as lists of chars,
 ; because empty string will get printed as nil.  Would need to rep strings
@@ -752,12 +755,12 @@
 (def punc (c)
   (in c #\. #\, #\; #\: #\! #\?))
 
-(def readline ((o str (stdin)))
-  (awhen (readc str)
-    (tostring
-      (writec it)
-      (whiler c (readc str) [in _ nil #\newline]
-        (writec c)))))
+(def readline ((o str stdin))
+  (tostring:whiler c (readc str)
+                     [or (and (is _ #\return)
+                              (is peekc.str #\newline))
+                         (in _ nil #\newline)]
+    (writec c)))
 
 ; Don't currently use this but suspect some code could.
 

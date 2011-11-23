@@ -72,9 +72,24 @@ The current differences are as follows:
 
     But in _Nu_, the above function would have the name `foo`, as one would expect
 
+*   Macros have names too:
+
+        > do
+        #<mac:do>
+
 *   Ssyntax is expanded in function arguments. So you can do things like this: `(fn (a.b) ...)` which is the same as `(fn ((a b)) ...)`
 
 *   The `do` macro is smarter: `(do 1)` compiles into `1` rather than `((racket-lambda nil 1))`
+
+*   `num` has been renamed to `comma`
+
+*   `annotate` has been implemented with a Racket `struct` rather than `vector`
+
+*   Keyword destructuring is supported:
+
+        > (let (:a :b :c) (obj a 1 b 2 c 3)
+            (list a b c))
+        (1 2 3)
 
 *   [The REPL](#repl) is implemented better
 

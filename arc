@@ -33,18 +33,24 @@
 
 (define-syntax-rule (ac-eval-in namespace . body)
   (parameterize ((current-namespace             namespace)
-                 (compile-allow-set!-undefined  #t))
-    ((namespace-get namespace 'eval)
-      ((namespace-get namespace 'ac-deep-toarc)
-        '(do body)))))
+                 (compile-allow-set!-undefined  #t)
+                 (port-count-lines-enabled      #t))
+    (map (lambda (x)
+           ((namespace-get namespace 'eval)
+             ((namespace-get namespace 'ac-deep-toarc)
+               x)))
+         'body)))
 
 
 #|(define ac-read (make-readtable (current-readtable) #\( 'terminating-macro
                   (lambda (ch port src line col pos)
                     (list->mlist (read/recursive port #\( #f)))))|#
 
+;(port-count-lines-enabled #t)
+
 (parameterize ((current-namespace             namespace)
                (compile-allow-set!-undefined  #t)
+               (port-count-lines-enabled      #t)
                ;; TODO: !!! This is super slow !!!
                ;(use-compiled-file-paths       (list (string->path ".compiled")))
                ;(compile-enforce-module-constants #f)
@@ -68,14 +74,16 @@
 
   ;(load/use-compiled "compiler.arc")
 
-  (ac-load "compiler.arc"   namespace)
-  (ac-load "core.arc"       namespace)
-  (ac-load "ssyntax.arc"    namespace)
-  (ac-load "compat.arc"     namespace)
-  (ac-load "arc.arc"        namespace)
-  (ac-load "lib/script.arc" namespace)
-  ;(ac-load "lib/time.arc"   namespace)
-  ;(ac-load "repl.arc"       namespace)
+  (ac-load "compiler.arc"    namespace)
+  (ac-load "core.arc"        namespace)
+  (ac-load "ssyntax.arc"     namespace)
+  (ac-load "compat.arc"      namespace)
+  (ac-load "arc.arc"         namespace)
+  (ac-load "lib/script.arc"  namespace)
+  (ac-load "lib/re.arc"      namespace)
+  (ac-load "lib/strings.arc" namespace)
+  (ac-load "lib/time.arc"    namespace)
+  ;(ac-load "repl.arc"        namespace)
 
   (let ((cli (current-command-line-arguments)))
     (when (> (vector-length cli) 0)

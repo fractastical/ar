@@ -174,10 +174,10 @@ error: #<procedure>: expects 3 arguments, given 2: 1 {2}
 #<fn>
 
 > ((fn ((a) (b) (c)) (list a b c)) 1 2)
-error:
+error: #<procedure>: expects 3 arguments, given 2: 1 2
 
 > ((fn ((a) (b) (c)) (list a b c)) 1 2 3)
-error:
+error: mcar: expects argument of type <mutable-pair>; given 3
 
 > ((fn ((a) (b) (c)) (list a b c)) '(1) '(2) '(3))
 (1 2 3)
@@ -257,11 +257,25 @@ t
 > (let (a (o b 5)) (list 1 2) b)
 2
 
+> (let (a (o b 5)) (list 1 nil) b)
+nil
+
+
 > (let (a (o b 5)) (list 1) b)
 5
 
 > (let (a (o b)) (list 1) b)
 nil
+
+
+> (let ((o a 5)) (list 1) a)
+1
+
+> (let ((o a 5)) (list nil) a)
+nil
+
+> (let ((o a 5)) nil a)
+5
 
 
 > (let (a (o b 5) c) (list 1 2) a)
@@ -286,7 +300,7 @@ nil
 
 
 > ('(1 2 3) -1)
-error:
+error: mcdr: expects argument of type <mutable-pair>; given ()
 
 > ('(1 2 3) 0)
 1
@@ -298,12 +312,65 @@ error:
 3
 
 > ('(1 2 3) 3)
-error:
+error: mcar: expects argument of type <mutable-pair>; given 3
+
+
+;=============================================================================
+;  annotate
+;=============================================================================
+
+> (= bar '(1 2 3))
+(1 2 3)
+
+> (= foo (annotate 10 bar))
+
+> (type foo)
+10
+
+> (rep foo)
+(1 2 3)
+
+> (is (rep foo) bar)
+t
 
 
 ;=============================================================================
 ;  ssyntax
 ;=============================================================================
+
+
+;=============================================================================
+;  readline
+;=============================================================================
+
+> (readline:instring "\n")
+"\n"
+
+> (readline:instring "foo\n")
+"foo"
+
+> (readline:instring "foo\r\n")
+"foo\r"
+
+
+> (= foo (instring "foo\r\n"))
+#<input-port:string>
+
+> (readline foo)
+"foo\r"
+
+> (peekc foo)
+nil
+
+
+> (= foo (instring "foo\n"))
+#<input-port:string>
+
+> (readline foo)
+"foo"
+
+> (peekc foo)
+nil
 
 
 ;=============================================================================
@@ -321,3 +388,17 @@ error:
 
 > (+ 1 2 3)
 6
+
+
+;=============================================================================
+;  Strings
+;=============================================================================
+
+> (= foo "bar")
+"bar"
+
+> (= (foo 0) #\n)
+#\n
+
+> foo
+"nar"
