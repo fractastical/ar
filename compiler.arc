@@ -1051,8 +1051,23 @@
     ((racket-mpair? com)
       (racket-if (racket-number? ind)
                    (racket-set-mcar! (racket-mlist-tail com ind) val)
-                 ;; TODO: should assoc be defined in compiler.arc?
-                 (racket-set-mcar! (cdr (assoc com ind)) val)))
+                 (racket-if (ac-no val)
+                              ;; TODO: should assoc-cdr be defined in compiler.arc?
+                              (racket-let ((x (assoc-cdr com ind)))
+                                (racket-when (ac-true x)
+                                  (racket-set-mcar! x (cadr x))
+                                  (racket-set-mcdr! x (cddr x))))
+                            ;; TODO: should assoc be defined in compiler.arc?
+                            (racket-let ((x (assoc com ind)))
+                              (racket-cond
+                                ((ac-true x)
+                                  (racket-set-mcar! (cdr x) val))
+                                (racket-else
+                                  ;; This is needed to prevent cyclic lists
+                                  ;; TODO: should idfn be defined in compiler.arc?
+                                  (racket-let ((x (racket-mmap idfn com)))
+                                    (racket-set-mcar! com (list ind val))
+                                    (racket-set-mcdr! com x))))))))
     (racket-else
       (err "Can't set reference" com ind val)))
   val)

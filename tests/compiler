@@ -586,6 +586,7 @@ g2
 > (= foo '((b 2) (a 1) (c 3)))
 ((b 2) (a 1) (c 3))
 
+
 > foo!a
 1
 
@@ -594,6 +595,7 @@ g2
 
 > foo!c
 3
+
 
 > foo.0
 (b 2)
@@ -604,11 +606,13 @@ g2
 > foo.2
 (c 3)
 
+
 > (= foo.0 '(b 5))
 (b 5)
 
 > foo
 ((b 5) (a 1) (c 3))
+
 
 > (= foo!b 10)
 10
@@ -616,11 +620,13 @@ g2
 > foo
 ((b 10) (a 1) (c 3))
 
+
 > (= foo!a "bar")
 "bar"
 
 > foo
 ((b 10) (a "bar") (c 3))
+
 
 > (= foo!a nil)
 nil
@@ -628,8 +634,47 @@ nil
 > foo
 ((b 10) (c 3))
 
+
+> (= foo!c nil)
+nil
+
+> foo
+((b 10))
+
+
+> (= foo!b nil)
+nil
+
+> foo
+nil
+
+
+> (= foo '((b 2) (a 1) (c 3)))
+((b 2) (a 1) (c 3))
+
+
+> (= foo!d nil)
+nil
+
+> foo
+((b 2) (a 1) (c 3))
+
+
 > (= foo!d 500)
 500
 
 > foo
-((d 500) (b 10) (c 3))
+((d 500) (b 2) (a 1) (c 3))
+
+
+> (= foo nil)
+nil
+
+> foo
+nil
+
+> (= foo!d 500)
+500
+
+> foo
+((d 500))

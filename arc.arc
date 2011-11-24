@@ -25,12 +25,15 @@
 
 (def atom (x) (no (acons x)))
 
-(def assoc (al key)
+(def assoc-cdr (al key)
   (if (atom al)
         nil
       (and (acons (car al)) (is (caar al) key))
-        (car al)
-      (assoc (cdr al) key)))
+        al
+      (assoc-cdr (cdr al) key)))
+
+(def assoc (al key)
+  (car (assoc-cdr al key)))
 
 (def alref (al key)
   (cadr (assoc al key)))
