@@ -91,6 +91,35 @@ The current differences are as follows:
             (list a b c))
         (1 2 3)
 
+*   Alists support indexing by key rather than number:
+
+        > (= foo '((b 2) (a 1) (c 3)))
+        ((b 2) (a 1) (c 3))
+
+        > (foo 'b)
+        2
+
+        > (= foo!a 10)
+        10
+
+        > foo
+        ((b 2) (a 10) (c 3))
+
+*   `assoc` now has the list first, and the key second:
+
+        (assoc foo 'bar)
+
+*   Keyword arguments are supported:
+
+        > (def foo (:a :b)
+            (list a b))
+
+        > (foo :a 1 :b 2)
+        (1 2)
+
+        > (foo :b 2 :a 1)
+        (1 2)
+
 *   [The REPL](#repl) is implemented better
 
 *   [Implicit variables](#implicit) are implemented better

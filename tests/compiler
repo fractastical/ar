@@ -187,6 +187,40 @@ error: Function call on inappropriate object () {15}
 
 
 ;=============================================================================
+;  Function calls
+;=============================================================================
+
+> (ac-compile '(foo))
+(#<fn:ac-funcall0> (#<fn:ac-lookup-global> foo))
+
+> (ac-compile '(foo 1))
+(#<fn:ac-funcall1> (#<fn:ac-lookup-global> foo) 1)
+
+> (ac-compile '(foo 1 2))
+(#<fn:ac-funcall2> (#<fn:ac-lookup-global> foo) 1 2)
+
+> (ac-compile '(foo 1 2 3))
+(#<fn:ac-funcall3> (#<fn:ac-lookup-global> foo) 1 2 3)
+
+> (ac-compile '(foo 1 2 3 4))
+(#<fn:ac-funcall4> (#<fn:ac-lookup-global> foo) 1 2 3 4)
+
+> (ac-compile '(foo 1 2 3 4 5))
+(#<fn:ac-apply> (#<fn:ac-lookup-global> foo) 1 2 3 4 5)
+
+> (ac-compile '(foo :a 1))
+(#<fn:ac-apply> (#<fn:ac-lookup-global> foo) #:a 1)
+
+
+;=============================================================================
+;  Function names
+;=============================================================================
+
+> ac-apply
+#<fn:ac-apply>
+
+
+;=============================================================================
 ;  Keyword args
 ;=============================================================================
 
@@ -239,6 +273,57 @@ error: #<procedure>: expects 1 argument plus an optional argument with keyword #
 
 > ((fn (:a (b c)) (list a b c)) '(1 2) :a 5)
 (5 1 2)
+
+
+> (def foo (:a :b)
+    (list a b))
+#<fn:foo>
+
+> (foo 1 2)
+error: procedure foo: expects 0 arguments plus optional arguments with keywords #:a and #:b, given 2: 1 2
+
+> (foo :a 1)
+(1 nil)
+
+> (foo :b 2)
+(nil 2)
+
+> (foo :a 1 2)
+error: foo: no case matching 1 non-keyword argument; arguments were: 2 #:a 1
+
+> (foo :a 1 :b 2)
+(1 2)
+
+> (foo :b 2 :a 1)
+(1 2)
+
+
+> (def foo (:a (o :b 5))
+    (list a b))
+*** redefining foo
+#<fn:foo>
+
+> (foo :a 1)
+(1 5)
+
+> (foo :a 1 :b nil)
+(1 5)
+
+> (foo :a 1 :b 2)
+(1 2)
+
+
+> (def foo (:a :b . rest)
+    (list a b rest))
+*** redefining foo
+#<fn:foo>
+
+> (apply foo :a 1 :b 2)
+(1 2 nil)
+
+> (apply foo :a 1 :b 2 3 (list 4 5))
+(1 2 (3 4 5))
+
 
 
 ;=============================================================================
@@ -492,3 +577,59 @@ foo5
 
 > (parameterize (uniq-counter* 1) (uniq) (uniq))
 g2
+
+
+;=============================================================================
+;  Association lists
+;=============================================================================
+
+> (= foo '((b 2) (a 1) (c 3)))
+((b 2) (a 1) (c 3))
+
+> foo!a
+1
+
+> foo!b
+2
+
+> foo!c
+3
+
+> foo.0
+(b 2)
+
+> foo.1
+(a 1)
+
+> foo.2
+(c 3)
+
+> (= foo.0 '(b 5))
+(b 5)
+
+> foo
+((b 5) (a 1) (c 3))
+
+> (= foo!b 10)
+10
+
+> foo
+((b 10) (a 1) (c 3))
+
+> (= foo!a "bar")
+"bar"
+
+> foo
+((b 10) (a "bar") (c 3))
+
+> (= foo!a nil)
+nil
+
+> foo
+((b 10) (c 3))
+
+> (= foo!d 500)
+500
+
+> foo
+((d 500) (b 10) (c 3))

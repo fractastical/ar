@@ -25,16 +25,17 @@
 
 (def atom (x) (no (acons x)))
 
-(def idfn (x) x)
-
-(def assoc (key al)
+(def assoc (al key)
   (if (atom al)
-       nil
+        nil
       (and (acons (car al)) (is (caar al) key))
-       (car al)
-      (assoc key (cdr al))))
+        (car al)
+      (assoc (cdr al) key)))
 
-(def alref (al key) (cadr (assoc key al)))
+(def alref (al key)
+  (cadr (assoc al key)))
+
+(def idfn (x) x)
 
 (mac withs (parms . body)
   (if (no parms)
@@ -1027,7 +1028,7 @@
 (def templatize (tem raw)
   (with (x (inst tem) fields (if (acons tem) tem (templates* tem)))
     (each (k v) raw
-      (when (assoc k fields)
+      (when (assoc fields k)
         (= (x k) v)))
     x))
 

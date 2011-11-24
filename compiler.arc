@@ -426,42 +426,53 @@
       (next (racket-cdr as)
             (racket-append accum (racket-list (racket-car as))))))))|#
 
-(racket-define (ac-apply-non-fn x args)
+(racket-define (ac-apply-non-fn x kw kw-val args)
   (racket-cond
     ((racket-mpair? x)
-     (racket-mlist-ref x (car args)))
+      (racket-if (racket-number? (car args))
+                   (racket-mlist-ref x (car args))
+                 ;; TODO: should alref be defined in compiler.arc?
+                 (alref x (car args))))
     ((racket-string? x)
-     (racket-string-ref x (car args)))
+      (racket-string-ref x (car args)))
     ((racket-hash? x)
-     (racket-hash-ref x (car args) (cadr args)))
+      (racket-hash-ref x (car args) (cadr args)))
     (racket-else
-     (err "Function call on inappropriate object" x args))))
+      (err "Function call on inappropriate object" x args))))
 
-(racket-define (ac-apply f . racket-arg-list)
-  ;(racket-display racket-arg-list)
-  ;(racket-newline)
-  (racket-if (racket-procedure? f)
-               (racket-apply f racket-arg-list)
-             (ac-apply-non-fn f (racket-list->mlist racket-arg-list))))
+(racket-define ac-apply
+  ;; TODO: ew
+  ;(racket-procedure-rename
+    (racket-make-keyword-procedure
+      (racket-lambda (kw kw-val f . racket-arg-list)
+        ;(racket-display racket-arg-list)
+        ;(racket-newline)
+        (racket-if (racket-procedure? f)
+                     (racket-keyword-apply f kw kw-val racket-arg-list)
+                   (ac-apply-non-fn f kw kw-val (racket-list->mlist racket-arg-list)))))
+    ;(racket-quote ac-apply))
+    )
 
 ;; TODO: why is apply very slow compared to ar and Arc 3.1? fix it
-(racket-define (apply f . args)
-  ;(racket-display (racket-apply list* args))
-  ;(racket-display (racket-pair? (racket-cdr args)))
-  ;(racket-display args)
-  ;(racket-display (racket-car args))
-  ;(racket-newline)
-  (racket-apply ac-apply f (ac-arg-list* args))
-  #|(racket-if (racket-pair? (racket-cdr args))
-               (racket-apply ac-apply f (ac-arg-list* args))
-             (racket-apply ac-apply f (racket-mlist->list (racket-car args))))|#
+(racket-define apply
+  (racket-make-keyword-procedure
+    (racket-lambda (kw kw-val f . args)
+      ;(racket-display (racket-apply list* args))
+      ;(racket-display (racket-pair? (racket-cdr args)))
+      ;(racket-display args)
+      ;(racket-display (racket-car args))
+      ;(racket-newline)
+      (racket-keyword-apply ac-apply kw kw-val f (ac-arg-list* args))
+      #|(racket-if (racket-pair? (racket-cdr args))
+                   (racket-apply ac-apply f (ac-arg-list* args))
+                 (racket-apply ac-apply f (racket-mlist->list (racket-car args))))|#
 
-  ;time: 2556 msec.
-  ;(racket-apply ac-apply (racket-car args))
-  ;(racket-apply ac-apply f (racket-apply racket-list* args))
-  ;(racket-apply ac-apply f (racket-mlist->list (racket-apply racket-list* args)))
-  ;(racket-apply ac-apply f (racket-mlist->list (racket-apply list* args)))
-  )
+      ;time: 2556 msec.
+      ;(racket-apply ac-apply (racket-car args))
+      ;(racket-apply ac-apply f (racket-apply racket-list* args))
+      ;(racket-apply ac-apply f (racket-mlist->list (racket-apply racket-list* args)))
+      ;(racket-apply ac-apply f (racket-mlist->list (racket-apply list* args)))
+  )))
 
 
 ;=============================================================================
@@ -476,7 +487,7 @@
                 (racket-or (racket-eq? x (car env))
                            (self (cdr env))))))
 
-;; TODO: make keyword arguments supported
+;; TODO: should ac-funcall* accept keyword args...?
 (racket-define (ac-funcall0 f)
   (racket-if (racket-procedure? f)
                (f)
@@ -537,6 +548,23 @@
     (racket-else
       (list (car fns) (ac-decompose (cdr fns) args)))))
 
+(racket-define (ac-return-apply x)
+  (racket-let loop ((x x) (n 0))
+    (racket-cond
+      ((racket-> n 4)
+        ac-apply)
+      ((ac-no x)
+        (racket-case n
+          ((0) ac-funcall0)
+          ((1) ac-funcall1)
+          ((2) ac-funcall2)
+          ((3) ac-funcall3)
+          ((4) ac-funcall4)))
+      ((racket-keyword? (car x))
+        ac-apply)
+      (racket-else
+        (loop (cdr x) (racket-+ n 1))))))
+
 (racket-define (ac-call f args)
   ;; TODO: ew, mutation
   (racket-set! f (ssexpand f))
@@ -566,7 +594,7 @@
               ;; then we know we can just call it in Racket and we don't
               ;; have to use ac-apply
               ((ac-caris f (racket-quote racket-lambda))
-               (cons f args))
+                (cons f args))
               #|
               ;; if it's a global function, don't bother calling ac-apply or ac-funcall
               ((racket-and g
@@ -574,14 +602,8 @@
                            (racket-procedure? (namespace-get namespace f nil)))
                (cons f (ac-args args)))|#
               (racket-else
-               (cons (racket-case (len args)
-                       ((0) ac-funcall0)
-                       ((1) ac-funcall1)
-                       ((2) ac-funcall2)
-                       ((3) ac-funcall3)
-                       ((4) ac-funcall4)
-                       (racket-else ac-apply))
-                     (cons f args))))))))))
+                (cons (ac-return-apply args)
+                      (cons f args))))))))))
 
 
 ;=============================================================================
@@ -1027,7 +1049,10 @@
     ((racket-string? com)
       (racket-string-set! com ind val))
     ((racket-mpair? com)
-      (racket-set-mcar! (racket-mlist-tail com ind) val))
+      (racket-if (racket-number? ind)
+                   (racket-set-mcar! (racket-mlist-tail com ind) val)
+                 ;; TODO: should assoc be defined in compiler.arc?
+                 (racket-set-mcar! (cdr (assoc com ind)) val)))
     (racket-else
       (err "Can't set reference" com ind val)))
   val)

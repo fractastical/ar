@@ -19,3 +19,5 @@
       (writec it)
       (whiler c (readc str) [in _ nil #\newline]
         (writec c)))))|#
+
+;(= assoc (reverse-args assoc))
