@@ -48,6 +48,13 @@
 
 ;(port-count-lines-enabled #t)
 
+(require profile)
+;(require errortrace)
+;(require errortrace/errortrace-lib)
+
+;(profiling-enabled #t)
+;(profile-paths-enabled #t)
+
 (parameterize ((current-namespace             namespace)
                (compile-allow-set!-undefined  #t)
                (port-count-lines-enabled      #t)
@@ -74,16 +81,23 @@
 
   ;(load/use-compiled "compiler.arc")
 
-  (ac-load "compiler.arc"    namespace)
-  (ac-load "core.arc"        namespace)
-  (ac-load "ssyntax.arc"     namespace)
-  (ac-load "compat.arc"      namespace)
-  (ac-load "arc.arc"         namespace)
-  (ac-load "lib/script.arc"  namespace)
-  (ac-load "lib/re.arc"      namespace)
-  (ac-load "lib/strings.arc" namespace)
-  (ac-load "lib/time.arc"    namespace)
-  ;(ac-load "repl.arc"        namespace)
+  (profile-thunk (lambda ()
+    ;(errortrace-annotate (begin
+    (ac-load "compiler.arc"    namespace)
+    (ac-load "core.arc"        namespace)
+    (ac-load "ssyntax.arc"     namespace)
+    (ac-load "compat.arc"      namespace)
+    (ac-load "arc.arc"         namespace)
+    (ac-load "lib/script.arc"  namespace)
+    (ac-load "lib/re.arc"      namespace)
+    (ac-load "lib/strings.arc" namespace)
+    (ac-load "lib/time.arc"    namespace)
+    ;(ac-load "repl.arc"        namespace)
+  ))
+
+  ;(output-profile-results #t #t)
+
+  ;(display (get-coverage))
 
   (let ((cli (current-command-line-arguments)))
     (when (> (vector-length cli) 0)

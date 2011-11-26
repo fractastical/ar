@@ -3,7 +3,7 @@ How to run it
 
 Just call `./arc` and you'll get a REPL.
 
-If you would like to run all the unit tests in the `tests/` subdirectory, just call `./run-tests | less`
+If you would like to run all the unit tests in the `tests/` subdirectory, just call `./arc run-tests | less`
 
 
 Details
@@ -36,9 +36,7 @@ The current differences are as follows:
 
 *   Code is organized into different sections, making it easier to navigate the code base
 
-*   The _Nu_ compiler does not hardcode **any** symbols _whatsoever_. All special forms (`fn`, `assign`, `quote`, etc.) are implemented as macros. This makes Arc much simpler and easier to reason about, without any cost in code maintenance.
-
-    The *only* exceptions to this are `unquote`, `unquote-splicing`, and `%compile`, which are handled specially by `quasiquote` and `%nocompile`, respectively.
+*   The _Nu_ compiler does not hardcode any of the special forms: `assign`, `fn`, `if`, and `quote` are implemented as macros. This makes Arc much simpler and easier to reason about, without any cost in code maintenance.
 
 *   All binary operators (`is`, `+`, `<`, etc.) are implemented in terms of `case-lambda` for increased speed, [as suggested by waterhouse](https://sites.google.com/site/arclanguagewiki/arc-3_1/optimizations)
 
@@ -85,6 +83,17 @@ The current differences are as follows:
 
 *   `annotate` has been implemented with a Racket `struct` rather than `vector`
 
+*   Keyword arguments are supported:
+
+        > (def foo (:a :b)
+            (list a b))
+
+        > (foo :a 1)
+        (1 nil)
+
+        > (foo :a 1 :b 2)
+        (1 2)
+
 *   Keyword destructuring is supported:
 
         > (let (:a :b :c) (obj a 1 b 2 c 3)
@@ -96,8 +105,8 @@ The current differences are as follows:
         > (= foo '((b 2) (a 1) (c 3)))
         ((b 2) (a 1) (c 3))
 
-        > (foo 'b)
-        2
+        > foo!a
+        1
 
         > (= foo!a 10)
         10
@@ -108,17 +117,6 @@ The current differences are as follows:
 *   `assoc` now has the list first, and the key second:
 
         (assoc foo 'bar)
-
-*   Keyword arguments are supported:
-
-        > (def foo (:a :b)
-            (list a b))
-
-        > (foo :a 1 :b 2)
-        (1 2)
-
-        > (foo :b 2 :a 1)
-        (1 2)
 
 *   [The REPL](#repl) is implemented better
 

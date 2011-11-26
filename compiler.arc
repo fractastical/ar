@@ -534,7 +534,9 @@
                     (racket-if (ac-caris c ac-splice)
                                  (cdr c)
                                (list c))))
-                args)))
+                args)
+    ;(map1 ac-compile args)
+                ))
 
 (racket-define compose    (uniq))
 (racket-define complement (uniq))
@@ -617,7 +619,7 @@
           (list (racket-quote racket-set!) a result)
           result))|#
   (list (racket-quote racket-set!) a
-        (list (racket-quote %compile) b)))
+        (ac-compile b)))
 
 (racket-define (ac-global-assign a b)
                   ;; TODO: how slow is ac-var?
@@ -630,9 +632,9 @@
                      ;; TODO: this should probably do the check at runtime,
                      ;;       rather than at compile time
           (racket-if (racket-parameter? x)
-                       (list x (list (racket-quote %compile) b))
+                       (list x (ac-compile b))
                      (list (racket-quote racket-set!) a
-                           (list (racket-quote %compile) b))))))
+                           (ac-compile b))))))
 
 (racket-define (ac-assign1 a b)
   (racket-unless (racket-symbol? a)
@@ -648,8 +650,7 @@
              ;; TODO: why does Arc 3.1 call ac-macex here?
              (cons (ac-assign1 (car x) (cadr x))
                    (racket-if (ac-no (cddr x))
-                                (list (list (racket-quote %compile)
-                                            (car x)))
+                                (list (ac-compile (car x)))
                               (ac-assignn (cddr x))))))
 
 (racket-define (ac-assign x)
@@ -660,8 +661,7 @@
 (racket-define assign (annotate (racket-quote mac)
                         (racket-procedure-rename
                           (racket-lambda args
-                            (list (racket-quote %nocompile)
-                                  (ac-assign (racket-list->mlist args))))
+                            (cons ac-assign (racket-list->mlist args)))
                           (racket-quote assign))))
 
 
@@ -899,15 +899,7 @@
 (racket-define fn (annotate (racket-quote mac)
                     (racket-procedure-rename
                       (racket-lambda (parms . body)
-                        ;; TODO: remove the racket-let
-                        (racket-let ((x
-                        (list (racket-quote %nocompile)
-                              (ac-fn parms (racket-list->mlist body)))
-                              ))
-                          ;(racket-display x)
-                          ;(racket-newline)
-                          x
-                              ))
+                        (list* ac-fn parms (racket-list->mlist body)))
                       (racket-quote fn))))
 
 
@@ -920,22 +912,18 @@
     ((ac-no args)
       (racket-quote nil))
     ((ac-no (cdr args))
-      (list (racket-quote %compile)
-            (car args)))
+      (ac-compile (car args)))
     (racket-else
       (list (racket-quote racket-if)
-            (list ac-true (list (racket-quote %compile)
-                                (car args)))
-            (list (racket-quote %compile)
-                  (cadr args))
+            (list ac-true (ac-compile (car args)))
+            (ac-compile (cadr args))
             (ac-if (cddr args))))))
 
 ;; TODO: make this prettier
 (racket-define if (annotate (racket-quote mac)
                     (racket-procedure-rename
                       (racket-lambda args
-                        (list (racket-quote %nocompile)
-                              (ac-if (racket-list->mlist args))))
+                        (cons ac-if (racket-list->mlist args)))
                       (racket-quote if))))
 
 
@@ -965,8 +953,7 @@
                          ;; Could pass ac-quote directly, but then it wouldn't
                          ;; work if somebody overwrites ac-quote later
                          (racket-lambda (x)
-                           (list (racket-quote %nocompile)
-                                 (ac-quote x)))
+                           (cons ac-quote x))
                          (racket-quote quote))))
 
 
@@ -1190,14 +1177,14 @@
       (ac-nocompile (cdr x)))
     ((ac-caris x ac-splice)
       x)
-    #|((ac-caris x ac-assign)
-      (ac-assign (cdr x)))|#
-    #|((ac-caris x ac-fn)
-      (ac-fn x))|#
-    #|((ac-caris x ac-if)
-      (ac-if (cdr x)))|#
-    #|((ac-caris x ac-quote)
-      (ac-quote (cadr x)))|#
+    ((ac-caris x ac-assign)
+      (ac-assign (cdr x)))
+    ((ac-caris x ac-fn)
+      (ac-fn (cadr x) (cddr x)))
+    ((ac-caris x ac-if)
+      (ac-if (cdr x)))
+    ((ac-caris x ac-quote)
+      (ac-quote (cdr x)))
     ((racket-mpair? x)
       (ac-call (car x) (cdr x)))
     ((racket-eq? x nil)

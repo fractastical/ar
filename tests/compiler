@@ -219,6 +219,18 @@ error: Function call on inappropriate object () {15}
 > ac-apply
 #<fn:ac-apply>
 
+> is
+#<fn:is>
+
+> +
+#<fn:+>
+
+> <
+#<fn:<>
+
+> >
+#<fn:>>
+
 
 ;=============================================================================
 ;  Keyword args
@@ -379,6 +391,11 @@ error: foo: no case matching 1 non-keyword argument; arguments were: 2 #:a 1
 ;; TODO: not sure about this
 > (ac-compile '(fn ((a (o :b 5))) (list a b)))
 (racket-lambda (g1) (racket-let* ((a (#<fn:car> g1)) (g1 (#<fn:cdr> g1)) (b (#<fn:ac-funcall2> g1 (racket-quote b) 5))) (#<fn:ac-funcall2> (#<fn:ac-lookup-global> list) a b)))
+
+
+> (let (:a :b :c) '((b 2) (a 1) (c 3))
+    (list a b c))
+(1 2 3)
 
 
 ;=============================================================================
