@@ -13,7 +13,7 @@
         x
       (racket-path->string:racket-expand-user-path x)))
 
-(require scheme/path)
+(require racket/path)
 
 (def make-path->string (converter)
   (fn (x)

@@ -1,3 +1,12 @@
+(racket-define namespace (racket-current-namespace))
+
+(racket-define (namespace-get runtime varname (default nil))
+  (racket-namespace-variable-value varname #t (racket-lambda () default) runtime))
+
+(racket-define (namespace-set runtime varname value)
+  (racket-namespace-set-variable-value! varname value #t runtime))
+
+
 (racket-define t            (racket-quote t))
 (racket-define nil          racket-null)
 
@@ -107,7 +116,7 @@
   (racket-make-struct-type (racket-quote annotate) #f 2 0 #f
     #|(racket-list (racket-cons prop:name
                               (racket-lambda (x)
-                                (disp x))))|#
+                                (racket-display x))))|#
     nil
     ;(racket-quote prefab)
     #f
@@ -117,9 +126,10 @@
     ;(racket-quote annotate)
     ))|#
 
-(racket-define-struct ac-tagged (type rep)
+(racket-struct ac-tagged (type rep)
   ;#:prefab
   ;#:transparent
+  #:constructor-name annotate
   #:mutable
   #:guard (racket-lambda (type rep name)
             (racket-let ((n (ac-assign-name)))
@@ -128,17 +138,20 @@
                            (racket-values type (racket-procedure-rename rep n))
                          (racket-values type rep))))
   ;#:property racket-prop:set!-transformer
-  ;           (racket-lambda (x) (disp x))
+  ;           (racket-lambda (x) (racket-display x))
   )
+
+#|(racket-struct ac-hash (rep)
+  )|#
 
 ;(set-ac-tagged-type! x ...)
 ;(set-ac-tagged-rep! x ...)
 
 ;(racket-define annotate make-ac-tagged)
 
-(racket-define annotate
+#|(racket-define annotate
   (racket-procedure-rename make-ac-tagged
-                           (racket-quote annotate)))
+                           (racket-quote annotate)))|#
 
 #|(racket-define (annotate type rep)
   (racket-vector (racket-quote tagged) type rep))
@@ -221,16 +234,16 @@
   (racket-cond
     ((ac-no (cdr x))
       (print primitive (car x) port)
-      (disp ")" port))
+      (racket-display ")" port))
     ((racket-mpair? (cdr x))
       (print primitive (car x) port)
-      (disp " " port)
+      (racket-display " " port)
       (print-w/list primitive (cdr x) port))
     (racket-else
       (print primitive (car x) port)
-      (disp " . " port)
+      (racket-display " . " port)
       (print primitive (cdr x) port)
-      (disp ")" port))))
+      (racket-display ")" port))))
 
 (racket-define (name x)
   #|(racket-if (ac-tagged? x)
@@ -241,30 +254,30 @@
 
 (racket-define (print-w/name x l m r port)
   (racket-let ((x (name x)))
-    (disp l port)
+    (racket-display l port)
     (racket-when x
-      (disp m port)
-      (disp x port))
-    (disp r port)))
+      (racket-display m port)
+      (racket-display x port))
+    (racket-display r port)))
 
 (racket-define (print primitive x port)
   (racket-cond
     ((ac-no x)
-      (disp "nil" port))
+      (racket-display "nil" port))
     ((racket-mpair? x)
-      (disp "(" port)
+      (racket-display "(" port)
       (print-w/list primitive x port))
     ((racket-eq? (type x) (racket-quote fn))
       (print-w/name x "#<fn" ":" ">" port))
     ((racket-eq? (type x) (racket-quote mac))
       (print-w/name (rep x) "#<mac" ":" ">" port))
     ((ac-tagged? x)
-      (disp "#(" port)
-      (disp "tagged " port)
-      (disp (type x) port)
-      (disp " " port)
-      (disp (rep x) port)
-      (disp ")" port))
+      (racket-display "#(" port)
+      (racket-display "tagged " port)
+      (racket-display (type x) port)
+      (racket-display " " port)
+      (racket-display (rep x) port)
+      (racket-display ")" port))
     (racket-else
       (primitive x port)))
   nil)
@@ -581,11 +594,11 @@
                         (cons (car (cdr f)) args))))
     (racket-else
       (racket-let* ((g  (racket-not (ac-lex? f)))
-                    (m  (racket-and g (ac-macro? f)))
-                    (f  (racket-parameterize ((ac-functional-position? t))
-                          (ac-compile f))))
+                    (m  (racket-and g (ac-macro? f))))
         (racket-if m (ac-mac-call m args)
-          (racket-let ((args (ac-args args)))
+          (racket-let ((f     (racket-parameterize ((ac-functional-position? t))
+                                (ac-compile f)))
+                       (args  (ac-args args)))
             ;; TODO: ew, mutation
             (racket-when (ac-caris f ac-splice)
               (racket-set! args (racket-mappend (cddr f) args))
@@ -597,6 +610,8 @@
               ;; have to use ac-apply
               ((ac-caris f (racket-quote racket-lambda))
                 (cons f args))
+              #|(racket-else
+                (cons f args))|#
               #|
               ;; if it's a global function, don't bother calling ac-apply or ac-funcall
               ((racket-and g
@@ -605,7 +620,8 @@
                (cons f (ac-args args)))|#
               (racket-else
                 (cons (ac-return-apply args)
-                      (cons f args))))))))))
+                      (cons f args)))
+              )))))))
 
 
 ;=============================================================================
@@ -909,8 +925,8 @@
 
 (racket-define (ac-if args)
   (racket-cond
-    ((ac-no args)
-      (racket-quote nil))
+    #|((ac-no args)
+      (racket-quote nil))|#
     ((ac-no (cdr args))
       (ac-compile (car args)))
     (racket-else
@@ -1172,23 +1188,25 @@
 ;=============================================================================
 
 (racket-define (ac-compile x)
+  ;(racket-display x)
+  ;(racket-newline)
   (racket-cond
-    ((ac-caris x ac-nocompile)
-      (ac-nocompile (cdr x)))
-    ((ac-caris x ac-splice)
-      x)
+    ((ac-no x)
+      (racket-quote nil))
+    ((ac-caris x ac-quote)
+      (ac-quote (cdr x)))
     ((ac-caris x ac-assign)
       (ac-assign (cdr x)))
     ((ac-caris x ac-fn)
       (ac-fn (cadr x) (cddr x)))
     ((ac-caris x ac-if)
       (ac-if (cdr x)))
-    ((ac-caris x ac-quote)
-      (ac-quote (cdr x)))
+    ((ac-caris x ac-nocompile)
+      (ac-nocompile (cdr x)))
+    ((ac-caris x ac-splice)
+      x)
     ((racket-mpair? x)
       (ac-call (car x) (cdr x)))
-    ((racket-eq? x nil)
-      (racket-quote nil))
     ((ac-true (ssyntax x))
       (ac-compile (ssexpand x)))
     ((racket-symbol? x)

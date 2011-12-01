@@ -1,0 +1,18 @@
+> (posmatch "foo" "foobar")
+0
+
+> (posmatch "foo" "barfoo")
+3
+
+> (posmatch "foo" "barfo")
+nil
+
+> (posmatch "foobar" "quxbarfoo")
+nil
+
+> (posmatch "foobarquxcorgenou" "adadadadadadadadadadadadadad")
+nil
+
+
+> (boyer-moore-search (boyer-moore-process "foobar" "bar" "qux") "quxbarfoo")
+0

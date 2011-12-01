@@ -1,0 +1,103 @@
+Timing notes
+============
+
+*   Arc's posmatch is faster than Boyer-Moore for small pattern strings:
+
+        > (timeit (posmatch "foo" "barfoo"))
+        iter: 450,573  gc: 533  mem: 572808
+
+        > (timeit (boyer-posmatch "foo" "barfoo"))
+        iter: 160,950  gc: 568  mem: 5363584
+
+*   And even with long pattern strings, it's *still* faster:
+
+        > (timeit (posmatch "foobarquxcorgenou" "adadadadadadadadadadadadadad"))
+        iter: 258,423  gc: 352  mem: 1044256
+
+        > (timeit (boyer-posmatch "foobarquxcorgenou" "adadadadadadadadadadadadadad"))
+        iter: 29,644  gc: 624  mem: -10920552
+
+*   But, when precomputing the pattern, Boyer-Moore is *drastically* faster:
+
+        > (timeit (posmatch "foobarquxcorgenou" "adadadadadadadadadadadadadad"))
+        iter: 249,563  gc: 624  mem: -2719608
+
+        > (let x (boyer-moore-process "foobarquxcorgenou")
+            (timeit (boyer-moore-search x "adadadadadadadadadadadadadad")))
+        iter: 1,547,769  gc: 92  mem: 1247392
+
+
+        > (timeit (posmatch "Chrono Cross CrossFire OC ReMix"
+                            "lists/Chrono Cross/Remix/Chrono Cross CrossFire OC ReMix.mp3"))
+        iter: 71,751  gc: 216  mem: 8233368
+
+        > (let x (boyer-moore-process "Chrono Cross CrossFire OC ReMix")
+            (timeit (boyer-moore-search x "lists/Chrono Cross/Remix/Chrono Cross CrossFire OC ReMix.mp3")))
+        iter: 148,505  gc: 128  mem: 464008
+
+*   Inlining function values gives a noticable speed boost:
+
+        (eval `(ac-funcall2 + 1 2))   -> 9211 ms
+        (eval `(,ac-funcall2 + 1 2))  -> 5321 ms
+        (eval `(,ac-funcall2 ,+ 1 2)) -> 4108 ms
+
+*   `make-keyword-procedure` is about twice as slow as a normal `lambda`:
+
+        > (timeit (%nocompile ((racket-make-keyword-procedure (racket-lambda (kw kw-val . rest) rest)) 1 2 3)))
+        time: 18.043  gc: 0.856  mem: 2992.04
+
+        > (timeit (%nocompile ((racket-lambda rest rest) 1 2 3)))
+        time:  9.149  gc: 0.1    mem: -8635.272
+
+
+        > (timeit (%nocompile ((racket-make-keyword-procedure (racket-lambda (kw kw-val a) a)) 1)))
+        time: 13.35   gc: 0.38   mem: 645.072
+
+        > (timeit (%nocompile ((racket-lambda (a) a) 1)))
+        time:  7.957  gc: 0.004  mem: -14541.976
+
+    But it has a much smaller cost when the function is created only once:
+
+        > (let foo (%nocompile (racket-make-keyword-procedure (racket-lambda (kw kw-val a) a)))
+            (timeit (%nocompile (foo 1))))
+        time: 9.565  gc: 0.032  mem: -2701.456
+
+        > (let foo (%nocompile (racket-lambda (a) a))
+            (timeit (%nocompile (foo 1))))
+        time: 7.99   gc: 0.0    mem: 97.504
+
+
+*   `keyword-apply` is *very comparable* in speed to a normal `apply`:
+
+        > (let foo (%nocompile (racket-lambda rest rest))
+            (timeit (%nocompile (racket-keyword-apply foo nil nil (racket-list 1 2 3)))))
+        time: 12.951 gc: 0.388 mem: -1748.512
+
+        > (let foo (%nocompile (racket-lambda rest rest))
+            (timeit (%nocompile (racket-apply foo (racket-list 1 2 3)))))
+        time: 12.692 gc: 0.536 mem: -10373.568
+
+
+        > (let foo (%nocompile (racket-lambda (#:b (b nil) . rest) rest))
+            (timeit (%nocompile (racket-keyword-apply foo nil nil (racket-list 1 2 3)))))
+        time: 15.309 gc: 0.536 mem: -1729.12
+
+        > (let foo (%nocompile (racket-lambda (#:b (b nil) . rest) rest))
+            (timeit (%nocompile (racket-apply foo (racket-list 1 2 3)))))
+        time: 14.282 gc: 0.356 mem: -1215.76
+
+*   Keyword functions are almost twice as slow as normal functions:
+
+        > (let foo (fn (:a :b) (list a b))
+            (timeit (foo :a 1 :b 2)))
+        time: 17.521  gc: 0.408  mem: 2303.568
+
+        > (let foo (fn (a b) (list a b))
+            (timeit (foo 1 2)))
+        time:  9.515  gc: 0.3    mem: -22736.128
+
+
+*   Using `%nocompile` is slow because it calls `ac-mappend`:
+
+        Special forms with %nocompile: 3462ms
+        Special forms with ac-compile: 2340ms

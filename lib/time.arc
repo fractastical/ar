@@ -22,6 +22,7 @@
 
 
 ;; TODO: move this someplace else
+#|
 ;; TODO: inefficient
 (def zip args
   ;; TODO: this causes it to stop when all the lists are empty.
@@ -31,13 +32,56 @@
   (if (all no args)
         nil
       (cons (apply list (map car args))
-            (apply zip  (map cdr args)))))
+            (apply zip  (map cdr args)))))|#
+
+(def zip args
+  ;; Faster than the above: 395ms compared to 695ms
+  ;; TODO: how fast is map applied to multiple lists?
+  (apply map list args))
 
 
-(mac timeit (x (o a 1000) (o n 10000))
+#|(mac timeit1 (x limit)
+  (w/uniq (time gc mem n)
+    `(with (,time (msec)
+            ,gc   (gc-msec)
+            ,mem  (memory)
+            ,n    0)
+       (while (< (- (msec) ,time) ,limit)
+         ,x
+         (++ ,n))
+       (list ,n
+             ;(- (msec)    ,time)
+             (- (gc-msec) ,gc)
+             (- (memory)  ,mem)))))|#
+
+(mac timeit1 (x limit)
+  (w/uniq (u n time gc mem)
+    `(with (,n     0
+            ,time  (msec)
+            ,gc    (gc-msec)
+            ,mem   (memory))
+       ((rfn ,u ()
+          ,x
+          (++ ,n)
+          (when (< (- (msec) ,time) ,limit)
+            (,u))))
+       (list ,n
+             ;(- (msec)    ,time)
+             (- (gc-msec) ,gc)
+             (- (memory)  ,mem)))))
+
+
+#|(mac timeit (x (o repeat 100))
   `(let (a b c) (map inexact:avg
-                     (apply zip (n-of ,a (utime (repeat ,n ,x)))))
-     (prn "time: " a
-          " gc: "  b
-          " mem: " c)
+                     (apply zip (n-of ,repeat (timeit1 ,x 100))))
+     (prn "iter: "   comma.a
+          "  gc: "   b
+          "  mem: "  c)
+     nil))|#
+
+(mac timeit (x (o limit 10000))
+  `(let (a b c) (timeit1 ,x ,limit)
+     (prn "iter: "   comma.a
+          "  gc: "   b
+          "  mem: "  c)
      nil))

@@ -1,3 +1,27 @@
+#|(assign quote (annotate (racket-quote mac)
+                ;; Could pass ac-quote directly, but then it wouldn't
+                ;; work if somebody overwrites ac-quote later
+                (fn (x)
+                  (cons ac-quote x))))
+
+
+(assign quasiquote (annotate 'mac
+                     (fn args
+                       (apply qq-expand args))))
+
+(assign if (annotate 'mac
+             (fn args
+               (cons ac-if (racket-list->mlist args)))))
+
+(assign %nocompile (annotate 'mac
+                     (fn args
+                       (cons ac-nocompile (racket-list->mlist args)))))
+
+(assign %splice (annotate 'mac
+                  (fn args
+                    (cons ac-splice (racket-list->mlist args)))))|#
+
+
 ;=============================================================================
 ;  Core
 ;=============================================================================

@@ -21,23 +21,6 @@
 ;  not sure this is a mistake; strings may be subtly different from
 ;  lists of chars
 
-(def caar (xs) (car (car xs)))
-
-(def atom (x) (no (acons x)))
-
-(def assoc-cdr (al key)
-  (if (atom al)
-        nil
-      (and (acons (car al)) (is (caar al) key))
-        al
-      (assoc-cdr (cdr al) key)))
-
-(def assoc (al key)
-  (car (assoc-cdr al key)))
-
-(def alref (al key)
-  (cadr (assoc al key)))
-
 (def idfn (x) x)
 
 (mac withs (parms . body)
