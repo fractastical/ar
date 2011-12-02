@@ -49,7 +49,7 @@
 ;(port-count-lines-enabled #t)
 
 (require racket/cmdline)
-(require profile)
+;(require profile)
 ;(require errortrace)
 ;(require errortrace/errortrace-lib)
 
@@ -120,7 +120,7 @@
                  ;(compile-enforce-module-constants #f)
                  )
     (let ((load (namespace-variable-value 'ac-load)))
-      (profile-thunk (lambda ()
+      ;(profile-thunk (lambda ()
         ;(namespace-require "compiler.rkt")
         ;(display (variable-reference-constant? 'complement))
         ;(errortrace-annotate (begin))
@@ -138,11 +138,12 @@
           ;(load "lib/strings.arc")
           ;(load "lib/time.arc")
           ;(load "lib/compile.arc")
-      )))
+        )
+      ;))
 
       (if (> (length arguments) 0)
             (begin (load (car arguments))
-                   (when repl (load (string-append exec-dir "repl.arc"))))
+                   (when (repl) (load (string-append exec-dir "repl.arc"))))
           (load (string-append exec-dir "repl.arc")))))
 
   ;(output-profile-results #t #t)

@@ -31,15 +31,15 @@
 (def boyer-posmatch (pattern input)
   (boyer-moore-search boyer-moore-process.pattern input))
 
-(def boyer-multi-match1 (patterns inputs)
+(def boyer-multi-match1 (patterns inputs :every)
   (keep (fn (in)
           (some (fn (pat)
                   (boyer-moore-search pat in))
                 patterns))
         inputs))
 
-(def boyer-multi-match (patterns inputs)
-  (boyer-multi-match1 (map boyer-moore-process patterns) inputs))
+(def boyer-multi-match (patterns inputs :every)
+  (boyer-multi-match1 (map boyer-moore-process patterns) inputs :every every))
 
 
 ;; for testing posmatch: doesn't have anything to do with boyer-moore

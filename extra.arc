@@ -1,14 +1,14 @@
-(defset assoc (y x)
+(defset assoc (x y)
   (w/uniq g
     (list (list g x)
-          `(assoc ,y ,g)
-          `(fn (val) (scar (assoc-ref ,y ,g) val)))))
+          `(assoc ,g ,y)
+          `(fn (val) (scar (assoc-ref ,g ,y) val)))))
 
 (defset alref (x y)
   (w/uniq g
     (list (list g x)
           `(alref ,g ,y)
-          `(fn (val) (scar (cdr:assoc ,y ,g) val)))))
+          `(fn (val) (scar (cdr:assoc ,g ,y) val)))))
 
 
 #|
@@ -48,3 +48,7 @@
 (mac catcherr (expr)
   `(on-err (fn (c) (details c))
            (fn () ,expr nil)))
+
+(def xml-encode (s)
+  (multisubst '(("&" "&amp;")
+                ("<" "&lt;")) s))

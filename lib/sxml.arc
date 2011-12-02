@@ -43,7 +43,8 @@
 
                       r
                         (let res nil
-                          (mode l 'start depth)
+                          ;; TODO: get this to work without the parens around mode
+                          ((mode) l 'start depth)
                           (pr "<" l)
                           (= res (attrs r))
                           (if (or (and (isnt parser 'html)
@@ -61,7 +62,7 @@
                                 (do (pr ">")
                                     (parse (car res) (+ depth 1))
                                     (parse (cdr res) (+ depth 1))
-                                    (mode res 'end depth)
+                                    ((mode) res 'end depth)
                                     (pr "</" l ">"))))
 
                       (and (is parser 'html)
