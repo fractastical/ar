@@ -39,26 +39,6 @@ Timing notes
 
 *   Boyer-Moore is also faster for multi-string searches:
 
-        > (with (string "ufobarquxcorge"
-                 pats   '("foo" "bar" "qux"))
-            (timeit (reclist (fn (x) (posmatch car.x string)) pats)))
-        iter: 153,900  gc: 352  mem: 7072440
-
-        > (let x (boyer-moore-process "foo" "bar" "qux")
-            (timeit (boyer-moore-search x "ufobarquxcorge")))
-        iter: 288,369  gc: 148  mem: -5091232
-
-
-        > (with (string "ufoobarquxcorge"
-                 pats   '("foo" "bar" "qux"))
-            (timeit (reclist (fn (x) (posmatch car.x string)) pats)))
-        iter: 554,319  gc: 580  mem: 4115784
-
-        > (let x (boyer-moore-process "foo" "bar" "qux")
-            (timeit (boyer-moore-search x "ufoobarquxcorge")))
-        iter: 727,511  gc: 448  mem: -1464704
-
-
         > (timeit (multi-match '("foo" "bar" "qux") '("corge" "foo" "bar" "qux")))
         iter: 56,169  gc: 948  mem: -23564104
 
