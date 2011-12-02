@@ -225,17 +225,14 @@ As you can see, it creates a function that takes any number of arguments, and th
           (racket-let* ((c (racket-list->mlist c)))
             ...))
 
-    The only issue then is destructuring args, which Racket doesn't support. But that too can use plain old Racket `lambda`s, simply by nesting them. Thus, this:
+    The only issue then is destructuring args, which Racket doesn't support. In that case, I still use a normal lambda, but do the destructuring in the function's body. Thus, this:
 
         (fn (a (b) c) ...)
 
-    Is compiled into this (where `g1` and `g2` are gensyms):
+    Is compiled into this (where `g1` is a gensym):
 
         (racket-lambda (a g1 c)
-          (racket-apply (racket-lambda ((b nil) . g2)
-                          ...)
-                        (racket-mlist->list g1)))
+          (racket-let* ((b (car g1)))
+            ...))
 
-    I'm using a rather interesting technique here. I realized that `(fn (a (b) c) ...)` can be statically translated into `(fn (a _ c) (apply (fn (b) ...) _))` In other words, by applying nested functions, you end up destructuring the arguments. But in Arc, destructuring is very lax: if you supply a smaller or bigger list than expected, it'll just return `nil` rather than throw an error. That's why the `racket-lambda` above is more complicated. This can be changed by parameterizing `ac-fn-rigid-destructuring?`.
-
-    See [this thread](http://arclanguage.org/item?id=15394) for more details and precise timings.
+Just like *Arc 3.1* and *ar*, this means the overhead from destructuring is *very low*: it's just as fast as if you had done the destructuring yourself.
