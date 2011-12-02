@@ -406,6 +406,25 @@
     (racket-else x)))|#
 
 
+(racket-define (caar xs)
+  (car (car xs)))
+
+(racket-define (assoc-ref al key)
+  (racket-cond
+    ((racket-not (racket-mpair? al))
+      nil)
+    ((racket-and (racket-mpair? (car al)) (racket-eq? (caar al) key))
+      al)
+    (racket-else
+      (assoc-ref (cdr al) key))))
+
+(racket-define (assoc al key)
+  (car (assoc-ref al key)))
+
+(racket-define (alref al key)
+  (cadr (assoc al key)))
+
+
 ;=============================================================================
 ;  apply
 ;=============================================================================
@@ -1055,8 +1074,8 @@
       (racket-if (racket-number? ind)
                    (racket-set-mcar! (racket-mlist-tail com ind) val)
                  (racket-if (ac-no val)
-                              ;; TODO: should assoc-cdr be defined in compiler.arc?
-                              (racket-let ((x (assoc-cdr com ind)))
+                              ;; TODO: should assoc-ref be defined in compiler.arc?
+                              (racket-let ((x (assoc-ref com ind)))
                                 (racket-when (ac-true x)
                                   (racket-set-mcar! x (cadr x))
                                   (racket-set-mcdr! x (cddr x))))

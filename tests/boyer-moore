@@ -1,18 +1,56 @@
-> (posmatch "foo" "foobar")
+> (boyer-posmatch "foo" "foobar")
 0
 
-> (posmatch "foo" "barfoo")
+> (boyer-posmatch "foo" "barfoo")
 3
 
-> (posmatch "foo" "barfo")
+> (boyer-posmatch "foo" "barufoo")
+4
+
+> (boyer-posmatch "foo" "barfo")
 nil
 
-> (posmatch "foobar" "quxbarfoo")
+> (boyer-posmatch "foobar" "quxbarfoo")
 nil
 
-> (posmatch "foobarquxcorgenou" "adadadadadadadadadadadadadad")
+> (boyer-posmatch "foobarquxcorgenou" "adadadadadadadadadadadadadad")
+nil
+
+> (boyer-posmatch "Chrono Trigger Resurrection - Schala's Theme"
+                  "Chrono Trigger Resurrection OST Schala's Theme <ciNjsDPjrSw>.mp4")
 nil
 
 
 > (boyer-moore-search (boyer-moore-process "foobar" "bar" "qux") "quxbarfoo")
 0
+
+> (boyer-moore-search (boyer-moore-process "foo" "bar" "qux") "uoobarquxcorge")
+3
+
+> (boyer-moore-search (boyer-moore-process "foo" "bar" "qux") "ufoobarquxcorge")
+1
+
+> (boyer-moore-search (boyer-moore-process "foo" "bar" "qux") "ufobarquxcorge")
+3
+
+
+> (multi-match '("foo" "bar" "qux") '("corge" "foo" "bar" "qux"))
+("foo" "bar" "qux")
+
+> (boyer-multi-match '("foo" "bar" "qux") '("corge" "foo" "bar" "qux"))
+("foo" "bar" "qux")
+
+> (let x (map boyer-moore-process '("foo" "bar" "qux"))
+    (boyer-multi-match1 x '("corge" "foo" "bar" "qux")))
+("foo" "bar" "qux")
+
+
+> (multi-match '("foo" "bar" "qux") '("ufoobarquxcorge"))
+("ufoobarquxcorge")
+
+> (boyer-multi-match '("foo" "bar" "qux") '("ufoobarquxcorge"))
+("ufoobarquxcorge")
+
+> (let x (map boyer-moore-process '("foo" "bar" "qux"))
+    (boyer-multi-match1 x '("ufoobarquxcorge")))
+("ufoobarquxcorge")

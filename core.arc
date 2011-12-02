@@ -425,6 +425,10 @@
         (join x y)))
 
 (def <2 (x y)
+  #|(racket-display (string? x))
+  (racket-display " ")
+  (racket-display y)
+  (racket-newline)|#
   (ac-tnil
     (if (num? x) ;(and (num? x) (num? y))
           (racket-< x y)
@@ -463,7 +467,7 @@
     x))
 
 (def maptable (fn table)               ; arg is (fn (key value) ...)
-  (racket-hash-table-for-each table fn)
+  (racket-hash-for-each table fn)
   table)
 
 
@@ -695,8 +699,20 @@
 ;;(= setuid (%nocompile (get-ffi-obj 'setuid #f (_fun _int -> _int))))
 (ac-notimpl setuid)
 
-(def dir ((o name "."))
-  (map1 racket-path->string (racket-list->mlist (racket-directory-list name))))
+(def dir ((o name "") (o f))
+  ;; TODO: ew
+  (= name (expandpath name))
+  (if (empty name) (= name "."))
+  ;(prn name)
+  (parameterize (racket-current-directory name)
+    (let x (map1 (fn (x)
+                   (let x (racket-path->string x)
+                     (if (dir-exists x)
+                           (string x "/")
+                         x)))
+                 (racket-list->mlist (racket-directory-list)))
+      (if f (keep f x)
+            x))))
 
 
 ; Would def mkdir in terms of make-directory and call that instead
@@ -706,10 +722,10 @@
 ;; TODO: racket-make-directory*
 
 (def file-exists (name)
-  (if (ac-tnil (racket-file-exists? name)) name))
+  (ac-tnil (racket-file-exists? name)))
 
 (def dir-exists (name)
-  (if (ac-tnil (racket-directory-exists? name)) name))
+  (ac-tnil (racket-directory-exists? name)))
 
 (= rmfile  racket-delete-file)
 

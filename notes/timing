@@ -1,39 +1,84 @@
 Timing notes
 ============
 
-*   Arc's posmatch is faster than Boyer-Moore for small pattern strings:
+*   Boyer-Moore is faster than Arc's posmatch with small pattern strings:
 
         > (timeit (posmatch "foo" "barfoo"))
-        iter: 450,573  gc: 533  mem: 572808
+        iter: 423,974  gc: 760  mem: -19140888
 
         > (timeit (boyer-posmatch "foo" "barfoo"))
-        iter: 160,950  gc: 568  mem: 5363584
+        iter: 585,847  gc: 140  mem: -74992
 
-*   And even with long pattern strings, it's *still* faster:
+*   Due to preprocessing, the situation is reversed with long pattern strings:
 
         > (timeit (posmatch "foobarquxcorgenou" "adadadadadadadadadadadadadad"))
-        iter: 258,423  gc: 352  mem: 1044256
+        iter: 248,074  gc: 368  mem: 4458200
 
         > (timeit (boyer-posmatch "foobarquxcorgenou" "adadadadadadadadadadadadadad"))
-        iter: 29,644  gc: 624  mem: -10920552
+        iter: 164,709  gc: 112  mem: -10014592
 
 *   But, when precomputing the pattern, Boyer-Moore is *drastically* faster:
 
-        > (timeit (posmatch "foobarquxcorgenou" "adadadadadadadadadadadadadad"))
-        iter: 249,563  gc: 624  mem: -2719608
-
         > (let x (boyer-moore-process "foobarquxcorgenou")
             (timeit (boyer-moore-search x "adadadadadadadadadadadadadad")))
-        iter: 1,547,769  gc: 92  mem: 1247392
+        iter: 1,758,602  gc: 124  mem: -5842336
 
 
         > (timeit (posmatch "Chrono Cross CrossFire OC ReMix"
                             "lists/Chrono Cross/Remix/Chrono Cross CrossFire OC ReMix.mp3"))
-        iter: 71,751  gc: 216  mem: 8233368
+        iter: 69,847  gc: 205  mem: 14991456
+
+        > (timeit (boyer-posmatch "Chrono Cross CrossFire OC ReMix"
+                                  "lists/Chrono Cross/Remix/Chrono Cross CrossFire OC ReMix.mp3"))
+        iter: 51,026  gc: 116  mem: 11917568
 
         > (let x (boyer-moore-process "Chrono Cross CrossFire OC ReMix")
             (timeit (boyer-moore-search x "lists/Chrono Cross/Remix/Chrono Cross CrossFire OC ReMix.mp3")))
-        iter: 148,505  gc: 128  mem: 464008
+        iter: 170,348  gc: 124  mem: -16630560
+
+
+*   Boyer-Moore is also faster for multi-string searches:
+
+        > (with (string "ufobarquxcorge"
+                 pats   '("foo" "bar" "qux"))
+            (timeit (reclist (fn (x) (posmatch car.x string)) pats)))
+        iter: 153,900  gc: 352  mem: 7072440
+
+        > (let x (boyer-moore-process "foo" "bar" "qux")
+            (timeit (boyer-moore-search x "ufobarquxcorge")))
+        iter: 288,369  gc: 148  mem: -5091232
+
+
+        > (with (string "ufoobarquxcorge"
+                 pats   '("foo" "bar" "qux"))
+            (timeit (reclist (fn (x) (posmatch car.x string)) pats)))
+        iter: 554,319  gc: 580  mem: 4115784
+
+        > (let x (boyer-moore-process "foo" "bar" "qux")
+            (timeit (boyer-moore-search x "ufoobarquxcorge")))
+        iter: 727,511  gc: 448  mem: -1464704
+
+
+        > (timeit (multi-match '("foo" "bar" "qux") '("corge" "foo" "bar" "qux")))
+        iter: 56,169  gc: 948  mem: -23564104
+
+        > (timeit (boyer-multi-match '("foo" "bar" "qux") '("corge" "foo" "bar" "qux")))
+        iter: 84,598  gc: 136  mem: 4189208
+
+        > (let x (map boyer-moore-process '("foo" "bar" "qux"))
+            (timeit (boyer-multi-match1 x '("corge" "foo" "bar" "qux"))))
+        iter: 108,929  gc: 124  mem: -104176
+
+
+        > (timeit (multi-match '("foo" "bar" "qux") '("ufoobarquxcorge")))
+        iter: 357,005  gc: 484  mem: -103664
+
+        > (timeit (boyer-multi-match '("foo" "bar" "qux") '("ufoobarquxcorge")))
+        iter: 214,963  gc: 128  mem: 16251304
+
+        > (let x (map boyer-moore-process '("foo" "bar" "qux"))
+            (timeit (boyer-multi-match1 x '("ufoobarquxcorge"))))
+        iter: 471,928  gc: 116  mem: 21216504
 
 *   Inlining function values gives a noticable speed boost:
 

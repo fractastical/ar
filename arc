@@ -48,9 +48,23 @@
 
 ;(port-count-lines-enabled #t)
 
+(require racket/cmdline)
 (require profile)
 ;(require errortrace)
 ;(require errortrace/errortrace-lib)
+
+(define repl (make-parameter #f))
+
+(define arguments
+  (command-line
+    #:program "Nu Arc"
+    #:once-each
+    [("-i" "--repl") "Always execute the repl"
+                     (repl #t)]
+    #:args filenames
+    filenames))
+
+(current-command-line-arguments (list->vector arguments))
 
 ;(profiling-enabled #t)
 ;(profile-paths-enabled #t)
@@ -71,6 +85,8 @@
     (lambda (in)
       ((namespace-variable-value 'ac-eval-all #t #f runtime) in runtime))))
 
+
+(define exec-dir (path->string (path-only (normalize-path (find-system-path 'run-file)))))
 
 (parameterize ((current-namespace namespace))
   (namespace-require '(only racket/base #%app #%datum #%top #%top-interaction))
@@ -95,6 +111,8 @@
   (namespace-set-variable-value! 'ac-eval-all  ac-eval-all)
   (namespace-set-variable-value! 'ac-load      ac-load)
 
+  (namespace-set-variable-value! 'exec-dir*    exec-dir)
+
   (parameterize ((compile-allow-set!-undefined  #t)
                  (port-count-lines-enabled      #t)
                  ;; TODO: !!! This is super slow !!!
@@ -105,25 +123,27 @@
       (profile-thunk (lambda ()
         ;(namespace-require "compiler.rkt")
         ;(display (variable-reference-constant? 'complement))
-
         ;(errortrace-annotate (begin))
-        (load "compiler.arc")
-        (load "core.arc")
-        (load "ssyntax.arc")
-        (load "compat.arc")
-        (load "arc.arc")
-        (load "lib/script.arc")
-        (load "lib/re.arc")
-        (load "lib/strings.arc")
-        (load "lib/time.arc")
-        (load "lib/compile.arc")
-        ;(load "repl.arc")
-      ))
 
-      (let ((cli (current-command-line-arguments)))
-        (if (> (vector-length cli) 0)
-              (load (vector-ref cli 0))
-            (load "repl.arc")))))
+        (parameterize ((current-directory exec-dir))
+          (load "compiler.arc")
+          (load "core.arc")
+          (load "ssyntax.arc")
+          (load "compat.arc")
+          (load "arc.arc")
+          (load "extra.arc")
+          (load "lib/re.arc")
+          (load "lib/script.arc")
+          (load "import.arc")
+          ;(load "lib/strings.arc")
+          ;(load "lib/time.arc")
+          ;(load "lib/compile.arc")
+      )))
+
+      (if (> (length arguments) 0)
+            (begin (load (car arguments))
+                   (when repl (load (string-append exec-dir "repl.arc"))))
+          (load (string-append exec-dir "repl.arc")))))
 
   ;(output-profile-results #t #t)
 

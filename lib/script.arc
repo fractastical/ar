@@ -7,6 +7,24 @@
     (fn (v) (racket-path->string v))))
 
 
+(def racket-vector->mlist (x)
+  (racket-list->mlist:racket-vector->list x))
+  ;(ar-toarc:racket-vector->list x))
+
+(def racket-mlist->vector (x)
+  (racket-list->vector:racket-mlist->list x))
+  ;(racket-list->vector:ar-toracket x))
+
+(make-implicit script-args
+  (racket-make-derived-parameter (%nocompile racket-current-command-line-arguments)
+    (fn (v) (racket-mlist->vector v))
+    (fn (v) (racket-vector->mlist v))))
+
+;; TODO: ew
+(= script-name (car script-args))
+(zap cdr script-args)
+
+
 (def expandpath (x)
   (zap string x)
   (if empty.x
@@ -25,3 +43,54 @@
 
 (= dirname  (make-path->string racket-path-only:expandpath))
 (= basename (make-path->string racket-file-name-from-path:expandpath))
+
+
+(def extension (x)
+  (cadr:re-match ".+\\.(\\w+)$" string.x))
+
+(def hidden-file (x)
+  (is x.0 #\.))
+
+
+;; TODO: should maybe be elsewhere?
+(def dirall ((o x) (o f))
+  #|(let f (fn (x) (or (dirname x)
+                     (if f (f x) t))))|#
+  (w/cwd x
+    ((afn (d)
+       (mappend (fn (x)
+                  (if (dirname x) ;; dirname
+                        (self (string d x))
+                      (list (string d x))))
+                (dir d f)))
+     nil)))
+
+
+;; Algorithm taken from Python's os.path.join (http://bugs.python.org/issue9921)
+;; Ignore the previous parts if a part is absolute.
+;; Insert a '/' unless the first part is empty or already ends in '/'.
+
+(def todir (x)
+  (if (is last.x #\/)
+        x
+      (+ x "/")))
+
+(def joinpath args
+  (string:catch:afneach (x . rest) args
+    (if empty.x
+          self.rest
+        (aand car.rest (is expandpath.it.0 #\/))
+          (throw:self rest)
+        (cons (let x expandpath.x
+                (if rest todir.x
+                         x))
+              self.rest))))
+
+(def abspath ((o x))
+  (joinpath cwd x))
+
+#|(def abspath ((o x))
+  (racket-path->string (racket-normalize-path (expandpath x))))|#
+
+(def absdir ((o x))
+  (dirname abspath.x))

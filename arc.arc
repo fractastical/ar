@@ -21,6 +21,8 @@
 ;  not sure this is a mistake; strings may be subtly different from
 ;  lists of chars
 
+(def atom (x) (no (acons x)))
+
 (def idfn (x) x)
 
 (mac withs (parms . body)
@@ -105,7 +107,7 @@
        seqs)))
 
 (def mappend (f . args)
-  (apply + nil (apply map f args)))
+  (apply join (apply map f args)))
 
 (def firstn (n xs)
   (if (no n)            xs
@@ -333,9 +335,11 @@
       ,test)))
 
 (def last (xs)
-  (if (cdr xs)
-      (last (cdr xs))
-      (car xs)))
+  (if (cons? xs)
+        (if (cdr xs)
+              (last (cdr xs))
+            (car xs))
+        (xs (- (len xs) 1))))
 
 (def rem (test seq)
   (let f (testify test)

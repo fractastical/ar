@@ -1,7 +1,7 @@
 How to run it
 =============
 
-Just call `./arc` and you'll get a REPL.
+Just call `./arc` and you'll get a REPL. You can also load a file with `./arc foo.arc`. If you would like to load a file *and* run the REPL, use the `-i` or `--repl` flags: `./arc --repl foo.arc`
 
 If you would like to run all the unit tests in the `tests/` subdirectory, just call `./arc run-tests | less`
 
@@ -117,6 +117,10 @@ The current differences are as follows:
 *   `assoc` now has the list first, and the key second:
 
         (assoc foo 'bar)
+
+*   `dir` accepts two optional arguments: a string path and a function to apply on every element in the list. In addition, directories have a trailing `/` at the end of their name
+
+*   `last` accepts a string: `(last "foo")` returns `#\o`
 
 *   [The REPL](#repl) is implemented better
 

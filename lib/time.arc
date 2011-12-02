@@ -21,25 +21,6 @@
              (- (memory) ,gmem)))))
 
 
-;; TODO: move this someplace else
-#|
-;; TODO: inefficient
-(def zip args
-  ;; TODO: this causes it to stop when all the lists are empty.
-  ;;       however, in Python, it stops when the first list is
-  ;;       empty. I'm not sure which is the better semantic.
-  ;;       to get the Python behavior, just change `all` to `some`
-  (if (all no args)
-        nil
-      (cons (apply list (map car args))
-            (apply zip  (map cdr args)))))|#
-
-(def zip args
-  ;; Faster than the above: 395ms compared to 695ms
-  ;; TODO: how fast is map applied to multiple lists?
-  (apply map list args))
-
-
 #|(mac timeit1 (x limit)
   (w/uniq (time gc mem n)
     `(with (,time (msec)
