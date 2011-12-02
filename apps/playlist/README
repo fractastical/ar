@@ -73,8 +73,8 @@ use the `include` S-expression:
            "qux")
 
 The above will find the playlists "bar" and "qux" and include them into the
-current playlist. If any of the included playlists do not exist, an error will
-be raised.
+current playlist. If any of the included playlists do not exist, a warning
+will be displayed.
 
 
 Limiting the scope of a pattern

@@ -1,33 +1,7 @@
 #! /usr/bin/env arc
-#! /usr/bin/env old-arc
-#! /mnt/pauan/bin/.BACKUP/arc
-;
-;(pr (cadr (cli-args)))
-;(pr (cdr:cli-args))
-
-;(load "lib/arc/command-parsing.arc")
-;(load "lib/arc/utils.arc")
-
-;(prn cwd " " script-src)
-
-
-#|(w/script-dir
-  (load "lib/arc/sxml.arc"))
-
-(w/srcdir
-  (load "lib/parse-script-args.arc"))|#
 
 ;; TODO: import is Nu specific
-(import strings sxml boyer-moore)
-
-#|(let x (boyer-moore-process "foobarquxcorgenou")
-  (boyer-moore-search x "adadadadadadadadadadadadadad"))|#
-
-;(use arc)
-
-#|(w/script-dir
-  (use lib/ lib/arc/ sxml parse-script-args))|#
-
+(import strings sxml boyer-moore) ; parse-script-args
 
 (= verbose nil)
 
@@ -41,119 +15,31 @@
     (w/stdout stderr
       (apply prn args))))
 
-;(prn script-args)
-;(prn script-src)
-;(prn srcdir)
-;(prn cwd)
-;(prn (racket-current-command-line-arguments))
-
-;(mac w/temp (x) )
-
-#|(mac w/curr-dir body
-  (w/uniq x
-    `(let ,x ,load-exec-dir*
-       (assign load-exec-dir* "")
-       ,@body
-       (assign load-exec-dir* ,x))))
-
-(mac w/abs-dir body
-  (w/uniq x
-    `(let ,x ,load-exec-dir*
-       (assign load-exec-dir* "")
-       (set-load-directory "/" (fn () ,@body))
-       (assign load-exec-dir* ,x))))|#
-
-#|(mac w/abs-dir body
-  `(do ,@body))|#
-
-;(module sxml
-  ;(w/pretty
-    ;(->xml '(foo foo "bar"))))
-
-;(prn (->pretty-xml '(foo foo "bar" (bar "qux") (bar "qux"))))
-;
-;(prn cwd)
-;
-;(w/abs-dir
-;  (prn cwd))
-;
-;(prn cwd)
-;
-;(prn)
-
-;(prn (tokens "\n" (system "find")))
-
-#|(mac sys-exec (var com . body)
-  (w/uniq (in xs)
-   `(with (,in (pipe-from ,com)
-           ,xs '())
-      (w/stdin ,in
-        (whiler ,var (readline (stdin)) nil
-          (push ,var ,xs)
-          ,@body))
-      (close ,in)
-      ,xs)))|#
-
-#|
-(def find-all-files ()
-  (trues (fn (x)
-           (let ext (downcase:last:tokens x #\.)
-             (when (in ext "webm" "mp3" "mp4" "ogm" "ogg" "wma" "mid" "flv")
-               (cut x 2))))
-         (w/pipe-from x "find -not -path \"*/.*\" -type f" (readlines x))))
-|#
 
 (def dirall-ext (exts)
   ;; TODO: dirall is Nu specific
   (dirall nil (fn (x)
-                ;(prn x)
+                     ;; TODO: hidden-file is Nu specific
                 (and (no:hidden-file x)
+                         ;; TODO: dirname is Nu specific
                      (or (dirname x)
-                         ;(dir-exists x)
-    ;                     (exts x)
-                         ;(some (downcase:last:tokens x #\.) exts)
-                         (some (sym:downcase:extension x) exts)
-                         )))))
-#|
-(mac extis args
-  (w/uniq x
-    `(fn (,x)
-       (or (dirname ,x)
-           (some (downcase:last:tokens ,x #\.) ',args)))))|#
+                               ;; TODO: extension is Nu specific
+                         (some (sym:downcase:extension x) exts))))))
+
 
 (= all-files (dirall-ext '(webm mp3 mp4 ogm ogg wma mid flv wav)))
 
-;(prn all-files)
-
-#|
-(= all-files (trues (fn (x)
-                      (let ext (downcase:last:tokens x #\.)
-                        (when (in ext "webm" "mp3" "mp4" "ogm" "ogg" "wma" "mid" "flv")
-;                              (+ cwd
-                              (cut x 2);)
-                              )))
-                    (dirall))) ; test this to see if it's the same as using "find"
-                    ;(w/pipe-from x "find -not -path \"*/.*\" -type f" (readlines x))))
-                    ;(readlines:pipe-from "find -not -path \"*/.*\" -type f")))
-                    ;(sys-exec x "find -not -path \"*/.*\" -type f")))
-|#
-
-(= ;files  (table)
-   titles (table))
-;
-;(each x all-files
-;  (prn x))
-;
+(= titles (table))
 
 (def include (xs)
-  ;; should use ret
+  ;; TODO: should use ret
   (let items nil
             ;; TODO: Nu specific
     (each x (cdr:assoc xs 'include)
       (iflet x titles.x ;; TODO: Nu specific
         (zap join items (cdr:assoc x 'playlist) (include x))
                           ;; TODO: Nu specific
-        (warn:string "\"" (cadr:assoc xs 'title) ;xs ;(cadr title)
+        (warn:string "\"" (cadr:assoc xs 'title)
                      "\" tried to include \"" x
                      "\" but could not find it")))
     items))
@@ -165,84 +51,22 @@
                xml:base ,cwd
                         ;; TODO: Nu specific
        ,(with (playlist (cdr:assoc xs 'playlist)
-               ;include  (cdr:assoc xs 'include)
                         ;; TODO: Nu specific
                title    (assoc xs 'title))
-
-          ;(prn playlist)
-          ;(prn)
-
-
-
-            #|(map (fn (x)
-                   `(track
-                      (location ,xml-encode.x)))
-                 )|#
 
           (awhen include.xs
             (zap join playlist it))
 
-          ;(prn playlist)
-          ;(prn)
           (let body `(trackList
                        ,@(map (fn (x)
                                 `(track
+                                             ;; TODO: xml-encode is Nu specific
                                    (location ,xml-encode.x)))
                               playlist))
-
-                                  ;(multi-string-filter args all-files)
-            ;(prn title)
-            ;(prn body)
-            ;(prn)
-            (if title (push title body))
+            (when title
+              (push title body))
             body)))))
 
-;  (prn (cdr:assoc xs 'playlist))
-;       (location "file:///mnt/pauan/Downloads/Music/Playlists/Gaming.xspf")
-;                     (location ,(url-encode-path-strict x '(#\space)))))
-;                    ,(+ "file://" (url-encode-path-strict x)))))
-                           ;(title ,(last:tokens x #\/))
-
-
-;
-#|(mac include args
-  (prn args)
-  (prn (keys files))
-  )|#
-
-;(mac title (x) `(title ,x))
-
-#|(def multi-string-filter (patterns
-                          strings
-                          (o missing   [err:string "the pattern \"" _ "\" did not match anything"])
-                          (o duplicate (fn (p (l r))
-                                         (err:string "the pattern \"" p "\" matched both \"" l "\" and \"" r "\""))))
-
-  (let (track matches errors) nil
-    (= track (table))
-    (= matches (keep [some (fn (y)
-                             (if (posmatch y _)
-                                   (if track.y (push (catcherr:duplicate y (list track.y _)) errors)
-                                               (= track.y _))))
-                           patterns]
-                     strings))
-
-    (each x patterns
-      (if (no track.x)
-        (push (catcherr:missing x)
-              errors)))
-
-    (when errors
-      (w/stdout stderr
-        (each x (rev errors)
-          (prn x))
-  ;      (prn (string:intersperse "\n" (rev errors)))
-
-        (prn "\n" "aborting due to errors")
-
-        (quit 1)))
-
-    matches))|#
 
 (redef boyer-multi-match1 (patterns inputs :every)
   (trues (fn (pat)
@@ -273,24 +97,6 @@
                              (= files.y x
                                 track.x y))))
 
-    ;(prn matches)
-    ;(= patterns (apply boyer-moore-process patterns))
-    ;(= matches )
-
-    ;(prn (iso matches (multi-match patterns strings)))
-    #|(= matches (keep (fn (x)
-                       (boyer-moore-search patterns x))
-                     strings))|#
-    ;(= matches (multi-match patterns strings))
-    ;(prn matches)
-    #|
-    (= matches (keep [some (fn (y)
-                             (if (posmatch y _)
-                                   (if track.y (push (catcherr:duplicate y (list track.y _)) errors)
-                                               (= track.y _))))
-                           patterns]
-                     strings))|#
-
     (each x patterns
       (if (no track.x)
         (push (catcherr:missing x)
@@ -300,8 +106,6 @@
       (w/stdout stderr
         (each x (rev errors)
           (prn x))
-  ;      (prn (string:intersperse "\n" (rev errors)))
-
         (prn "\n" "aborting due to errors")
         (quit 1)))
 
@@ -319,7 +123,6 @@
    xs nil nil))
 
 (mac playlist args
-  ;`(playlist ,@(multi-string-filter args all-files))
   (let (l r) (partition acons args)
     `(playlist ,@(mappend (fn (x)
                             (if (caris x 'w/folder)
@@ -330,48 +133,6 @@
                           l)
                ,@(multi-string-filter r all-files))))
 
-;(mac playlist args args)
-
-;  (->sxml (keep (fn (x)
-;                  (some (fn (y)
-;;                          (and (isnt y 'include)
-;                          (posmatch y x)) args)) all-files)))
-;
-;(def walker (title full args)
-;;  (prn title " " full)
-;  (last:trues (fn (x) (macex x)) args))
-;;  (map (fn ((x . rest))
-;;         (if (is x 'include) (prn "foo!")
-;;                             `(title ,(last (tokens x #\/))
-;;                               location ,x))) args))
-
-
-;(playlist version "1" xmlns "http://xspf.org/ns/0/")
-;  (prn (cdr args))
-;  (cdr args)
-;  (cdr args))
-;    (prn x)))
-;
-;(let x car/y
-;  (string:something x cdr/y))
-
-#|(mac w/config args)|#
-
-#|(def home (x)
-  (subst (env "HOME") "~" x))|#
-
-;  (w/abs-dir
-#|(mac w/template args
-  (each (l r) (pair args)
-;      (prn r)
-;      (= r (home r))
-    (let info (if (empty r)
-                    `((playlist ,@all-files))
-                  (w/cwd (dirname r)
-                    (map macex1 (readfile:basename r))))
-      (iflet x (alref info 'title)
-        (= (titles x) info))
-      (= (files l) info))))|#
 
 ;(require profile)
 
@@ -420,32 +181,4 @@
       (prn-verbose "writing to \"" output key ".xspf\"")
       (w/outfile out (+ key ".xspf")
         (disp val out))
-      )))
-
-;  (each x script-args
-;    (load x)))
-
-
-;(prn (cdr:assoc 'playlist (files "lists/Classical.xspf")))
-
-;->sxml:
-
-;(prn (keys files))
-;
-;(def writefile (val file)
-;  (let tmpfile (+ file ".tmp")
-;    (w/outfile o tmpfile (write val o))
-;    (mvfile tmpfile file))
-;  val)
-
-#|
-(each (key val) files
-;  (prn cwd " " key)
-;  (with (full   (+ cwd key)
-;         output (walker key full val))
-;         output (->sxml val))
-  (let output (->sxml val)
-    ;(disp output)
-    (w/outfile out key
-      (disp output out))
-  ))|#
+    )))

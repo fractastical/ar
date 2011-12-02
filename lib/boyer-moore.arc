@@ -31,6 +31,7 @@
 (def boyer-posmatch (pattern input)
   (boyer-moore-search boyer-moore-process.pattern input))
 
+                                         ;; TODO: :every isn't used here
 (def boyer-multi-match1 (patterns inputs :every)
   (keep (fn (in)
           (some (fn (pat)
@@ -38,6 +39,7 @@
                 patterns))
         inputs))
 
+                                        ;; TODO: :every isn't used here
 (def boyer-multi-match (patterns inputs :every)
   (boyer-multi-match1 (map boyer-moore-process patterns) inputs :every every))
 
