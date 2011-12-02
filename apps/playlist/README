@@ -81,8 +81,8 @@ Limiting the scope of a pattern
 ===============================
 
 Because patterns use sub-string matching, sometimes they are more lenient than
-you would like, and you then wish for a way to be more strict. A simple way
-to accomplish this is to include the file's path in the pattern:
+you would like, and then you wish to be more strict. A simple way to
+accomplish this is to include the file's path in the pattern:
 
   (playlist
     "path/to/foo"
