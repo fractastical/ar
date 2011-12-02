@@ -69,8 +69,8 @@ Including other playlists
 If you wish to combine multiple different playlists into a single one, you can
 use the `include` S-expression:
 
-  (include "bar"
-           "qux")
+    (include "bar"
+             "qux")
 
 The above will find the playlists "bar" and "qux" and include them into the
 current playlist. If any of the included playlists do not exist, a warning
@@ -84,26 +84,26 @@ Because patterns use sub-string matching, sometimes they are more lenient than
 you would like, and then you wish to be more strict. A simple way to
 accomplish this is to include the file's path in the pattern:
 
-  (playlist
-    "path/to/foo"
-    "path/to/bar"
-    "path/to/qux"
-    "other/path/to/foo"
-    "other/path/to/bar"
-    "other/path/to/qux")
+    (playlist
+      "path/to/foo"
+      "path/to/bar"
+      "path/to/qux"
+      "other/path/to/foo"
+      "other/path/to/bar"
+      "other/path/to/qux")
 
 But that is verbose and tedious. As an alternative, inside the `playlist`
 S-expression, you can use the `w/folder` S-expression:
 
-  (playlist
-    (w/folder "path/to"
-      "foo"
-      "bar"
-      "qux")
-    (w/folder "other/path/to"
-      "foo"
-      "bar"
-      "qux"))
+    (playlist
+      (w/folder "path/to"
+        "foo"
+        "bar"
+        "qux")
+      (w/folder "other/path/to"
+        "foo"
+        "bar"
+        "qux"))
 
 
 Examples
