@@ -81,8 +81,8 @@ Limiting the scope of a pattern
 ===============================
 
 Because patterns use sub-string matching, sometimes they are more lenient than
-you would like, and then you wish to be more strict. A simple way to
-accomplish this is to include the file's path in the pattern:
+you would like. A simple way to be more strict is to include the file's path
+in the pattern:
 
     (playlist
       "path/to/foo"
@@ -110,7 +110,7 @@ Examples
 ========
 
 I have included a few of my own playlists in the "examples" subdirectory.
-These demonstrate not only how to write playlists, but also clearly show how
-much shorter and easier to read the S-expression format is, compared to .xspf.
+These demonstrate how to write playlists, and also clearly show how much
+shorter and easier to read the S-expression format is, compared to .xspf.
 
 This makes managing playlists a much more pleasant experience.
