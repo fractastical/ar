@@ -1,14 +1,47 @@
-(racket-define namespace (racket-current-namespace))
+;#lang s-exp '#%kernel
 
-(racket-define (namespace-get runtime varname (default nil))
-  (racket-namespace-variable-value varname #t (racket-lambda () default) runtime))
+;(#%require (only racket/base #%app #%datum #%top #%top-interaction))
+#|(#%require (prefix-all-except racket- racket/base
+             #%app #%datum #%top #%top-interaction))|#
 
-(racket-define (namespace-set runtime varname value)
-  (racket-namespace-set-variable-value! varname value #t runtime))
+(#%require (prefix racket- racket/base))
+
+;(racket-require (racket-prefix-in racket- racket/base))
+
+;(#%require (prefix racket- racket/base))
+#|(racket-require (racket-rename-in
+                  (racket-prefix-in racket- racket/mpair)
+                  [racket-mcons cons]
+                  [racket-mlist list]))|#
+
+(racket-require (racket-prefix-in racket- racket/mpair))
+(racket-require (racket-prefix-in racket- racket/path))
+;(racket-require (racket-prefix-in racket- racket/path))
+(racket-require (racket-prefix-in racket- racket/system))
+
+#|(racket-provide (racket-all-defined-out)
+                (racket-all-from-out racket/base
+                                     racket/mpair
+                                     racket/path
+                                     racket/system))|#
+
+
+#|(racket-displayln cons?)
+(racket-displayln module->namespace)
+(racket-displayln racket-mcons)|#
+
+;(racket-displayln compiler)
+;(racket-displayln module->namespace)
+#|(racket-displayln (module->namespace (racket-list (racket-quote quote)
+                                                  (syntax->datum (namespace-module-identifier)))))|#
+
+;(racket-displayln (racket-module->namespace (racket-list (racket-quote quote) (racket-quote compiler))))
+;(racket-displayln (racket-namespace-mapped-symbols))
 
 
 (racket-define t            (racket-quote t))
 (racket-define nil          racket-null)
+;(racket-define nil          (racket-quote nil))
 
 ;; TODO: tests for the fn environment
 (racket-define ac-local-env   (racket-make-parameter nil))
@@ -19,6 +52,14 @@
 (racket-define-syntax-rule (ac-w/local-env x ...body)
   (racket-parameterize ((ac-local-env (racket-mappend (ac-local-env) x)))
     ...body))|#
+
+(racket-define namespace racket-current-namespace)
+
+(racket-define (namespace-get runtime varname (default nil))
+  (racket-namespace-variable-value varname #t (racket-lambda () default) runtime))
+
+(racket-define (namespace-set runtime varname value)
+  (racket-namespace-set-variable-value! varname value #t runtime))
 
 ;=============================================================================
 ;  Hash Tables
@@ -33,6 +74,9 @@
 
 (racket-define (ac-tnil x)
   (racket-if x t nil))
+
+#|(racket-define (ac-#f x)
+  (racket-if x x nil))|#
 
 (racket-define (ac-no x)
   (racket-eq? x nil))
@@ -88,7 +132,7 @@
                             (racket-number->string num)))))
 
 (racket-define (ac-var x (def nil))
-  (namespace-get namespace x def))
+  (namespace-get (namespace) x def))
 
 (racket-define bound
   (racket-let ((undef (uniq)))
@@ -576,7 +620,8 @@
 (racket-define (ac-decompose fns args)
   (racket-cond
     ((ac-no fns)
-      `((fn vals (car vals)) ,@args))
+      ;; TODO
+      nil);`((fn vals (car vals)) ,@args))
     ((ac-no (cdr fns))
       (cons (car fns) args))
     (racket-else
@@ -635,7 +680,7 @@
               ;; if it's a global function, don't bother calling ac-apply or ac-funcall
               ((racket-and g
                            (racket-symbol? f)
-                           (racket-procedure? (namespace-get namespace f nil)))
+                           (racket-procedure? (namespace-get (namespace) f nil)))
                (cons f (ac-args args)))|#
               (racket-else
                 (cons (ac-return-apply args)
@@ -1087,7 +1132,7 @@
                                 (racket-else
                                   ;; This is needed to prevent cyclic lists
                                   ;; TODO: should idfn be defined in compiler.arc?
-                                  (racket-let ((x (racket-mmap idfn com)))
+                                  (racket-let ((x (racket-mmap (lambda (x) x) com)))
                                     (racket-set-mcar! com (list ind val))
                                     (racket-set-mcdr! com x))))))))
     (racket-else
@@ -1237,7 +1282,7 @@
 (racket-define (eval x (runtime nil))
   (racket-eval (ac-deep-fromarc (ac-compile x))
                (racket-if (ac-no runtime)
-                            namespace
+                            (namespace)
                           runtime)))
 
 
@@ -1256,12 +1301,96 @@
 ;  load
 ;=============================================================================
 
+#|(racket-define exec-dir*
+  (racket-path->string
+    (racket-path-only
+      (racket-normalize-path
+        (racket-find-system-path (racket-quote run-file))))))|#
+
+(racket-define load-paths*
+  (racket-make-parameter
+    (list (racket-path->string (racket-current-directory))
+          exec-dir*
+          (racket-path->string (racket-build-path exec-dir* "lib")))))
+
+(racket-define load-suffix* (racket-make-parameter ".arc"))
+
+
+(racket-define (load-file-dir x)
+  ;; this is just (find [file-exists:joinpath _ x] load-paths*)
+  (racket-let loop ((xs (load-paths*)))
+    (racket-cond
+      ((racket-null? xs)
+        ;; TODO: should this be nil?
+        nil
+        ;(racket-current-directory)
+        )
+      ((racket-file-exists? (racket-build-path (car xs) x))
+        (car xs))
+      (racket-else
+        (loop (cdr xs))))))
+
+#|(racket-define (load-file-path x)
+  ;; this is just (find [file-exists:joinpath _ x] load-paths*)
+  (racket-let loop ((xs (load-paths*)))
+    (racket-cond
+      ((racket-null? xs)
+        ;; TODO: should this be nil?
+        nil
+        ;(racket-current-directory)
+        )
+      ((racket-file-exists? (racket-build-path (car xs) x))
+        (racket-build-path (car xs) x))
+      ((racket-file-exists? (racket-build-path (car xs) (load-normalize-path x)))
+        (racket-build-path (car xs) (load-normalize-path x)))
+      (racket-else
+        (loop (cdr xs))))))|#
+
+(racket-define (load-normalize-path x)
+  (racket-if (racket-filename-extension x)
+               x
+             (racket-string-append x (load-suffix*))))
+
+#|(racket-define (ac-with-find-file x f)
+  (racket-let ((it (load-file-dir x)))
+    (racket-if (ac-true it)
+                 (racket-parameterize ((racket-current-directory it))
+                   (f x))
+               (racket-let ((x (load-normalize-path x)))
+                 (racket-parameterize ((racket-current-directory (load-file-dir x)))
+                   (f x))))))|#
+
+(racket-define (ac-with-find-file x f)
+  (racket-let* ((y  (load-normalize-path x))
+                (it (load-file-dir y)))
+    (racket-if (ac-true it)
+                 (racket-parameterize ((racket-current-directory it))
+                   (f y))
+               (racket-parameterize ((racket-current-directory (load-file-dir x)))
+                 (f x)))))
+
+
 (racket-define (ac-eval-all in runtime)
   (racket-let ((x (sread in)))
     (racket-if (ac-no x)
                  nil
                (racket-begin (eval x)
                              (ac-eval-all in runtime)))))
+
+(racket-define (ac-load x (runtime (namespace)))
+  ;(racket-let ((x (load-normalize-path x)))
+  (racket-parameterize ((racket-compile-allow-set!-undefined #t)
+                        (racket-port-count-lines-enabled     #t)
+                        ;(racket-current-directory            (load-file-dir x))
+                        ;(racket-compile-enforce-module-constants #f)
+                        )
+    ;(racket-displayln (racket-namespace-mapped-symbols))
+    ;(racket-displayln (racket-compile-allow-set!-undefined))
+    (ac-with-find-file x
+      (racket-lambda (x)
+        (racket-call-with-input-file x
+          (racket-lambda (in)
+            (ac-eval-all in runtime)))))))
 
 ;(racket-display (ac-compile (ac-deep-toarc (racket-quote (foo (%splice 1 2 3))))))
 ;(racket-newline)

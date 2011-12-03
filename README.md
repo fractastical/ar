@@ -1,7 +1,13 @@
 How to run it
 =============
 
-Just call `./arc` and you'll get a REPL. You can also load a file with `./arc foo.arc`. If you would like to load a file *and* run the REPL, use the `-i` or `--repl` flags: `./arc --repl foo.arc`
+Just call `./arc` and you'll get a REPL.
+
+You can also load the file "foo.arc" with `./arc foo`.
+
+If you would like to load a file *and* run the REPL, use the `-i` or `--repl` flags: `./arc -i foo`
+
+If you would like to load *all* the files rather than only the first, use the `-a` or `--all` flags: `./arc -a foo bar qux`
 
 If you would like to run all the unit tests in the `tests/` subdirectory, just call `./arc run-tests | less`
 

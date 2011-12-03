@@ -203,7 +203,8 @@
       (char? x)
         (racket-string x)
       (cons? x)
-        (apply racket-string-append (map1 string x))
+        ;(apply racket-string-append (map1 string x))
+        (apply string x)
       (no x)
         ""
       (num? x)
@@ -508,7 +509,7 @@
   `(%nocompile (racket-parameterize ,(map1 (fn ((x y))
                                              `(,x (%compile ,y)))
                                            (pair x))
-                 (%compile ,@body))))
+                 (%compile ,@(or body (list nil))))))
 
 
 ;=============================================================================
@@ -826,4 +827,5 @@
 ;=============================================================================
 
 (mac require (x)
-  `(%nocompile (racket-namespace-require (racket-quote (prefix racket- ,x)))))
+  ;`(%nocompile (racket-namespace-require (racket-quote (prefix racket- ,x))))
+  `(%nocompile (racket-require (racket-prefix-in racket- ,x))))

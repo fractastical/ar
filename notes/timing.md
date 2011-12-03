@@ -1,6 +1,92 @@
 Timing notes
 ============
 
+*   `racket-build-path` is *really fast*:
+
+        > (timeit (racket-string-append "/foo/" "bar/qux/corge/" "nou.jpg"))
+        iter: 6,535,348  gc: 136  mem: -12813384
+
+        > (timeit (racket-path->string (racket-build-path "/foo/" "bar/qux/corge/" "nou.jpg")))
+        iter: 1,316,847  gc: 56  mem: 2529688
+
+        > (timeit (racket-path->string (apply racket-build-path (map expandpath '("/foo/" "bar/qux/corge/" "nou.jpg")))))
+        iter: 249,537  gc: 112  mem: 11936928
+
+
+        > (timeit (old-joinpath "/foo/" "bar/qux/corge/" "nou.jpg"))
+        iter: 129,113  gc: 256  mem: 6253272
+
+        > (timeit (joinpath "/foo/" "bar/qux/corge/" "nou.jpg"))
+        iter: 240,388  gc: 124  mem: -11613952
+
+*   `after` is really slow:
+
+        > (timeit (do1 10 20))
+        iter: 11,777,563  gc: 0  mem: 984
+
+        > (timeit (after 10 20))
+        iter:  5,337,566  gc: 384  mem: 2548048
+
+    For instance, consider the following macro:
+
+        (mac w/ (name value . body)
+          (w/uniq u
+            `(let ,u ,name
+               (assign ,name ,value)
+               (after (do ,@body)
+                      (assign ,name ,u)))))
+
+    And now let's compare an ordinary variable "foo" with an implicit variable "bar":
+
+        > (timeit (w/ foo 10 foo))
+        iter: 2,615,291  gc: 196  mem: -9667968
+
+        > (timeit (w/bar 10 bar))
+        iter: 5,296,878  gc: 148  mem: -11016096
+
+        > (timeit (let bar 10 bar))
+        iter: 11,164,302  gc: 0  mem: 824
+
+
+        > (timeit (w/ foo 10))
+        iter: 2,601,117  gc: 168  mem: 1924400
+
+        > (timeit (w/bar 10))
+        iter: 6,404,185  gc: 172  mem: -4969160
+
+        > (timeit (let bar 10))
+        iter: 10,522,936  gc: 0  mem: 504
+
+    Now let's implement `w/` with `do1`:
+
+        (mac w/ (name value . body)
+          (w/uniq u
+            `(let ,u ,name
+               (assign ,name ,value)
+               (do1 (do ,@body)
+                    (assign ,name ,u)))))
+
+        > (timeit (w/ foo 10 foo))
+        iter: 4,293,050  gc: 212  mem: -2171880
+
+    As the above also demonstrates, implicit variables (implemented with Racket parameters) are *faster* than global variables, but significantly slower than lexical variables.
+
+*   As an expansion on the above, implicit variables have a high cost vs function arguments:
+
+        > (implicit foo)
+
+        > (def bar ()
+            (+ foo 10))
+
+        > (timeit (w/foo 25 (bar)))
+        iter: 4,403,540  gc: 128  mem: -4611472
+
+        > (def bar (x)
+            (+ x 10))
+
+        > (timeit (bar 25))
+        iter: 8,485,407  gc: 0  mem: 504
+
 *   Boyer-Moore is faster than Arc's posmatch with small pattern strings:
 
         > (timeit (posmatch "foo" "barfoo"))

@@ -1,5 +1,5 @@
 #! /usr/bin/env racket
-#lang racket
+#lang racket/base
 
 #|(require racket/mpair)
 (provide (all-defined-out))|#
@@ -48,12 +48,16 @@
 
 ;(port-count-lines-enabled #t)
 
+;(require "compiler.arc")
 (require racket/cmdline)
-;(require profile)
+(require racket/path)
+(require readline)
+(require profile)
 ;(require errortrace)
 ;(require errortrace/errortrace-lib)
 
 (define repl (make-parameter #f))
+(define all  (make-parameter #f))
 
 (define arguments
   (command-line
@@ -61,17 +65,21 @@
     #:once-each
     [("-i" "--repl") "Always execute the repl"
                      (repl #t)]
+    [("-a" "--all")  "Execute every file rather than only the first"
+                     (all #t)]
     #:args filenames
     filenames))
 
-(current-command-line-arguments (list->vector arguments))
+(if (all)
+      (current-command-line-arguments (make-vector 0))
+    (current-command-line-arguments (list->vector arguments)))
 
 ;(profiling-enabled #t)
 ;(profile-paths-enabled #t)
 
 ;(compile-enforce-module-constants #f)
 
-(define namespace (make-base-empty-namespace))
+#|(define namespace (make-base-empty-namespace))
 
 (define (ac-eval-all in runtime)
   (let ((x (read in)))
@@ -83,12 +91,73 @@
 (define (ac-load filename (runtime namespace))
   (call-with-input-file filename
     (lambda (in)
-      ((namespace-variable-value 'ac-eval-all #t #f runtime) in runtime))))
+      ((namespace-variable-value 'ac-eval-all #t #f runtime) in runtime))))|#
 
 
-(define exec-dir (path->string (path-only (normalize-path (find-system-path 'run-file)))))
+;(define exec-dir (path->string (path-only (normalize-path (find-system-path 'run-file)))))
 
-(parameterize ((current-namespace namespace))
+#|(namespace-require '(only racket/private/pre-base
+                            module #%app #%top #%top-interaction))|#
+
+(define exec-dir
+  (path->string (path-only (normalize-path (find-system-path 'run-file)))))
+
+(parameterize ((current-namespace (make-base-empty-namespace)))
+  ;(namespace-require '(only racket/base #%app #%datum #%top #%top-interaction))
+  #|(namespace-require '(only racket/private/pre-base
+                            module #%app #%top #%top-interaction #%datum))|#
+  #|(namespace-require '(only racket/private/pre-base
+                            #%app #%top #%top-interaction))
+  (namespace-require '(only racket/private/pre-base
+                            #%require #%app #%top #%top-interaction))|#
+  (namespace-require '(only racket/private/pre-base
+                            #%top-interaction #%app #%top #%datum #%require))
+  ;(namespace-require '(prefix racket- racket/base))
+  ;(namespace-require '(prefix racket- racket/base))
+  ;(namespace-require '(prefix racket- racket/mpair))
+  ;(namespace-require '(prefix racket- racket/path))
+  ;(namespace-require '(prefix racket- racket/system))
+  ;(namespace-require "compiler.arc")
+
+  (namespace-set-variable-value! 'exec-dir* exec-dir)
+
+  (profile-thunk (lambda ()
+    (load/use-compiled (build-path exec-dir "compiler.arc"))
+
+     ;(displayln (namespace-mapped-symbols))
+
+     ;(parameterize ((current-namespace (module->namespace "compiler.arc"))))
+
+    (let (;(exec-dir (namespace-variable-value 'exec-dir*))
+          (ac-load  (namespace-variable-value 'ac-load)))
+
+          ;(ac-load "compiler.arc")
+          (ac-load "core.arc")
+          (ac-load "ssyntax.arc")
+          (ac-load "compat.arc")
+          (ac-load "arc.arc")
+          (ac-load "extra.arc")
+          ;(ac-load "lib/re.arc")
+          ;(ac-load "lib/script.arc")
+          (ac-load "import.arc")
+
+          ;(ac-load "lib/strings.arc")
+          ;(ac-load "lib/time.arc")
+          ;(ac-load "lib/compile.arc")
+
+      (unless (null? arguments)
+        (if (all)
+              (map ac-load arguments)
+            (ac-load (car arguments))))
+
+      (when (or (repl) (null? arguments))
+        (ac-load "repl.arc")))
+  ))
+
+  ;; This is to prevent () from being printed when the REPL exits
+  (void))
+
+#|(parameterize ((current-namespace namespace))
   (namespace-require '(only racket/base #%app #%datum #%top #%top-interaction))
   (namespace-require '(prefix racket- racket/base))
   (namespace-require '(prefix racket- racket/mpair))
@@ -151,4 +220,4 @@
   ;(display (get-coverage))
 
   ;; This is to prevent () from being printed when the REPL exits
-  (void))
+  (void))|#

@@ -1,3 +1,5 @@
+(import strings)
+
 ;; This is to make the code work in Arc 3.1, ar, and Nu.
 ;; Yes, it's using variable sniffing, but it's just a quick
 ;; hacky script, so that's okay

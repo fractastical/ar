@@ -1,7 +1,7 @@
 #! /usr/bin/env arc
 
 ;; TODO: import is Nu specific
-(import strings sxml boyer-moore) ; parse-script-args
+(import script strings sxml boyer-moore) ; parse-script-args
 
 (= verbose nil)
 
