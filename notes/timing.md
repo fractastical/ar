@@ -1,6 +1,14 @@
 Timing notes
 ============
 
+*   Assigning to a global variable is basically just as fast as assigning to the namespace:
+
+        > (timeit (= foo 'bar))
+        iter: 129,091  gc: 172  mem: -5105664
+
+        > (timeit (sref (namespace) 'bar 'foo))
+        iter: 124,680  gc: 196  mem: 15249328
+
 *   Nu startup times took a hit when switching to `namespace-variable-value`:
 
         Direct access:
@@ -10,6 +18,23 @@ Timing notes
         namespace-variable-value:
           Total cpu time observed: 2150ms (out of 2252ms)
           Number of samples taken: 52 (once every 41ms)
+
+
+        Direct access:
+          Total cpu time observed: 1548ms (out of 1668ms)
+          Number of samples taken: 194 (once every 8ms)
+
+        namespace-variable-value #f:
+          Total cpu time observed: 1846ms (out of 1908ms)
+          Number of samples taken: 42 (once every 44ms)
+
+        namespace-variable-value #f:
+          Total cpu time observed: 1988ms (out of 2040ms)
+          Number of samples taken: 43 (once every 46ms)
+
+        namespace-variable-value #f:
+          Total cpu time observed: 2474ms (out of 2544ms)
+          Number of samples taken: 58 (once every 43ms)
 
 *   `namespace-set-variable-value!` is slower than `set!`:
 

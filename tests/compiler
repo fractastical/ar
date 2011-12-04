@@ -2,13 +2,13 @@
 ;  Compiler specific things
 ;=============================================================================
 
-> ((cadr (car (ac-compile ''(1 2 3)))))
+> ((car (ac-compile ''(1 2 3))))
 (1 2 3)
 
 
 > (racket-parameterize ((racket-current-namespace (racket-current-namespace)))
     (racket-current-namespace))
-error: racket-parameterize: bad syntax in: racket-parameterize
+error: undefined variable: racket-parameterize
 
 
 ;=============================================================================
@@ -16,13 +16,13 @@ error: racket-parameterize: bad syntax in: racket-parameterize
 ;=============================================================================
 
 > (ac-compile '(foo:bar 1))
-(#<fn:ac-funcall1> (#<fn:ac-lookup-global> foo) (#<fn:ac-funcall1> (#<fn:ac-lookup-global> bar) 1))
+(#<fn:ac-funcall1> (#<fn:ac-lookup-global> (racket-quote foo)) (#<fn:ac-funcall1> (#<fn:ac-lookup-global> (racket-quote bar)) 1))
 
 > (ac-compile '(~foo 1))
-(#<fn:ac-funcall1> (#<fn:ac-lookup-global> no) (#<fn:ac-funcall1> (#<fn:ac-lookup-global> foo) 1))
+(#<fn:ac-funcall1> (#<fn:ac-lookup-global> (racket-quote no)) (#<fn:ac-funcall1> (#<fn:ac-lookup-global> (racket-quote foo)) 1))
 
 > (ac-compile '(~foo:bar 1))
-(#<fn:ac-funcall1> (#<fn:ac-lookup-global> no) (#<fn:ac-funcall1> (#<fn:ac-lookup-global> foo) (#<fn:ac-funcall1> (#<fn:ac-lookup-global> bar) 1)))
+(#<fn:ac-funcall1> (#<fn:ac-lookup-global> (racket-quote no)) (#<fn:ac-funcall1> (#<fn:ac-lookup-global> (racket-quote foo)) (#<fn:ac-funcall1> (#<fn:ac-lookup-global> (racket-quote bar)) 1)))
 
 
 ;=============================================================================
@@ -30,28 +30,28 @@ error: racket-parameterize: bad syntax in: racket-parameterize
 ;=============================================================================
 
 > (ac-compile '(fn args args))
-(racket-lambda args (racket-set! args (#<fn:list->mlist> args)) args)
+(racket-lambda args (racket-let ((args (#<fn:list->mlist> args))) args))
 
 
 > (ac-compile '(fn (a b c) (list a b c)))
-(racket-lambda (a b c) (#<fn:ac-funcall3> (#<fn:ac-lookup-global> list) a b c))
+(racket-lambda (a b c) (#<fn:ac-funcall3> (#<fn:ac-lookup-global> (racket-quote list)) a b c))
 
 
 > (ac-compile '(fn (a (o b 5) c) (list a b c)))
-(racket-lambda (a (b 5) c) (#<fn:ac-funcall3> (#<fn:ac-lookup-global> list) a b c))
+(racket-lambda (a (b 5) c) (#<fn:ac-funcall3> (#<fn:ac-lookup-global> (racket-quote list)) a b c))
 
 > (fn (a (o b 5) c) (list a b c))
-error: racket-lambda: default-value expression missing at: c in: (racket-lambda (a (b 5) c) (#<procedure:ac-funcall3> (#<procedure:ac-lookup-global> list) a b c))
+error: racket-lambda: default-value expression missing at: c in: (racket-lambda (a (b 5) c) (#<procedure:ac-funcall3> (#<procedure:ac-lookup-global> (racket-quote list)) a b c))
 
 
 > (ac-compile '(fn (a b (o c 5)) (list a b c)))
-(racket-lambda (a b (c 5)) (#<fn:ac-funcall3> (#<fn:ac-lookup-global> list) a b c))
+(racket-lambda (a b (c 5)) (#<fn:ac-funcall3> (#<fn:ac-lookup-global> (racket-quote list)) a b c))
 
 > (ac-compile '(fn (a b (o c nil)) (list a b c)))
-(racket-lambda (a b (c (#<fn:ac-lookup-global-arg> nil))) (#<fn:ac-funcall3> (#<fn:ac-lookup-global> list) a b c))
+(racket-lambda (a b (c (#<fn:ac-lookup-global-arg> (racket-quote nil)))) (#<fn:ac-funcall3> (#<fn:ac-lookup-global> (racket-quote list)) a b c))
 
 > (ac-compile '(fn (a b (o c)) (list a b c)))
-(racket-lambda (a b (c nil)) (#<fn:ac-funcall3> (#<fn:ac-lookup-global> list) a b c))
+(racket-lambda (a b (c nil)) (#<fn:ac-funcall3> (#<fn:ac-lookup-global> (racket-quote list)) a b c))
 
 
 > (ac-compile '(fn (a b . c) (list a b c)))

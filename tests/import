@@ -1,0 +1,43 @@
+> (= foo (new-namespace (new-namespace (new-namespace)) (new-namespace)))
+#(tagged namespace {#<namespace:0> #<namespace:0> #<namespace:0> #<namespace:0>})
+
+> foo!bar
+nil
+
+> (= foo!bar 10)
+10
+
+> foo!bar
+10
+
+> foo!qux
+nil
+
+
+> (eval-w/ (new-namespace) foo)
+error: undefined variable: foo
+
+
+> (= bar (new-namespace arc3-namespace))
+
+> (eval-w/ bar foo)
+#(tagged namespace {#<namespace:0> #<namespace:0> #<namespace:0> #<namespace:0>})
+
+> (eval-w/ bar (= foo 10))
+10
+
+> (eval-w/ bar foo)
+10
+
+> foo
+#(tagged namespace {#<namespace:0> #<namespace:0> #<namespace:0> #<namespace:0>})
+
+
+;> (w/namespace bar (eval '(= foo 10)))
+10
+
+;> (w/namespace bar foo)
+10
+
+;> foo
+#(tagged namespace {#<namespace:0> #<namespace:0> #<namespace:0> #<namespace:0>})

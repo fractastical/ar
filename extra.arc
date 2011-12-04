@@ -45,6 +45,13 @@
       ,x)))
 
 
+(def maplast (f xs)
+  (if (no cdr.xs)
+        (f car.xs)
+      (do (f car.xs)
+          (maplast f cdr.xs))))
+
+
 (mac catcherr (expr)
   `(on-err (fn (c) (details c))
            (fn () ,expr nil)))
@@ -52,3 +59,59 @@
 (def xml-encode (s)
   (multisubst '(("&" "&amp;")
                 ("<" "&lt;")) s))
+
+
+(mac extend (name parms test . body)
+  (w/uniq u
+    `(let orig ,name
+       (= ,name (fn ,u
+                  ;(%nocompile (racket-displayln ,u))
+                  #|(apply (fn ,parms
+                           (aif ,test
+                                  (do ,@body)
+                                (apply orig ,u)))
+                         ,u)|#
+                  (let ,parms ,u
+                    (aif ,test
+                           (do ,@body)
+                         (%nocompile (,apply orig ,u))))
+                  )))))
+
+#|(mac extend (name parms test . body)
+  (w/uniq (k a u)
+    `(let orig ,name
+       (= ,name (racket-make-keyword-procedure
+                  (fn (,k ,a . ,u)
+                    ;(prn ',name " " ,u)
+                    (let ,parms ,u
+                      (aif ,test
+                             (do ,@body)
+                           (racket-keyword-apply orig ,k ,a (racket-mlist->list ,u))))))))))|#
+
+
+#|(mac extend (name parms test . body)
+  (w/uniq u
+    `(let orig ,name
+       (= ,name (fn ,u
+                  (aif (apply (fn ,parms ,test) ,u)
+                         (apply (fn ,parms ,@body) ,u)
+                       (apply orig ,u)))))))|#
+
+#|(mac extend (name parms test . body)
+  (w/uniq u
+    `(let orig ,name
+       (= ,name (fn ,u
+                  ;(prn ',name " " ,u)
+                  (aif (apply (fn ,parms ,test) ,u)
+                         (apply (fn ,parms ,@body) ,u)
+                       (apply orig ,u)))))))|#
+
+
+(= defcall-types* (table))
+
+(mac defcall (name parms . body)
+  `(= (defcall-types* ',name) (fn ,parms ,@body)))
+
+(extend ac-apply-non-fn (x . args)
+  (%nocompile (orig defcall-types* (type x)))
+  (apply it x args))

@@ -4,7 +4,8 @@
 #|(#%require (prefix-all-except racket- racket/base
              #%app #%datum #%top #%top-interaction))|#
 
-(#%require (prefix racket- racket/base))
+;(#%require (only racket/base namespace-require/copy))
+;(#%require (prefix racket- racket/base))
 
 ;(racket-require (racket-prefix-in racket- racket/base))
 
@@ -14,10 +15,13 @@
                   [racket-mcons cons]
                   [racket-mlist list]))|#
 
-(racket-require (racket-prefix-in racket- racket/mpair))
+(racket-namespace-require/copy (racket-quote (prefix racket- racket/mpair)))
+(racket-namespace-require/copy (racket-quote (prefix racket- racket/path)))
+(racket-namespace-require/copy (racket-quote (prefix racket- racket/system)))
+
+#|(racket-require (racket-prefix-in racket- racket/mpair))
 (racket-require (racket-prefix-in racket- racket/path))
-;(racket-require (racket-prefix-in racket- racket/path))
-(racket-require (racket-prefix-in racket- racket/system))
+(racket-require (racket-prefix-in racket- racket/system))|#
 
 #|(racket-provide (racket-all-defined-out)
                 (racket-all-from-out racket/base
@@ -48,6 +52,7 @@
 (racket-define ac-assign-name    (racket-make-parameter nil))
 
 ;; Setting this to `t` makes code 60% faster, but disables namespace functionality
+;; Setting this to `t` makes code 28% faster, but disables namespace functionality
 (racket-define ac-direct-globals (racket-make-parameter nil))
 
 #|
@@ -57,12 +62,23 @@
     ...body))|#
 
 (racket-define arc3-namespace (racket-current-namespace))
+(racket-define namespace      (racket-make-parameter arc3-namespace))
 ;(racket-define namespace racket-current-namespace)
 
 (racket-define (namespace-get runtime varname (default nil))
-  (racket-if (racket-procedure? default)
-               (racket-namespace-variable-value varname #f default runtime)
-             (racket-namespace-variable-value varname #f (racket-lambda () default) runtime)))
+  (racket-let ((default (racket-if (racket-procedure? default)
+                                   #|(racket-or (racket-not default)
+                                              )|#
+                                     default
+                                   (racket-lambda () default))))
+
+    (racket-namespace-variable-value varname #f default runtime)
+
+    #|(racket-namespace-variable-value varname #f
+      (racket-lambda ()
+        (racket-namespace-variable-value varname #t default runtime))
+      runtime)|#
+  ))
 
 (racket-define (namespace-set runtime varname value)
   (racket-namespace-set-variable-value! varname value #f runtime))
@@ -138,11 +154,16 @@
                             (racket-number->string num)))))
 
 (racket-define (ac-var x (def nil))
-  (namespace-get arc3-namespace x def))
+  ;(namespace-get arc3-namespace x def)
+  ;(ac-apply-non-fn (namespace) nil nil (list x def))
+  ;(namespace-get (namespace) x def)
+  (ac-apply-non-fn (namespace) x def)
+  )
 
 (racket-define bound
   (racket-let ((undef (uniq)))
     (racket-lambda (name)
+      ;(racket-displayln (((ac-var name undef))))
       (ac-tnil
         (racket-not (racket-eq? (ac-var name undef) undef))))))
 
@@ -508,30 +529,31 @@
       (next (racket-cdr as)
             (racket-append accum (racket-list (racket-car as))))))))|#
 
-(racket-define (ac-apply-non-fn x kw kw-val args)
+(racket-define (ac-apply-non-fn x k (d nil))
+  ;(racket-displayln x)
   (racket-cond
+    ((racket-namespace? x)
+      (namespace-get x k d))
     ((racket-mpair? x)
-      (racket-if (racket-number? (car args))
-                   (racket-mlist-ref x (car args))
+      (racket-if (racket-number? k)
+                   (racket-mlist-ref x k)
                  ;; TODO: should alref be defined in compiler.arc?
-                 (alref x (car args))))
+                 (alref x k)))
     ((racket-string? x)
-      (racket-string-ref x (car args)))
+      (racket-string-ref x k))
     ((racket-hash? x)
-      (racket-hash-ref x (car args) (cadr args)))
+      (racket-hash-ref x k d))
     (racket-else
-      (err "Function call on inappropriate object" x args))))
+      (err "Function call on inappropriate object" x k d))))
 
 (racket-define ac-apply
   ;; TODO: ew
   ;(racket-procedure-rename
     (racket-make-keyword-procedure
       (racket-lambda (kw kw-val f . racket-arg-list)
-        ;(racket-display racket-arg-list)
-        ;(racket-newline)
         (racket-if (racket-procedure? f)
                      (racket-keyword-apply f kw kw-val racket-arg-list)
-                   (ac-apply-non-fn f kw kw-val (racket-list->mlist racket-arg-list)))))
+                   (racket-keyword-apply ac-apply-non-fn kw kw-val f racket-arg-list))))
     ;(racket-quote ac-apply))
     )
 
@@ -718,8 +740,12 @@
                      ;;       rather than at compile time
           (racket-if (racket-parameter? x)
                        (list x (ac-compile b))
-                     (list (racket-quote racket-set!) a
-                           (ac-compile b))))))
+                     #|(list (racket-quote racket-set!) a
+                           (ac-compile b))|#
+                     (list sref
+                           (namespace)
+                           (ac-compile b)
+                           (list (racket-quote racket-quote) a))))))
 
 (racket-define (ac-assign1 a b)
   (racket-unless (racket-symbol? a)
@@ -1114,6 +1140,8 @@
 
 (racket-define (sref com val ind)
   (racket-cond
+    ((racket-namespace? com)
+      (namespace-set com ind val))
     ((racket-hash? com)
       (racket-if (ac-no val)
                    (racket-hash-remove! com ind)
@@ -1235,22 +1263,33 @@
 (racket-define (ac-local-var x)
   x)
 
+(racket-define (ac-undefined-var x)
+  (racket-lambda ()
+    (err "undefined variable:" x)))
+
 (racket-define ac-lookup-global
   (racket-if (ac-true (ac-direct-globals))
-               (racket-lambda (x) x)
-             (racket-lambda (x)
-               ;(racket-displayln x)
+               (racket-lambda (space x) x)
+             (racket-lambda (space x)
                ;(racket-displayln x)
                ;(racket-eval (racket-cons (racket-quote #%top) x) arc3-namespace)
                ;(racket-eval x arc3-namespace)
                ;x
-               (racket-namespace-variable-value x #f
+               ;(racket-namespace-variable-value x #f #f arc3-namespace)
+               #|(racket-namespace-variable-value x #f
                  (racket-lambda ()
                    (racket-namespace-variable-value x #t #f arc3-namespace))
-                 arc3-namespace))))
+                 arc3-namespace)|#
+               ;(ac-apply space x (ac-undefined-var x))
 
-(racket-define (ac-lookup-global-arg x)
-  (racket-let ((x (ac-lookup-global x)))
+               ;; slower than using ac-var
+               ;(ac-apply-non-fn space nil nil (list x (ac-undefined-var x)))
+               ;(namespace-get space x (ac-undefined-var x))
+               (ac-apply-non-fn space x (ac-undefined-var x))
+               )))
+
+(racket-define (ac-lookup-global-arg space x)
+  (racket-let ((x (ac-lookup-global space x)))
     ;; This implements implicit parameters
     (racket-if (racket-parameter? x)
                  (x)
@@ -1261,8 +1300,8 @@
                                x
                              (list (racket-quote racket-quote) x))))
     (racket-if (ac-true (ac-functional-position?))
-                 (list ac-lookup-global x)
-               (list ac-lookup-global-arg x))))
+                 (list ac-lookup-global (namespace) x)
+               (list ac-lookup-global-arg (namespace) x))))
 
 
 ;=============================================================================
@@ -1298,9 +1337,10 @@
     (racket-else x)))
 
 (racket-define (eval x (runtime nil))
+  ;(racket-displayln (ac-compile x))
   (racket-eval (ac-deep-fromarc (ac-compile x))
                (racket-if (ac-no runtime)
-                            arc3-namespace
+                            arc3-namespace ;(namespace)
                           runtime)))
 
 

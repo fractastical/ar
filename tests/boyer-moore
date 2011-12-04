@@ -1,3 +1,6 @@
+> (import boyer-moore)
+nil
+
 > (boyer-posmatch "foo" "foobar")
 0
 

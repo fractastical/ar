@@ -828,4 +828,5 @@
 
 (mac require (x)
   ;`(%nocompile (racket-namespace-require (racket-quote (prefix racket- ,x))))
-  `(%nocompile (racket-require (racket-prefix-in racket- ,x))))
+  ;`(%nocompile (racket-require (racket-prefix-in racket- ,x)))
+  `(%nocompile (racket-namespace-require/copy (racket-quote (prefix racket- ,x)))))

@@ -1,5 +1,7 @@
 #! /usr/bin/env arc
 
+(import script re strings)
+
 #|(current-command-line-arguments
   (list->vector
     (map (lambda (x)

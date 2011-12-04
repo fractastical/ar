@@ -110,8 +110,12 @@
                             #%app #%top #%top-interaction))
   (namespace-require '(only racket/private/pre-base
                             #%require #%app #%top #%top-interaction))|#
-  (namespace-require '(only racket/private/pre-base
-                            #%top-interaction #%app #%top #%datum #%require))
+  #|(namespace-require '(only racket/private/pre-base
+                            #%top-interaction #%app #%top #%datum #%require))|#
+  (namespace-require/copy '(only racket/private/pre-base
+                             #%top-interaction #%app #%top #%datum))
+
+  (namespace-require/copy '(prefix racket- racket/base))
   ;(namespace-require '(prefix racket- racket/base))
   ;(namespace-require '(prefix racket- racket/base))
   ;(namespace-require '(prefix racket- racket/mpair))
