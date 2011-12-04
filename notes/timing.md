@@ -1,6 +1,61 @@
 Timing notes
 ============
 
+*   Nu startup times took a hit when switching to `namespace-variable-value`:
+
+        Direct access:
+          Total cpu time observed: 1334ms (out of 1432ms)
+          Number of samples taken: 36 (once every 37ms)
+
+        namespace-variable-value:
+          Total cpu time observed: 2150ms (out of 2252ms)
+          Number of samples taken: 52 (once every 41ms)
+
+*   `namespace-set-variable-value!` is slower than `set!`:
+
+        > (timeit (%nocompile (racket-set! foo 10)))
+        iter: 11,389,643  gc: 0  mem: 1028704
+
+        > (timeit (%nocompile (racket-namespace-set-variable-value! (racket-quote foo) 10)))
+        iter: 7,369,962  gc: 0  mem: 1024064
+
+        > (timeit (%nocompile (racket-namespace-set-variable-value! (racket-quote foo) 10 #f)))
+        iter: 7,595,915  gc: 0  mem: 922336
+
+        > (timeit (%nocompile (racket-namespace-set-variable-value! (racket-quote foo) 10 #t)))
+        iter: 7,078,268  gc: 0  mem: 762368
+
+        > (let name (obj foo 5)
+            (timeit (= name!foo 10)))
+        iter: 5,567,179  gc: 36  mem: -10775384
+
+*   `namespace-variable-value` is slower than direct access:
+
+        > (timeit (%nocompile foo))
+        iter: 10,617,404  gc: 0  mem: 1616824
+
+        > (timeit (%nocompile (racket-namespace-variable-value (racket-quote foo))))
+        iter: 3,954,457  gc: 36  mem: -7896744
+
+        > (timeit (%nocompile (racket-namespace-variable-value (racket-quote foo) #f)))
+        iter: 7,542,512  gc: 0  mem: 1171400
+
+        > (timeit (%nocompile (racket-namespace-variable-value (racket-quote foo) #f (%compile (fn () nil)))))
+        iter: 7,115,895  gc: 0  mem: 1137640
+
+        > (timeit (%nocompile (racket-namespace-variable-value (racket-quote foo) #f (racket-lambda () nil))))
+        iter: 7,020,827  gc: 0  mem: 1342384
+
+        > (timeit (racket-namespace-variable-value 'foo #f (fn () nil)))
+        iter: 7,161,521  gc: 0  mem: 1287848
+
+        > (timeit (ac-var 'foo))
+        iter: 6,889,370  gc: 20  mem: -2489272
+
+        > (let name (obj foo 5)
+                      (timeit name!foo))
+        iter: 6,086,214  gc: 112  mem: -9602608
+
 *   `racket-build-path` is *really fast*:
 
         > (timeit (racket-string-append "/foo/" "bar/qux/corge/" "nou.jpg"))

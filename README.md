@@ -1,9 +1,7 @@
 How to run it
 =============
 
-Just call `./arc` and you'll get a REPL.
-
-You can also load the file "foo.arc" with `./arc foo`.
+Just call `./arc` and you'll get a REPL. You can also load the file "foo.arc" with `./arc foo`.
 
 If you would like to load a file *and* run the REPL, use the `-i` or `--repl` flags: `./arc -i foo`
 

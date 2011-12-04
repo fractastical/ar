@@ -9,13 +9,13 @@
 (define namespace-get
   (case-lambda
    ((runtime varname)
-    (namespace-variable-value varname #t #f runtime))
+    (namespace-variable-value varname #f #f runtime))
 
    ((runtime varname default)
-    (namespace-variable-value varname #t (lambda () default) runtime))))
+    (namespace-variable-value varname #f (lambda () default) runtime))))
 
 (define (namespace-set runtime varname value)
-  (namespace-set-variable-value! varname value #t runtime))|#
+  (namespace-set-variable-value! varname value #f runtime))|#
 
 
 #|(define (ac-eval-all in runtime)
@@ -91,7 +91,7 @@
 (define (ac-load filename (runtime namespace))
   (call-with-input-file filename
     (lambda (in)
-      ((namespace-variable-value 'ac-eval-all #t #f runtime) in runtime))))|#
+      ((namespace-variable-value 'ac-eval-all #f #f runtime) in runtime))))|#
 
 
 ;(define exec-dir (path->string (path-only (normalize-path (find-system-path 'run-file)))))
@@ -119,17 +119,18 @@
   ;(namespace-require '(prefix racket- racket/system))
   ;(namespace-require "compiler.arc")
 
-  (namespace-set-variable-value! 'exec-dir* exec-dir)
+  (namespace-set-variable-value! 'exec-dir* exec-dir #f)
 
   (profile-thunk (lambda ()
     (load/use-compiled (build-path exec-dir "compiler.arc"))
+    ;(load/use-compiled (string->path "compiler.arc"))
 
      ;(displayln (namespace-mapped-symbols))
 
      ;(parameterize ((current-namespace (module->namespace "compiler.arc"))))
 
-    (let (;(exec-dir (namespace-variable-value 'exec-dir*))
-          (ac-load  (namespace-variable-value 'ac-load)))
+    (let (;(exec-dir (namespace-variable-value 'exec-dir* #f))
+          (ac-load  (namespace-variable-value 'ac-load #f)))
 
           ;(ac-load "compiler.arc")
           (ac-load "core.arc")
@@ -177,10 +178,10 @@
 
   ;(load/use-compiled "compiler.arc")
 
-  (namespace-set-variable-value! 'ac-eval-all  ac-eval-all)
-  (namespace-set-variable-value! 'ac-load      ac-load)
+  (namespace-set-variable-value! 'ac-eval-all  ac-eval-all  #f)
+  (namespace-set-variable-value! 'ac-load      ac-load      #f)
 
-  (namespace-set-variable-value! 'exec-dir*    exec-dir)
+  (namespace-set-variable-value! 'exec-dir*    exec-dir     #f)
 
   (parameterize ((compile-allow-set!-undefined  #t)
                  (port-count-lines-enabled      #t)
@@ -188,7 +189,7 @@
                  ;(use-compiled-file-paths       (list (string->path ".compiled")))
                  ;(compile-enforce-module-constants #f)
                  )
-    (let ((load (namespace-variable-value 'ac-load)))
+    (let ((load (namespace-variable-value 'ac-load #f)))
       ;(profile-thunk (lambda ()
         ;(namespace-require "compiler.rkt")
         ;(display (variable-reference-constant? 'complement))
