@@ -61,9 +61,16 @@ error: undefined variable: foo
 50
 
 > (eval-w/ bar
-    (dynamic bar bar)
     (def bar (x)
       10)
+    (foo 50))
+50
+
+> (eval-w/ foo
+    (dynamic bar bar))
+#<fn:bar>
+
+> (eval-w/ bar
     (foo 50))
 10
 
@@ -71,7 +78,19 @@ error: undefined variable: foo
     (foo 50))
 50
 
-> (eval-w/ bar
-    ;(dynamic bar bar)
-    (foo 50))
+
+;=============================================================================
+;  Dynamic variables
+;=============================================================================
+
+> (dynamic foo 5)
+5
+
+> foo
+5
+
+> (= foo 10)
+10
+
+> foo
 10

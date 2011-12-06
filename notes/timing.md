@@ -1,6 +1,14 @@
 Timing notes
 ============
 
+  * `quote` is awfully fast, and so is `list`:
+
+        > (timeit '(foo bar qux))
+        iter: 3,333,270  gc: 0  mem: 1688488
+
+        > (timeit (list 'foo 'bar 'qux))
+        iter: 3,354,804  gc: 52  mem: 2700912
+
   * `path->complete-path` is quite fast:
 
         > (timeit (racket-path->string:racket-path->complete-path (expandpath "~/foobar")))

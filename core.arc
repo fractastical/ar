@@ -505,12 +505,24 @@
 ;  Parameters
 ;=============================================================================
 
+;; TODO: function version of alias...?
 (mac alias (name get set)
   `(= ,name (annotate 'alias (list ,get ,set))))
 
-
-(mac make-dynamic (name param)
-  )
+;; TODO: make this into a function
+(mac make-dynamic (name val)
+  (w/uniq (u v x)
+    `(with (,u  ,val
+            ,x  nil)
+       ;; TODO: use letr ?
+       (= ,x (alias ,name
+                                ;; TODO: use (ref namespace ...) ?
+                                ;; TODO: how slow is it to create a new fn
+                                ;;       every time...?
+               (fn ()   (let ,v (ac-var ',name (fn () ,x))
+                          (if (is ,v ,x) ,u ,v)))
+               (fn (,v) (sref namespace ,v ',name))))
+       ,u)))
 
 (mac dynamic (name (o init))
   `(make-dynamic ,name ,init))

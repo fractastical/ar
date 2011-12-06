@@ -761,7 +761,8 @@
               ;; if we're about to call a literal fn such as ((fn (a b) ...) 1 2)
               ;; then we know we can just call it in Racket and we don't
               ;; have to use ac-apply
-              ((ac-caris f (racket-quote racket-lambda))
+              ((racket-or (racket-procedure? f)
+                          (ac-caris f (racket-quote racket-lambda)))
                 (cons f args))
               #|(racket-else
                 (cons f args))|#
@@ -1202,6 +1203,7 @@
 ;  quote
 ;=============================================================================
 
+#|
 (racket-define (ac-quote x)
   #|(racket-when (racket-eq? x (racket-quote nil))
     (racket-set! x nil))|#
@@ -1225,7 +1227,22 @@
                          ;; work if somebody overwrites ac-quote later
                          (racket-lambda (x)
                            (cons ac-quote x))
+                         (racket-quote quote))))|#
+
+(racket-define quote (annotate (racket-quote mac)
+                       (racket-procedure-rename
+                         (racket-lambda (x)
+                           ;; TODO: not sure about the %nocompile part: is it
+                           ;;       fast enough?
+                           (list %nocompile (list (racket-lambda () x))))
                          (racket-quote quote))))
+
+#|
+
+(mac quote (x)
+  (list (fn () x)))
+
+|#
 
 
 ;=============================================================================
@@ -1437,8 +1454,8 @@
   (racket-cond
     ((ac-no x)
       (racket-quote nil))
-    ((ac-caris x ac-quote)
-      (ac-quote (cdr x)))
+    #|((ac-caris x ac-quote)
+      (ac-quote (cdr x)))|#
     ((ac-caris x ac-assign)
       (ac-assign (cdr x)))
     ((ac-caris x ac-fn)
