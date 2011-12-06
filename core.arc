@@ -505,42 +505,80 @@
 ;  Parameters
 ;=============================================================================
 
+(mac alias (name get set)
+  `(= ,name (annotate 'alias (list ,get ,set))))
+
+
+(mac make-dynamic (name param)
+  )
+
+(mac dynamic (name (o init))
+  `(make-dynamic ,name ,init))
+
+
 (mac parameterize (x . body)
   `(%nocompile (racket-parameterize ,(map1 (fn ((x y))
                                              `(,x (%compile ,y)))
                                            (pair x))
                  (%compile ,@(or body (list nil))))))
 
-
-;=============================================================================
-;  I/O
-;=============================================================================
+#|(mac make-w/ (name)
+  (w/uniq u
+    `(mac ,(sym "w/" name) (val . body)
+       ;; TODO: very clunky
+       (let ,u (car (rep (%nocompile (ac-lookup-global-raw ,(ac-namespace)
+                                                           (racket-quote ,name)))))
+         `(parameterize (,,u ,val) ,@body)))))|#
 
 (mac make-w/ (name)
   `(mac ,(sym "w/" name) (val . body)
      `(parameterize (,',name ,val) ,@body)))
 
-(def parameter (init (o guard))
+#|
+;; foo.arc
+
+(parameter foo 5)
+
+;; bar.arc
+
+(import foo)
+
+(w/foo 10 foo) -> 10
+foo -> 5
+
+(= foo 50)
+|#
+
+(mac make-parameter (name param)
+  (w/uniq u
+    `(let ,u ,param
+       (alias ,name ,u ,u)
+       (make-w/ ,name)
+       ,u)))
+
+#|(def parameter (init (o guard))
   ;; TODO: ew
   (if guard
         (racket-make-parameter init guard)
-      (racket-make-parameter init)))
+      (racket-make-parameter init)))|#
 
-(mac make-implicit (name param)
-                              ;; TODO: hacky
-  `(do (= ,name ,param)
-       (make-w/ ,name)))
+(mac parameter (name (o init))
+  `(make-parameter ,name (racket-make-parameter ,init)))
 
-(mac dynamic (name (o init))
-  `(= ,name (parameter ,init)))
 
-(mac implicit (name (o init))
-  `(make-implicit ,name (parameter ,init)))
+(make-parameter namespace     ac-namespace)
+(make-parameter uniq-counter* ac-uniq-counter*)
+(make-parameter load-paths*   ac-load-paths*)
+(make-parameter load-suffix*  ac-load-suffix*)
 
-;; TODO: figure out a way to not need %nocompile
-(make-implicit stdin   (%nocompile racket-current-input-port))
-(make-implicit stdout  (%nocompile racket-current-output-port))
-(make-implicit stderr  (%nocompile racket-current-error-port))
+
+;=============================================================================
+;  I/O
+;=============================================================================
+
+(make-parameter stdin   racket-current-input-port)
+(make-parameter stdout  racket-current-output-port)
+(make-parameter stderr  racket-current-error-port)
 
 
 (def ac-disp (x port)

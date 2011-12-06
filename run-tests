@@ -9,15 +9,15 @@
          (directory-list "."))))|#
 
 ;; options
-(implicit verbose)
-(implicit expects-strings)
+(parameter verbose)
+(parameter expects-strings)
 
-(implicit debug-statements)
+(parameter debug-statements)
 
 ;; TODO: remove line-number?
-(implicit line-number)
+(parameter line-number)
 
-(implicit separator-width 78)
+(parameter separator-width 78)
 
 (def debug args
   (push (tostring:mapfn disp (intersperse " " args))
@@ -86,7 +86,7 @@
          line    x!line-number
          name    x!file-name)
     (w/debug-statements nil
-      (let result (parameterize (uniq-counter* 1)
+      (let result (w/uniq-counter* 1
                     (tostring:w/stderr stdout
                       (errdet:eval run env)))
         (when expect
@@ -136,8 +136,9 @@
     (test-file x new-namespace.arc3-namespace)))|#
 
 (def test-files args
+  ;; TODO: eachfn
   (each x args
     (test-file x namespace)))
 
 (w/cwd "tests"
-  (apply test-files (dir)))
+  (apply test-files (or script-args (dir))))

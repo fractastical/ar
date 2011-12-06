@@ -1,16 +1,13 @@
-(make-w/ load-suffix*)
-(make-w/ load-paths*)
-(make-w/ namespace)
-#|(implicit load-paths* (list cwd (abspath) (abspath "lib/")))
-(implicit load-suffix* ".arc")
+#|(parameter load-paths* (list cwd (abspath) (abspath "lib/")))
+(parameter load-suffix* ".arc")
 
 (def load-file-dir (x)
   (car:mem (fn (y)
              (file-exists (joinpath y x)))
            load-paths*))|#
 
-(make-implicit cwd
-  (racket-make-derived-parameter (%nocompile racket-current-directory)
+(make-parameter cwd
+  (racket-make-derived-parameter racket-current-directory
     (fn (v) (zap string v)
             (if empty.v
                   (racket-current-directory)
@@ -34,7 +31,26 @@
                   (self cdr.x (cons c nil))
                 (self cdr.x (cons c acc))))))))
 
+
+(def make-path->string (converter)
+  (fn (x)
+    (zap string x)
+    (unless empty.x
+      (zap converter x)
+      (when ac-tnil.x
+        (racket-path->string x)))))
+
+(= dirname  (make-path->string racket-path-only:expandpath))
+(= basename (make-path->string racket-file-name-from-path:expandpath))
+
+
+(def abspath ((o x))
+  ;(joinpath cwd x)
+  (racket-path->string:racket-path->complete-path expandpath.x))
+
+
 ;; TODO: ew
+;; TODO: throw an error when the file can't be found
 (redef load-file-dir (x)
   ;; this is just (car:mem [file-exists (joinpath _ x)] load-paths*)
   (find [file-exists:joinpath _ x] load-paths*))
@@ -90,7 +106,7 @@
   (sref (car rep.x) v k))
 
 
-;(implicit namespace)
+;(parameter namespace)
 #|
 (unless ac-direct-globals
   #|
@@ -113,7 +129,7 @@
     (let x (it a)
       ;; This allows annotate to assign a name to functions
 
-      ;; This implements implicit parameters
+      ;; This implements parameters
       ;; TODO: this should probably do the check at runtime,
       ;;       rather than at compile time
       `(racket-parameterize ((ac-assign-name (racket-quote ,a)))
@@ -127,14 +143,46 @@
      (maplast eval ',body)))
 
 
+(= imported-namespaces*
+   ;; TODO: ew
+   (listtab:list (list (joinpath exec-dir* "compiler.arc") arc3-namespace)
+                 (list (joinpath exec-dir* "core.arc")     arc3-namespace)
+                 (list (joinpath exec-dir* "ssyntax.arc")  arc3-namespace)
+                 (list (joinpath exec-dir* "compat.arc")   arc3-namespace)
+                 (list (joinpath exec-dir* "arc.arc")      arc3-namespace)
+                 (list (joinpath exec-dir* "extra.arc")    arc3-namespace)
+                 (list (joinpath exec-dir* "import.arc")   arc3-namespace)))
+
+(def importfn (args)
+  (w/load-paths* load-paths*
+    (each x args
+      (if (dirname x)
+            ;; TODO: use dont
+            (do (push abspath.x load-paths*)
+                nil)
+          (withs (x     (load-normalize-path string.x)
+                  path  abspath.x)
+            (prn path)
+            ;; TODO: use w/cwd ...?
+            ;`(parameterize (racket-current-directory ,load-file-dir.x))
+            (w/cwd load-file-dir.x
+              (aif imported-namespaces*.path
+                                ;; TODO: should namespace come first or second...?
+                     ;; TODO: fix the huge explosion of namespaces when you
+                     ;;       import a module that was already imported
+                     ;(namespace (new-namespace namespace it))
+                     nil
+                   (do (load x)
+                       ;(zap new-namespace namespace)
+                       #|(= namespace (new-namespace
+                         (= imported-namespaces*.path namespace)))|#
+                       ))))))))
+
 (mac import args
-  `(do ,@(map (fn (x)
-                (let x (load-normalize-path string.x)
-                  ;; TODO: use w/cwd ...?
-                  `(do (w/cwd ,load-file-dir.x
-                       ;`(parameterize (racket-current-directory ,load-file-dir.x))
-                         (load ,x))
-                       (namespace (new-namespace namespace)))))
-              args)
+  #|
+  ;; TODO: use dont
+  `(do
        ;(namespace (new-namespace namespace))
-       nil))
+       nil)|#
+  ;`(importfn ,@(map string args))
+  `(importfn ',args))

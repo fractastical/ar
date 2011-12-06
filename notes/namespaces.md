@@ -25,7 +25,7 @@ the three files should be able to use the name `foo` without clashing at all.
 Let's examine how a few languages implement namespaces.
 
 In Python, the above example would create a global variable `bar`, load the
-file `bar.arc` into the `bar` namespace, and then do the same for `qux`. Now,
+file "bar.arc" into the `bar` namespace, and then do the same for `qux`. Now,
 if you want to call the "bar.arc" functions, you need to do this:
 
     (bar!foo ...)
@@ -36,7 +36,7 @@ system, so the same criticisms apply to both of them. What are those
 criticisms?
 
  1. As demonstrated, having to prefix every imported function with the
-    namespace's name is a huge pain. Python allows for `import * from foo`
+    namespace's name is a huge pain. Python allows for `from foo import *`
     but this is highly discouraged because it basically bypasses the namespace
     mechanism entirely, thus allowing for variable collisions.
 

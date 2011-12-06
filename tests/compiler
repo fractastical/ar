@@ -535,6 +535,20 @@ nil
 #<output-port:stdout>
 
 
+> (parameter foo 5)
+#<mac:w/foo>
+
+> foo
+5
+
+> (w/foo 10 foo)
+10
+
+> foo
+5
+
+
+
 ;=============================================================================
 ;  annotate
 ;=============================================================================
@@ -574,25 +588,25 @@ nil
 ;  uniq
 ;=============================================================================
 
-> (parameterize (uniq-counter* 1) (uniq))
+> (w/uniq-counter* 1 (uniq))
 g1
 
-> (parameterize (uniq-counter* 1) (uniq "foo"))
+> (w/uniq-counter* 1 (uniq "foo"))
 foo1
 
-> (parameterize (uniq-counter* 1) (uniq) uniq-counter*)
+> (w/uniq-counter* 1 (uniq) uniq-counter*)
 2
 
-> (parameterize (uniq-counter* 1) (uniq "foo") uniq-counter*)
+> (w/uniq-counter* 1 (uniq "foo") uniq-counter*)
 2
 
-> (parameterize (uniq-counter* 1) (uniq "foo" 5))
+> (w/uniq-counter* 1 (uniq "foo" 5))
 foo5
 
-> (parameterize (uniq-counter* 1) (uniq "foo" 5) uniq-counter*)
+> (w/uniq-counter* 1 (uniq "foo" 5) uniq-counter*)
 1
 
-> (parameterize (uniq-counter* 1) (uniq) (uniq))
+> (w/uniq-counter* 1 (uniq) (uniq))
 g2
 
 

@@ -115,3 +115,7 @@
 (extend ac-apply-non-fn (x . args)
   (%nocompile (orig defcall-types* (type x)))
   (apply it x args))
+
+
+(mac %eval body
+  (eval `(do ,@body)))

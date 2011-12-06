@@ -17,8 +17,8 @@
     (pr "\n" (newstring (* depth 2) #\space))))
 
 
-(implicit mode noop)
-(implicit parser nil)
+(parameter mode   noop)
+(parameter parser nil)
 
 
 (def attrs (xs)

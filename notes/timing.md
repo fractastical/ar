@@ -1,7 +1,15 @@
 Timing notes
 ============
 
-*   Assigning to a global variable is basically just as fast as assigning to the namespace:
+  * `path->complete-path` is quite fast:
+
+        > (timeit (racket-path->string:racket-path->complete-path (expandpath "~/foobar")))
+        iter: 40,988  gc: 220  mem: -6044496
+
+        > (timeit (joinpath cwd "~/foobar"))
+        iter: 20,340  gc: 296  mem: 14891960
+
+  * Assigning to a global variable is basically just as fast as assigning to the namespace:
 
         > (timeit (= foo 'bar))
         iter: 129,091  gc: 172  mem: -5105664
@@ -9,7 +17,7 @@ Timing notes
         > (timeit (sref (namespace) 'bar 'foo))
         iter: 124,680  gc: 196  mem: 15249328
 
-*   Nu startup times took a hit when switching to `namespace-variable-value`:
+  * Nu startup times took a hit when switching to `namespace-variable-value`:
 
         Direct access:
           Total cpu time observed: 1334ms (out of 1432ms)
@@ -36,7 +44,7 @@ Timing notes
           Total cpu time observed: 2474ms (out of 2544ms)
           Number of samples taken: 58 (once every 43ms)
 
-*   `namespace-set-variable-value!` is slower than `set!`:
+  * `namespace-set-variable-value!` is slower than `set!`:
 
         > (timeit (%nocompile (racket-set! foo 10)))
         iter: 11,389,643  gc: 0  mem: 1028704
@@ -54,7 +62,7 @@ Timing notes
             (timeit (= name!foo 10)))
         iter: 5,567,179  gc: 36  mem: -10775384
 
-*   `namespace-variable-value` is slower than direct access:
+  * `namespace-variable-value` is slower than direct access:
 
         > (timeit (%nocompile foo))
         iter: 10,617,404  gc: 0  mem: 1616824
@@ -81,7 +89,7 @@ Timing notes
                       (timeit name!foo))
         iter: 6,086,214  gc: 112  mem: -9602608
 
-*   `racket-build-path` is *really fast*:
+  * `racket-build-path` is *really fast*:
 
         > (timeit (racket-string-append "/foo/" "bar/qux/corge/" "nou.jpg"))
         iter: 6,535,348  gc: 136  mem: -12813384
@@ -99,7 +107,7 @@ Timing notes
         > (timeit (joinpath "/foo/" "bar/qux/corge/" "nou.jpg"))
         iter: 240,388  gc: 124  mem: -11613952
 
-*   `after` is really slow:
+  * `after` is really slow:
 
         > (timeit (do1 10 20))
         iter: 11,777,563  gc: 0  mem: 984
@@ -116,7 +124,7 @@ Timing notes
                (after (do ,@body)
                       (assign ,name ,u)))))
 
-    And now let's compare an ordinary variable "foo" with an implicit variable "bar":
+    And now let's compare an ordinary variable "foo" with a parameter "bar":
 
         > (timeit (w/ foo 10 foo))
         iter: 2,615,291  gc: 196  mem: -9667968
@@ -149,11 +157,11 @@ Timing notes
         > (timeit (w/ foo 10 foo))
         iter: 4,293,050  gc: 212  mem: -2171880
 
-    As the above also demonstrates, implicit variables (implemented with Racket parameters) are *faster* than global variables, but significantly slower than lexical variables.
+    As the above also demonstrates, parameters are *faster* than global variables, but significantly slower than lexical variables.
 
-*   As an expansion on the above, implicit variables have a high cost vs function arguments:
+  * As an expansion on the above, parameters have a high cost vs function arguments:
 
-        > (implicit foo)
+        > (parameter foo)
 
         > (def bar ()
             (+ foo 10))
@@ -167,7 +175,7 @@ Timing notes
         > (timeit (bar 25))
         iter: 8,485,407  gc: 0  mem: 504
 
-*   Boyer-Moore is faster than Arc's posmatch with small pattern strings:
+  * Boyer-Moore is faster than Arc's posmatch with small pattern strings:
 
         > (timeit (posmatch "foo" "barfoo"))
         iter: 423,974  gc: 760  mem: -19140888
@@ -175,7 +183,7 @@ Timing notes
         > (timeit (boyer-posmatch "foo" "barfoo"))
         iter: 585,847  gc: 140  mem: -74992
 
-*   Due to preprocessing, the situation is reversed with long pattern strings:
+  * Due to preprocessing, the situation is reversed with long pattern strings:
 
         > (timeit (posmatch "foobarquxcorgenou" "adadadadadadadadadadadadadad"))
         iter: 248,074  gc: 368  mem: 4458200
@@ -183,7 +191,7 @@ Timing notes
         > (timeit (boyer-posmatch "foobarquxcorgenou" "adadadadadadadadadadadadadad"))
         iter: 164,709  gc: 112  mem: -10014592
 
-*   But, when precomputing the pattern, Boyer-Moore is *drastically* faster:
+  * But, when precomputing the pattern, Boyer-Moore is *drastically* faster:
 
         > (let x (boyer-moore-process "foobarquxcorgenou")
             (timeit (boyer-moore-search x "adadadadadadadadadadadadadad")))
@@ -203,7 +211,7 @@ Timing notes
         iter: 170,348  gc: 124  mem: -16630560
 
 
-*   Boyer-Moore is also faster for multi-string searches:
+  * Boyer-Moore is also faster for multi-string searches:
 
         > (timeit (multi-match '("foo" "bar" "qux") '("corge" "foo" "bar" "qux")))
         iter: 56,169  gc: 948  mem: -23564104
@@ -226,13 +234,13 @@ Timing notes
             (timeit (boyer-multi-match1 x '("ufoobarquxcorge"))))
         iter: 471,928  gc: 116  mem: 21216504
 
-*   Inlining function values gives a noticable speed boost:
+  * Inlining function values gives a noticable speed boost:
 
         (eval `(ac-funcall2 + 1 2))   -> 9211 ms
         (eval `(,ac-funcall2 + 1 2))  -> 5321 ms
         (eval `(,ac-funcall2 ,+ 1 2)) -> 4108 ms
 
-*   `make-keyword-procedure` is about twice as slow as a normal `lambda`:
+  * `make-keyword-procedure` is about twice as slow as a normal `lambda`:
 
         > (timeit (%nocompile ((racket-make-keyword-procedure (racket-lambda (kw kw-val . rest) rest)) 1 2 3)))
         time: 18.043  gc: 0.856  mem: 2992.04
@@ -258,7 +266,7 @@ Timing notes
         time: 7.99   gc: 0.0    mem: 97.504
 
 
-*   `keyword-apply` is *very comparable* in speed to a normal `apply`:
+  * `keyword-apply` is *very comparable* in speed to a normal `apply`:
 
         > (let foo (%nocompile (racket-lambda rest rest))
             (timeit (%nocompile (racket-keyword-apply foo nil nil (racket-list 1 2 3)))))
@@ -277,7 +285,7 @@ Timing notes
             (timeit (%nocompile (racket-apply foo (racket-list 1 2 3)))))
         time: 14.282 gc: 0.356 mem: -1215.76
 
-*   Keyword functions are almost twice as slow as normal functions:
+  * Keyword functions are almost twice as slow as normal functions:
 
         > (let foo (fn (:a :b) (list a b))
             (timeit (foo :a 1 :b 2)))
@@ -288,7 +296,7 @@ Timing notes
         time:  9.515  gc: 0.3    mem: -22736.128
 
 
-*   Using `%nocompile` is slow because it calls `ac-mappend`:
+  * Using `%nocompile` is slow because it calls `ac-mappend`:
 
         Special forms with %nocompile: 3462ms
         Special forms with ac-compile: 2340ms

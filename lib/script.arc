@@ -1,4 +1,4 @@
-#|(make-implicit cwd
+#|(make-parameter cwd
   (racket-make-derived-parameter (%nocompile racket-current-directory)
     (fn (v) (zap string v)
             (if empty.v
@@ -15,10 +15,13 @@
   (racket-list->vector:racket-mlist->list x))
   ;(racket-list->vector:ar-toracket x))
 
-(make-implicit script-args
-  (racket-make-derived-parameter (%nocompile racket-current-command-line-arguments)
-    (fn (v) (racket-mlist->vector v))
-    (fn (v) (racket-vector->mlist v))))
+(make-parameter script-args
+  (racket-make-derived-parameter racket-current-command-line-arguments
+    racket-mlist->vector
+    racket-vector->mlist
+    ;(fn (v) (racket-mlist->vector v))
+    ;(fn (v) (racket-vector->mlist v))
+    ))
 
 ;; TODO: ew
 (= script-src (car script-args))
@@ -32,17 +35,6 @@
       (racket-path->string:racket-expand-user-path x)))|#
 
 ;(require racket/path)
-
-(def make-path->string (converter)
-  (fn (x)
-    (zap string x)
-    (unless empty.x
-      (zap converter x)
-      (when ac-tnil.x
-        (racket-path->string x)))))
-
-(= dirname  (make-path->string racket-path-only:expandpath))
-(= basename (make-path->string racket-file-name-from-path:expandpath))
 
 
 (def extension (x)
@@ -109,10 +101,6 @@
                 (if rest todir.x
                          x))
               self.rest))))|#
-
-;; TODO: use a racket equivalent
-(def abspath ((o x))
-  (joinpath cwd x))
 
 #|(def abspath ((o x))
   (racket-path->string (racket-normalize-path (expandpath x))))|#

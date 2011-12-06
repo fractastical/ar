@@ -41,3 +41,37 @@ error: undefined variable: foo
 
 ;> foo
 #(tagged namespace {#<namespace:0> #<namespace:0> #<namespace:0> #<namespace:0>})
+
+
+> (= foo (new-namespace namespace))
+#(tagged namespace {#<namespace:0> #<namespace:0>})
+
+> (= bar (new-namespace foo))
+#(tagged namespace {#<namespace:0> #<namespace:0> #<namespace:0>})
+
+> (eval-w/ foo
+    (def foo (x)
+      (bar x))
+    (def bar (x)
+      x))
+#<fn>
+
+> (eval-w/ bar
+    (foo 50))
+50
+
+> (eval-w/ bar
+    (dynamic bar bar)
+    (def bar (x)
+      10)
+    (foo 50))
+10
+
+> (eval-w/ foo
+    (foo 50))
+50
+
+> (eval-w/ bar
+    ;(dynamic bar bar)
+    (foo 50))
+10
