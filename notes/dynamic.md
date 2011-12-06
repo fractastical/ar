@@ -47,8 +47,8 @@ differences:
     example:
 
         ;; foo.arc
-        (implicit one 5)
-        (dynamic  two 5)
+        (parameter one 5)
+        (dynamic   two 5)
 
         ;; bar.arc
         (import foo)
