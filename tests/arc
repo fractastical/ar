@@ -300,7 +300,7 @@ nil
 
 
 > ('(1 2 3) -1)
-error: mcdr: expects argument of type <mutable-pair>; given ()
+error: mcdr: expects argument of type <mutable-pair>; given '()
 
 > ('(1 2 3) 0)
 1

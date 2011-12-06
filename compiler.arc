@@ -210,7 +210,8 @@
   #:guard (racket-lambda (type rep name)
             (racket-let ((n (ac-assign-name)))
               (racket-if (racket-and (ac-true n)
-                                     (racket-procedure? rep))
+                                     (racket-procedure? rep)
+                                     (racket-not (racket-parameter? rep)))
                            (racket-values type (racket-procedure-rename rep n))
                          (racket-values type rep))))
   ;#:property racket-prop:set!-transformer
@@ -245,7 +246,7 @@
     ((racket-mpair? x)        (racket-quote cons))
     ((racket-null? x)         (racket-quote sym))
     ((racket-symbol? x)       (racket-quote sym))
-    ((racket-parameter? x)    (racket-quote parameter))
+    ;((racket-parameter? x)    (racket-quote parameter))
     ((racket-procedure? x)    (racket-quote fn))
     ((racket-char? x)         (racket-quote char))
     ((racket-string? x)       (racket-quote string))
@@ -534,11 +535,13 @@
       (next (racket-cdr as)
             (racket-append accum (racket-list (racket-car as))))))))|#
 
-(racket-define (ac-apply-non-fn x k (d nil))
+#|(racket-define (ac-apply-non-fn x k (d nil))
   ;(racket-displayln x)
   (racket-cond
     ((racket-namespace? x)
       (namespace-get x k d))
+    ((racket-eq? (type x) (racket-quote parameter))
+      ((rep x)))
     ((racket-mpair? x)
       (racket-if (racket-number? k)
                    (racket-mlist-ref x k)
@@ -549,7 +552,36 @@
     ((racket-hash? x)
       (racket-hash-ref x k d))
     (racket-else
-      (err "Function call on inappropriate object" x k d))))
+      (err "Function call on inappropriate object" x k d))))|#
+
+(racket-define ac-apply-non-fn
+  (racket-case-lambda
+    [(x)     (racket-if (racket-eq? (type x) (racket-quote parameter))
+                          ((rep x))
+                        (err "Function call on inappropriate object" x))]
+    [(x k)   (racket-cond
+               ((racket-namespace? x)
+                 (namespace-get x k))
+               ((racket-string? x)
+                 (racket-string-ref x k))
+               ((racket-hash? x)
+                 (racket-hash-ref x k nil))
+               ((racket-mpair? x)
+                 (racket-if (racket-number? k)
+                              (racket-mlist-ref x k)
+                            ;; TODO: should alref be defined in compiler.arc?
+                            (alref x k)))
+               ((racket-eq? (type x) (racket-quote parameter))
+                 ((rep x) k))
+               (racket-else
+                 (err "Function call on inappropriate object" x k)))]
+    [(x k d) (racket-cond
+               ((racket-namespace? x)
+                 (namespace-get x k d))
+               ((racket-hash? x)
+                 (racket-hash-ref x k d))
+               (racket-else
+                 (err "Function call on inappropriate object" x k d)))]))
 
 (racket-define ac-apply
   ;; TODO: ew
@@ -604,7 +636,7 @@
 (racket-define (ac-funcall0 f)
   (racket-if (racket-procedure? f)
                (f)
-             (ac-apply f)))
+             (ac-apply-non-fn f)))
 
 (racket-define (ac-funcall1 f arg1)
   (racket-cond
@@ -614,7 +646,7 @@
     ((racket-procedure? f)
       (f arg1))
     (racket-else
-      (ac-apply f arg1))))
+      (ac-apply-non-fn f arg1))))
 
 (racket-define (ac-funcall2 f arg1 arg2)
   (racket-cond
@@ -624,7 +656,7 @@
     ((racket-procedure? f)
       (f arg1 arg2))
     (racket-else
-      (ac-apply f arg1 arg2))))
+      (ac-apply-non-fn f arg1 arg2))))
 
 (racket-define (ac-funcall3 f arg1 arg2 arg3)
   (racket-cond
@@ -634,7 +666,7 @@
     ((racket-procedure? f)
       (f arg1 arg2 arg3))
     (racket-else
-      (ac-apply f arg1 arg2 arg3))))
+      (ac-apply-non-fn f arg1 arg2 arg3))))
 
 (racket-define (ac-funcall4 f arg1 arg2 arg3 arg4)
   (racket-cond
@@ -644,7 +676,7 @@
     ((racket-procedure? f)
       (f arg1 arg2 arg3 arg4))
     (racket-else
-      (ac-apply f arg1 arg2 arg3 arg4))))
+      (ac-apply-non-fn f arg1 arg2 arg3 arg4))))
 
 (racket-define (ac-macro? f)
   (racket-cond
@@ -810,7 +842,10 @@
 (racket-define (ac-lookup-global-arg x)
   ;(ac-lookup-global space x)
   ;(racket-displayln x)
-  (ac-lookup-global x)
+  (racket-let ((x (ac-lookup-global x)))
+    (racket-if (racket-eq? (type x) (racket-quote parameter))
+                 ((rep x))
+               x))
   #|(racket-let ((x (ac-lookup-global space x)))
     x
     ;; This implements parameters
@@ -856,6 +891,8 @@
     (racket-cond
       #|((racket-parameter? x)
         (x b))|#
+      ((racket-eq? (type x) (racket-quote parameter))
+        ((rep x) b))
       ((racket-eq? (type x) (racket-quote alias))
         ((cadr (rep x)) b))
       (racket-else

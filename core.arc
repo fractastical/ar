@@ -532,7 +532,8 @@
 
 (mac make-w/ (name)
   `(mac ,(sym "w/" name) (val . body)
-     `(parameterize (,',name ,val) ,@body)))
+                     ;; TODO: should probably use %compile
+     `(parameterize ((,rep ,',name) ,val) ,@body)))
 
 #|
 ;; foo.arc
@@ -550,11 +551,9 @@ foo -> 5
 |#
 
 (mac make-parameter (name param)
-  (w/uniq u
-    `(let ,u ,param
-       (alias ,name ,u ,u)
-       (make-w/ ,name)
-       ,u)))
+  `(do (= ,name (annotate 'parameter ,param))
+       ;(alias ,name ,u ,u)
+       (make-w/ ,name)))
 
 #|(def parameter (init (o guard))
   ;; TODO: ew
@@ -563,7 +562,10 @@ foo -> 5
       (racket-make-parameter init)))|#
 
 (mac parameter (name (o init))
-  `(make-parameter ,name (racket-make-parameter ,init)))
+  (w/uniq u
+    `(let ,u ,init
+       (make-parameter ,name (racket-make-parameter ,u))
+       ,u)))
 
 
 (make-parameter namespace     ac-namespace)
