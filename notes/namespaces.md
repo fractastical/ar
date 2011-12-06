@@ -169,7 +169,7 @@ any global variables that occur after that line will be in the new namespace,
 and won't clobber existing stuff.
 
 That means I can now write a `map` macro that has different behavior than Arc,
-yet Arc will continue to work fine! And even better still, I can still load
+yet Arc will continue to work fine! And even better still, I can load
 libraries into Arc's namespace, and Arc can load Arubic libraries.
 
 But that's just the tip of the iceberg. This really simple idea has some very
