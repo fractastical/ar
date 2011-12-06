@@ -26,13 +26,16 @@ This is very convenient, and so Nu provides exactly the same thing, except
     > (w/foo 10 foo)
     10
 
+    > foo
+    5
+
 Ar also provides another form called `dynamic` which is exactly like
 `implicit` except that it doesn't create the `w/` macro. In my own code, I
 have never once used `dynamic` since `implicit` is pretty much always better.
 
 As I was implementing namespaces, however, I discovered that parameters do not
 play well with multiple namespaces. So I created a `dynamic` form, except it
-behaves very differently from the `parameter` form. Here are the three
+behaves very differently from the `parameter` form. Here are the two
 differences:
 
  1. `dynamic` does not create a `w/` form. For instance, `(dynamic foo 5)`
@@ -44,34 +47,36 @@ differences:
     example:
 
         ;; foo.arc
-        (def foo (x)
-          (bar x))
-
-        (def bar (x)
-          x)
+        (implicit qux 5)
+        (dynamic  nou 5)
 
         ;; bar.arc
         (import foo)
 
-        (def bar (x)
-          10)
+        (prn qux) -> this prints 5
+        (prn nou) -> this prints 5
 
-        (foo 50)
+        (= qux 10) -> qux is now 10 in every namespace
+        (= nou 10) -> nou is now 10 only in bar.arc's namespace
 
-    In the above, do you expect the call to `foo` to return `50` or `10`?
-    Because of lexical scoping, it returns `50`. But let's suppose you don't
-    want that: let's suppose you want the `bar` function to be *dynamic*.
+    As you can see, dynamic variables obtain their value from the current
+    namespace, whereas parameter variables always refer to the value in the
+    namespace they were defined in.
 
-    You can then do the following:
+    In addition, setting a dynamic variable always sets it in the current
+    namespace, but setting a parameter variable always sets it in the defining
+    namespace.
 
-      (eval-w/ foo
-        (dynamic bar bar))
+    Thus, parameters are useful if you wish to supply options that affect the
+    behavior of your program, or if you wish to thread a value through many
+    functions but don't want to pass an argument explicitly.
 
-    And now when you call `(foo 50)` it will return `10` because it's using
-    "bar.arc"s version of `bar` rather than "foo.arc"s. To give a more
-    concrete example, consider Arubic.
+    On the other hand, dynamic variables are useful if you wish for a variable
+    to obtain its value from the current namespace, rather than the namespace
+    that it was defined in.
 
-    Arubic is currently implemented as a library on top of Nu. It can do this
+    To illustrate why this is useful, let's talk about Arubic. Arubic is
+    currently implemented as a library on top of Nu. It can do this
     because it resides in a different namespace, so as not to interfere with
     Arc.
 
@@ -83,28 +88,3 @@ differences:
     The solution to this is to use `(dynamic print print)` and now every time
     a function calls `print`, it will use whichever `print` is defined in the
     current namespace, rather than the original namespace.
-
- 3. Changing a parameter affects all namespaces, but changing a dynamic
-    variable affects only the current namespace. I'll illustrate with an
-    example:
-
-        ;; foo.arc
-        (implicit qux   5)
-        (dynamic  corge 5)
-
-        ;; bar.arc
-        (import foo)
-
-        (prn qux)   -> this prints 5
-        (prn corge) -> this prints 5
-
-        (= qux   10) -> qux is now 10 in every namespace
-        (= corge 10) -> corge is now 10 only in bar.arc's namespace
-
-    Thus, parameters are useful if you wish to supply options that affect the
-    behavior of your program, or if you wish to thread a value through many
-    functions but don't want to have to pass an argument explicitly.
-
-    On the other hand, dynamic variables are useful if you wish for a variable
-    to obtain it's value from the current namespace, rather than the namespace
-    that it was defined in.
