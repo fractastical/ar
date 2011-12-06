@@ -18,6 +18,7 @@ the same variable names without clobbering each other:
 
     ;; qux.arc
     (import foo bar)
+
     (def one ...)
 
 In the above example, assuming a proper namespace system has been implemented,
@@ -103,6 +104,7 @@ though they are implemented differently. Consider this example:
 
     ;; qux.arc
     (import foo bar)
+
     (def one ...)
 
 Right now, if you loaded everything into a single namespace, such as with

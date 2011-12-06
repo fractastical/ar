@@ -40,7 +40,7 @@ differences:
 
  1. `dynamic` does not create a `w/` form. For instance, `(dynamic foo 5)`
     does not create `w/foo`. In this regard, Nu's `dynamic` is just like ar's
-    `dynamic`
+    `dynamic`.
 
  2. Dynamic variables are dynamic with respect to multiple namespaces,
     whereas parameter variables are not. To explain this, I'll use a simple
