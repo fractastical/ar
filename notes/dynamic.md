@@ -47,17 +47,17 @@ differences:
     example:
 
         ;; foo.arc
-        (implicit qux 5)
-        (dynamic  nou 5)
+        (implicit one 5)
+        (dynamic  two 5)
 
         ;; bar.arc
         (import foo)
 
-        (prn qux) -> this prints 5
-        (prn nou) -> this prints 5
+        (prn one) -> this prints 5
+        (prn two) -> this prints 5
 
-        (= qux 10) -> qux is now 10 in every namespace
-        (= nou 10) -> nou is now 10 only in bar.arc's namespace
+        (= one 10) -> one is now 10 in every namespace
+        (= two 10) -> two is now 10 only in bar.arc's namespace
 
     As you can see, dynamic variables obtain their value from the current
     namespace, whereas parameter variables always refer to the value in the

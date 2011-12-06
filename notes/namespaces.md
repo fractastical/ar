@@ -10,28 +10,28 @@ so as to prevent variable collisions, thus allowing different modules to use
 the same variable names without clobbering each other:
 
     ;; foo.arc
-    (import bar qux)
-    (def foo ...)
+    (def one ...)
+    (def two ...)
 
     ;; bar.arc
-    (def foo ...)
-    (def bar ...)
+    (def one ...)
 
     ;; qux.arc
-    (def foo ...)
+    (import foo bar)
+    (def one ...)
 
 In the above example, assuming a proper namespace system has been implemented,
-the three files should be able to use the name `foo` without clashing at all.
+the three files should be able to use the name `one` without clashing at all.
 Let's examine how a few languages implement namespaces.
 
-In Python, the above example would create a global variable `bar`, load the
-file "bar.arc" into the `bar` namespace, and then do the same for `qux`. Now,
-if you want to call the "bar.arc" functions, you need to do this:
+In Python, the above example would create a global variable `foo`, load the
+file "foo.arc" into the `foo` namespace, and then do the same for `bar`. Now,
+if you want to call the "foo.arc" functions, you need to do this:
 
-    (bar!foo ...)
-    (bar!bar ...)
+    (foo!one ...)
+    (foo!two ...)
 
-And likewise for "qux.arc". Although I mentioned Python, ar uses the same
+And likewise for "bar.arc". Although I mentioned Python, ar uses the same
 system, so the same criticisms apply to both of them. What are those
 criticisms?
 
@@ -95,54 +95,54 @@ How do Nu namespaces work, then? Conceptually, they're exactly like closures,
 though they are implemented differently. Consider this example:
 
     ;; foo.arc
-    (import bar qux)
-    (def foo ...)
+    (def one ...)
+    (def two ...)
 
     ;; bar.arc
-    (def foo ...)
-    (def bar ...)
+    (def one ...)
 
     ;; qux.arc
-    (def foo ...)
+    (import foo bar)
+    (def one ...)
 
 Right now, if you loaded everything into a single namespace, such as with
 `load`, it would look like this:
 
+    ;; foo.arc
+    (def one ...)
+    (def two ...)
+
     ;; bar.arc
-    (def foo ...)
-    (def bar ...)
+    (def one ...)
 
     ;; qux.arc
-    (def foo ...)
-
-    ;; foo.arc
-    (def foo ...)
+    (def one ...)
 
 Thus later definitions overwrite the earlier ones, and Bad Things happen.
 But this problem has already been solved, and it's called closures. Using
 closures, you can create local variables that have the same name as outer
 variables:
 
-    ;; bar.arc
-    (let (foo bar) nil
-      (def foo ...)
-      (def bar ...)
+    ;; foo.arc
+    (let (one two) nil
+      (def one ...)
+      (def two ...)
 
-      ;; qux.arc
-      (let (foo) nil
-        (def foo ...)
+      ;; bar.arc
+      (let (one) nil
+        (def one ...)
 
-        ;; foo.arc
-        (let (foo) nil
-          (def foo ...))))
+        ;; qux.arc
+        (let (one) nil
+          (def one ...))))
 
 As you can see, by nesting local scopes, every file can use the same variable
 names without overwriting each other. Instead, inner definitions shadow outer
 definitions.
 
-This sounds exactly like what you want! Now "foo.arc" can refer to variables
-defined in "bar.arc" and "qux.arc" without needing to prefix the name with
-`bar!` or `qux!`. Yet "foo.arc" doesn't need to worry about other libraries
+This sounds exactly like what you want! Now "qux.arc" can refer to variables
+defined in "foo.arc" and "bar.arc" without needing to prefix the name with
+`foo!` or `bar!`. Yet "qux.arc" doesn't need to worry about other libraries
 messing with its stuff, nor does it need to worry about accidentally breaking
 something.
 
