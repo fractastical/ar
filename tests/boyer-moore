@@ -24,16 +24,20 @@ nil
 nil
 
 
-> (boyer-moore-search (boyer-moore-process "foobar" "bar" "qux") "quxbarfoo")
-0
-
-> (boyer-moore-search (boyer-moore-process "foo" "bar" "qux") "uoobarquxcorge")
+> (let x (map boyer-moore-process '("foobar" "bar" "qux"))
+    (some [boyer-moore-search _ "quxbarfoo"] x))
 3
 
-> (boyer-moore-search (boyer-moore-process "foo" "bar" "qux") "ufoobarquxcorge")
+> (let x (map boyer-moore-process '("foo" "bar" "qux"))
+    (some [boyer-moore-search _ "uoobarquxcorge"] x))
+3
+
+> (let x (map boyer-moore-process '("foo" "bar" "qux"))
+    (some [boyer-moore-search _ "ufoobarquxcorge"] x))
 1
 
-> (boyer-moore-search (boyer-moore-process "foo" "bar" "qux") "ufobarquxcorge")
+> (let x (map boyer-moore-process '("foo" "bar" "qux"))
+    (some [boyer-moore-search _ "ufobarquxcorge"] x))
 3
 
 

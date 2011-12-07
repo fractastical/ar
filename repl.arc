@@ -27,8 +27,11 @@
                         (let val (eval expr)
                           (write val)
                           (prn)
-                          (= that      val
-                             thatexpr  expr)
+                          ;; TODO: ew
+                          (sref namespace val  'that)
+                          (sref namespace expr 'thatexpr)
+                          #|(= that      val
+                             thatexpr  expr)|#
                           (repl))))))))
     (racket-default-continuation-prompt-tag)
     (fn args (repl))))

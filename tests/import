@@ -18,7 +18,8 @@ nil
 error: undefined variable: foo
 
 
-> (= bar (new-namespace arc3-namespace))
+> (= bar (new-namespace namespace))
+#<namespace (len 3)>
 
 > (eval-w/ bar foo)
 #<namespace (len 4)>
@@ -33,21 +34,11 @@ error: undefined variable: foo
 #<namespace (len 4)>
 
 
-;> (w/namespace bar (eval '(= foo 10)))
-10
-
-;> (w/namespace bar foo)
-10
-
-;> foo
-#(tagged namespace {#<namespace:0> #<namespace:0> #<namespace:0> #<namespace:0>})
-
-
 > (= foo (new-namespace namespace))
-#<namespace (len 2)>
+#<namespace (len 3)>
 
 > (= bar (new-namespace foo))
-#<namespace (len 3)>
+#<namespace (len 4)>
 
 > (eval-w/ foo
     (def foo (x)
@@ -89,6 +80,12 @@ error: undefined variable: foo
 > foo
 5
 
+> (ac-compile 'foo)
+(#<fn:ac-lookup-global-arg> (#<fn:ac-lookup-global-raw> #<namespace (len 2)> (racket-quote foo)))
+
+> (eval 'foo)
+5
+
 > (= foo 10)
 10
 
@@ -104,13 +101,24 @@ error: undefined variable: foo
 #<fn:nou>
 
 > namespace
-#<namespace:0>
+#<namespace (len 2)>
 
 > (def nou ())
+*** redefining nou
 #<fn:nou>
 
 > namespace
 #<namespace (len 2)>
+
+> (import time)
+nil
+
+> (import time)
+*** creating new namespace to avoid redefining tokens
+nil
+
+> namespace
+#<namespace (len 3)>
 
 
 ;=============================================================================

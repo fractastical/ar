@@ -14,7 +14,7 @@
 
 (parameter debug-statements)
 
-;; TODO: remove line-number?
+;; TODO: remove line-number ?
 (parameter line-number)
 
 (parameter separator-width 78)
@@ -86,9 +86,10 @@
          line    x!line-number
          name    x!file-name)
     (w/debug-statements nil
-      (let result (w/uniq-counter* 1
-                    (tostring:w/stderr stdout
-                      (errdet:eval run env)))
+      (let result (w/load-automatic-namespaces* nil
+                    (w/uniq-counter* 1
+                      (tostring:w/stderr stdout
+                        (errdet:eval run env))))
         (when expect
           (when expects-strings
             (zap re-multi-replace result ("\\\\\""  "\"" g)
@@ -124,10 +125,11 @@
 (def test-file (n (o env))
   (= expects-strings nil)
   (w/line-number 1
-    (w/cwd (or dirname.n ".") ; dirname
-      (w/infile file basename.n ; basename
-        (whilet x (parse-string file)
-          (eval-test x env))))))
+  (w/cwd (or dirname.n ".") ; dirname
+  (w/infile file basename.n ; basename
+  (w/new-namespace namespace
+    (whilet x (parse-string file)
+      (eval-test x env)))))))
 
 ;(prn (ac-compile '(w/line-number 1 (prn line-number))))
 
@@ -140,5 +142,7 @@
   (each x args
     (test-file x namespace)))
 
-(w/cwd "tests"
-  (apply test-files (or script-args (dir))))
+;; TODO
+(when script-src
+  (w/cwd "tests"
+    (apply test-files (or script-args (dir)))))

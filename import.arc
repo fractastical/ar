@@ -73,6 +73,10 @@
                                    (list x))))
                            args))))
 
+(mac w/new-namespace (x . body)
+  `(w/namespace (new-namespace ,x)
+     ,@body))
+
 ;; TODO: should use object.arc
 ;; TODO: extend should work with keyword args
 (defcall namespace (x k (o d))
@@ -146,7 +150,8 @@
 
 #|(extend ac-global-assign-defined (x a b) (and load-automatic-namespaces*
                                               (nor (in type.x 'parameter 'alias)
-                                                   (in a      'thatexpr  'that)))
+                                                   ;(in a      'thatexpr  'that)
+                                                   ))
   ;(zap new-namespace namespace)
   ;(orig nil 'namespace (new-namespace namespace))
   (ac-namespace (new-namespace (ac-namespace)))

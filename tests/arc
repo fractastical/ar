@@ -189,6 +189,7 @@ error: mcar: expects argument of type <mutable-pair>; given 3
 
 > (def foo (a (o b 5) (o c 10))
     (list a b c))
+#<fn:foo>
 
 > (foo 1)
 (1 5 10)
@@ -214,7 +215,7 @@ error: mcar: expects argument of type <mutable-pair>; given 3
 2
 
 > (let (a b) (list 1 2) c)
-error: reference to undefined identifier: c
+error: undefined variable: c
 
 
 > (let (a (o b 3)) (list 1) a)

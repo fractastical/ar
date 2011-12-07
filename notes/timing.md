@@ -1,6 +1,16 @@
 Timing notes
 ============
 
+  * `procedure-rename` has a very small (12%) cost:
+
+        Direct:
+          > (timeit 'foo)
+          iter: 3,443,284  gc: 0  mem: 917376
+
+        procedure-rename:
+          > (timeit 'foo)
+          iter: 3,083,123  gc: 0  mem: 1144280
+
   * Namespaces are costly:
 
         1   2      3    4    6    6    7

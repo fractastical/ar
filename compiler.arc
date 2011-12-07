@@ -63,7 +63,7 @@
 
 ;; TODO: tests for the fn environment
 (racket-define ac-local-env      (racket-make-parameter nil))
-(racket-define ac-assign-name    (racket-make-parameter #f))
+;(racket-define ac-assign-name    (racket-make-parameter #f))
 
 #|
 ;; Setting this to `t` makes code 60% faster, but disables namespace functionality
@@ -102,7 +102,8 @@
 ;  Hash Tables
 ;=============================================================================
 
-(racket-define sig (racket-make-hash))
+(racket-define sig       (racket-make-hash))
+(racket-define ac-names  (racket-make-hash))
 
 
 ;=============================================================================
@@ -216,13 +217,13 @@
   ;#:transparent
   #:constructor-name annotate
   #:mutable
-  #:guard (racket-lambda (type rep name)
+  #|#:guard (racket-lambda (type rep name)
             (racket-let ((n (ac-assign-name)))
               (racket-if (racket-and n
                                      (racket-procedure? rep)
                                      (racket-not (racket-parameter? rep)))
                            (racket-values type (racket-procedure-rename rep n))
-                         (racket-values type rep))))
+                         (racket-values type rep))))|#
   ;#:property racket-prop:set!-transformer
   ;           (racket-lambda (x) (racket-display x))
   )
@@ -280,22 +281,22 @@
 (racket-define (ac-deep-toarc x)
   (racket-cond
     ((racket-pair? x)
-     (cons (ac-deep-toarc (racket-car x))
-           (ac-deep-toarc (racket-cdr x))))
-    (racket-else
-     (racket-when (racket-mpair? x)
-       (err "Racket mpair passed to ac-deep-toarc" x))
-     x)))
+      (cons (ac-deep-toarc (racket-car x))
+            (ac-deep-toarc (racket-cdr x))))
+    ((racket-string? x)
+      (racket-string-copy x))
+    ((racket-mpair? x)
+      (err "Racket mpair passed to ac-deep-toarc" x))
+    (racket-else x)))
 
 (racket-define (ac-deep-fromarc x)
   (racket-cond
     ((racket-mpair? x)
      (racket-cons (ac-deep-fromarc (car x))
                   (ac-deep-fromarc (cdr x))))
-    (racket-else
-     (racket-when (racket-pair? x)
-       (err "Racket pair passed to ac-deep-fromarc" x))
-     x)))
+    ((racket-pair? x)
+      (err "Racket pair passed to ac-deep-fromarc" x))
+    (racket-else x)))
 
 
 ;=============================================================================
@@ -334,14 +335,19 @@
 (racket-define (name x)
   #|(racket-if (ac-tagged? x)
                (name (rep x))|#
+  (racket-or (racket-hash-ref ac-names x #f)
+             #|(racket-and (racket-or (racket-procedure? x)
+                                    (racket-port? x))
+                         )|#
              (racket-object-name x)
+             nil)
              ;)
              )
 
 (racket-define (print-w/name x l m r port)
   (racket-let ((x (name x)))
     (racket-display l port)
-    (racket-when x
+    (racket-when (ac-true x)
       (racket-display m port)
       (racket-display x port))
     (racket-display r port)))
@@ -356,13 +362,13 @@
     ((racket-eq? (type x) (racket-quote fn))
       (print-w/name x "#<fn" ":" ">" port))
     ((racket-eq? (type x) (racket-quote mac))
-      (print-w/name (rep x) "#<mac" ":" ">" port))
+      (print-w/name x "#<mac" ":" ">" port))
     ((ac-tagged? x)
       (racket-display "#(" port)
       (racket-display "tagged " port)
-      (racket-display (type x) port)
+      (print primitive (type x) port)
       (racket-display " " port)
-      (racket-display (rep x) port)
+      (print primitive (rep x) port)
       (racket-display ")" port))
     (racket-else
       (primitive x port)))
@@ -561,13 +567,13 @@
     ((racket-hash? x)
       (racket-hash-ref x k d))
     (racket-else
-      (err "Function call on inappropriate object" x k d))))|#
+      (err "function call on inappropriate object" x k d))))|#
 
 (racket-define ac-apply-non-fn
   (racket-case-lambda
     [(x)     (racket-if (racket-eq? (type x) (racket-quote parameter))
                           ((rep x))
-                        (err "Function call on inappropriate object" x))]
+                        (err "function call on inappropriate object" x))]
     [(x k)   (racket-cond
                ((racket-namespace? x)
                  (namespace-get x k))
@@ -581,31 +587,35 @@
                             ;; TODO: should alref be defined in compiler.arc?
                             (alref x k)))
                ((racket-eq? (type x) (racket-quote parameter))
-                 ((rep x) k))
+                 ((rep x) k)
+                 k)
                (racket-else
-                 (err "Function call on inappropriate object" x k)))]
+                 (err "function call on inappropriate object" x k)))]
     [(x k d) (racket-cond
                ((racket-namespace? x)
                  (namespace-get x k d))
                ((racket-hash? x)
                  (racket-hash-ref x k d))
                (racket-else
-                 (err "Function call on inappropriate object" x k d)))]))
+                 (err "function call on inappropriate object" x k d)))]))
 
 (racket-define ac-apply
   ;; TODO: ew
   ;(racket-procedure-rename
-    (racket-make-keyword-procedure
-      (racket-lambda (kw kw-val f . racket-arg-list)
-        (racket-cond
-          #|((racket-parameter? f)
-            (racket-keyword-apply (f) kw kw-val racket-arg-list))|#
-          ((racket-procedure? f)
-            (racket-keyword-apply f kw kw-val racket-arg-list))
-          (racket-else
-            (racket-keyword-apply ac-apply-non-fn kw kw-val f racket-arg-list)))))
+  (racket-make-keyword-procedure
+    (racket-lambda (kw kw-val f . racket-arg-list)
+      (racket-cond
+        #|((racket-parameter? f)
+          (racket-keyword-apply (f) kw kw-val racket-arg-list))|#
+        ((racket-procedure? f)
+          (racket-keyword-apply f kw kw-val racket-arg-list))
+        (racket-else
+          (racket-keyword-apply ac-apply-non-fn kw kw-val f racket-arg-list)))))
     ;(racket-quote ac-apply))
-    )
+  )
+
+(racket-hash-set! ac-names ac-apply (racket-quote ac-apply))
+
 
 ;; TODO: why is apply very slow compared to ar and Arc 3.1? fix it
 (racket-define apply
@@ -627,6 +637,8 @@
       ;(racket-apply ac-apply f (racket-mlist->list (racket-apply racket-list* args)))
       ;(racket-apply ac-apply f (racket-mlist->list (racket-apply list* args)))
   )))
+
+(racket-hash-set! ac-names apply (racket-quote apply))
 
 
 ;=============================================================================
@@ -911,6 +923,10 @@
         (ac-compile b)))
 
 (racket-define (ac-global-assigner x a b)
+  (racket-when (racket-or (ac-tagged? b)
+                          (racket-procedure? b))
+    (racket-hash-set! ac-names b a))
+
   (racket-cond
     ;; This implements parameters
     ((racket-eq? (type x) (racket-quote parameter))
@@ -918,7 +934,8 @@
     ((racket-eq? (type x) (racket-quote alias))
       ((cadr (rep x)) b))
     (racket-else
-      (sref (ac-namespace) b a))))
+      (sref (ac-namespace) b a)))
+  b)
 
 (racket-define (ac-global-assign-undefined x a b)
   (ac-global-assigner x a b))
@@ -937,16 +954,18 @@
 
 (racket-define (ac-global-assign a b)
   ;; This allows annotate to assign a name to functions
-  (list (racket-quote racket-parameterize)
+  ;; TODO: figure out a way to get rid of this
+  #|(list (racket-quote racket-parameterize)
         (list (list (racket-quote ac-assign-name)
                     (list (racket-quote racket-quote) a)))
-        (list ac-global-assign-raw
-              (list (racket-quote racket-quote) a)
-              (ac-compile b))))
+        )|#
+  (list ac-global-assign-raw
+        (list (racket-quote racket-quote) a)
+        (ac-compile b)))
 
 (racket-define (ac-assign1 a b)
   (racket-unless (racket-symbol? a)
-    (err "First arg to assign must be a symbol" a))
+    (err "first arg to assign must be a symbol" a))
 
   (racket-if (ac-lex? a)
                (ac-local-assign a b)
@@ -957,20 +976,24 @@
                nil
              ;; TODO: why does Arc 3.1 call ac-macex here?
              (cons (ac-assign1 (car x) (cadr x))
-                   (racket-if (ac-no (cddr x))
+                              ;; TODO: ew
+                   (racket-if (racket-and (ac-no (cddr x))
+                                          (ac-lex? (car x)))
                                 (list (ac-compile (car x)))
                               (ac-assignn (cddr x))))))
 
 (racket-define (ac-assign x)
-  (cons (racket-quote racket-begin)
-        (ac-assignn x)))
+  (racket-let ((x (ac-assignn x)))
+    (racket-if (ac-no (cdr x))
+                 (car x)
+               (cons (racket-quote racket-begin) x))))
 
 ;; TODO: make this prettier
 (racket-define assign (annotate (racket-quote mac)
-                        (racket-procedure-rename
-                          (racket-lambda args
-                            (cons ac-assign (racket-list->mlist args)))
-                          (racket-quote assign))))
+                        (racket-lambda args
+                          (cons ac-assign (racket-list->mlist args)))))
+
+(racket-hash-set! ac-names assign (racket-quote assign))
 
 
 ;=============================================================================
@@ -1205,10 +1228,10 @@
 
 ;; TODO: make this prettier
 (racket-define fn (annotate (racket-quote mac)
-                    (racket-procedure-rename
-                      (racket-lambda (parms . body)
-                        (list* ac-fn parms (racket-list->mlist body)))
-                      (racket-quote fn))))
+                    (racket-lambda (parms . body)
+                      (list* ac-fn parms (racket-list->mlist body)))))
+
+(racket-hash-set! ac-names fn (racket-quote fn))
 
 
 ;=============================================================================
@@ -1229,10 +1252,10 @@
 
 ;; TODO: make this prettier
 (racket-define if (annotate (racket-quote mac)
-                    (racket-procedure-rename
-                      (racket-lambda args
-                        (cons ac-if (racket-list->mlist args)))
-                      (racket-quote if))))
+                    (racket-lambda args
+                      (cons ac-if (racket-list->mlist args)))))
+
+(racket-hash-set! ac-names if (racket-quote if))
 
 
 ;=============================================================================
@@ -1266,12 +1289,15 @@
                          (racket-quote quote))))|#
 
 (racket-define quote (annotate (racket-quote mac)
-                       (racket-procedure-rename
-                         (racket-lambda (x)
-                           ;; TODO: not sure about the %nocompile part: is it
-                           ;;       fast enough?
-                           (list %nocompile (list (racket-lambda () x))))
-                         (racket-quote quote))))
+                       (racket-lambda (x)
+                         ;; TODO: not sure about the %nocompile part: is it
+                         ;;       fast enough?
+                         ;(list %nocompile (list (racket-lambda () x)))
+                         (list %nocompile
+                           (list (racket-procedure-rename (racket-lambda () x)
+                                                          (racket-quote quoted)))))))
+
+(racket-hash-set! ac-names quote (racket-quote quote))
 
 #|
 
@@ -1340,11 +1366,11 @@
 
 ;; TODO: make this prettier
 (racket-define quasiquote (annotate (racket-quote mac)
-                            (racket-procedure-rename
-                              (racket-lambda args
-                                (racket-apply qq-expand args))
-                              (racket-quote quasiquote))))
+                            (racket-lambda args
+                              (racket-apply qq-expand args))))
                               ;(racket-apply qq-expand (racket-list->mlist args)))))
+
+(racket-hash-set! ac-names quasiquote (racket-quote quasiquote))
 
 
 ;=============================================================================
@@ -1378,11 +1404,11 @@
                                 (racket-else
                                   ;; This is needed to prevent cyclic lists
                                   ;; TODO: should idfn be defined in compiler.arc?
-                                  (racket-let ((x (racket-mmap (lambda (x) x) com)))
+                                  (racket-let ((x (racket-mmap (racket-lambda (x) x) com)))
                                     (racket-set-mcar! com (list ind val))
                                     (racket-set-mcdr! com x))))))))
     (racket-else
-      (err "Can't set reference" com ind val)))
+      (err "can't set reference" com ind val)))
   val)
 
 
@@ -1411,6 +1437,8 @@
 
 (racket-define is (ac-binary is2 ac-pairwise))
 
+(racket-hash-set! ac-names is (racket-quote is))
+
 
 ;=============================================================================
 ;  %nocompile/%compile
@@ -1438,10 +1466,10 @@
 
 ;; TODO: make this prettier
 (racket-define %nocompile (annotate (racket-quote mac)
-                            (racket-procedure-rename
-                              (racket-lambda args
-                                (cons ac-nocompile (racket-list->mlist args)))
-                              (racket-quote %nocompile))))
+                            (racket-lambda args
+                              (cons ac-nocompile (racket-list->mlist args)))))
+
+(racket-hash-set! ac-names %nocompile (racket-quote %nocompile))
 
 
 ;=============================================================================
@@ -1452,10 +1480,10 @@
 
 ;; TODO: make this prettier
 (racket-define %splice (annotate (racket-quote mac)
-                         (racket-procedure-rename
-                           (racket-lambda args
-                             (cons ac-splice (racket-list->mlist args)))
-                           (racket-quote %splice))))
+                         (racket-lambda args
+                           (cons ac-splice (racket-list->mlist args)))))
+
+(racket-hash-set! ac-names %splice (racket-quote %splice))
 
 ;(foo (%splice 1 2 3))
 ;(foo 1 2 3)
@@ -1623,7 +1651,8 @@
                         ;(racket-port-count-lines-enabled     #t)
                         ;(racket-current-directory            (load-file-dir x))
                         ;(racket-compile-enforce-module-constants #f)
-                        )|#
+                        )
+    )|#
     ;(racket-displayln (racket-namespace-mapped-symbols))
     ;(racket-displayln (racket-compile-allow-set!-undefined))
   (ac-with-find-file x

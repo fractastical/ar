@@ -250,7 +250,7 @@
               (cons (car fs) args)))
         (cdr f))
       (is (car f) 'no)
-       (err "Can't invert " (cons f args))
+       (err "can't invert " (cons f args))
        (cons f args)))
 
 (def expand= (place val)
@@ -647,7 +647,7 @@
 
 (mac on (var s . body)
   (if (is var 'index)
-      (err "Can't use index as first arg to on.")
+      (err "can't use index as first arg to on.")
       (w/uniq gs
         `(let ,gs ,s
            (forlen index ,gs
@@ -862,7 +862,7 @@
                      (each (k v) x
                        (= (new k) v))
                      new)
-                   (err "Can't copy " x))
+                   (err "can't copy " x))
     (map (fn ((k v)) (= (x2 k) v))
          (pair args))
     x2))
@@ -1288,7 +1288,7 @@
       string (map downc x)
       char   (downc x)
       sym    (sym (map downc (coerce x 'string)))
-             (err "Can't downcase" x))))
+             (err "can't downcase" x))))
 
 (def upcase (x)
   (let upc (fn (c)
@@ -1300,7 +1300,7 @@
       string (map upc x)
       char   (upc x)
       sym    (sym (map upc (coerce x 'string)))
-             (err "Can't upcase" x))))
+             (err "can't upcase" x))))
 
 (def inc (x (o n 1))
   (coerce (+ (coerce x 'int) n) (type x)))

@@ -40,7 +40,7 @@
             (if (is (cadr toks) #\!)
                   (list 'quote (ac-chars->value (car toks)))
                 (if (in (car toks) #\. #\!)
-                      (err "Bad ssyntax" orig)
+                      (err "bad ssyntax" orig)
                     (ac-chars->value (car toks)))))))
 
 (def ac-expand-sexpr (sym)

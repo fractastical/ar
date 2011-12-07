@@ -251,7 +251,7 @@
         ;; TODO: can this be a simple `or` like in `num`...?
         (let n (racket-string->number x base)
           (if n  (ac-iround n)
-                 (err "Can't coerce" x 'string)))))
+                 (err "can't coerce" x 'string)))))
 
 (def char (x)
   (if (char? x)
@@ -268,7 +268,7 @@
         x
       (string? x)
         (or (racket-string->number x base)
-            (err "Can't coerce" x 'string))))
+            (err "can't coerce" x 'string))))
 
 (def keyword (x)
   (racket-string->keyword (string x)))
@@ -277,7 +277,7 @@
 ;; TODO: need to figure out a better way to deal with types
 (def coerce (x totype (o base 10))
   (if (ac-tnil (ac-tagged? x))
-        (err "Can't coerce annotated object")
+        (err "can't coerce annotated object")
 
       (is totype (type x))  x
       (is totype 'int)      (int x base)
@@ -289,7 +289,7 @@
                                   (racket-list->mlist (racket-string->list x))
                                 (no x)
                                   nil)
-                            (err "Can't coerce" x type)))
+                            (err "can't coerce" x type)))
 
 
 ;=============================================================================
@@ -448,7 +448,7 @@
           (racket-string<? (sym x) (sym y))
         (char? x) ;(and (char? x) (char? y))
           (racket-char<? x y)
-        (err "Can't <" x y))))
+        (err "can't <" x y))))
 
 (def >2 (x y)
   (ac-tnil
@@ -460,7 +460,7 @@
           (racket-string>? (string x) (string y))
         (char? x) ;(and (char? x) (char? y))
           (racket-char>? x y)
-        (err "Can't >" x y))))
+        (err "can't >" x y))))
 
 (= +  (ac-binary +-2 reduce)
    <  (ac-binary  <2 ac-pairwise)
@@ -514,9 +514,15 @@
 ;  Parameters
 ;=============================================================================
 
-;; TODO: function version of alias...?
-(mac alias (name get set)
+;; TODO: function version of make-alias...?
+(mac make-alias (name get set)
   `(= ,name (annotate 'alias (list ,get ,set))))
+
+(mac alias (name orig)
+  (w/uniq v
+    `(make-alias ,name
+       (fn ()   ,orig)
+       (fn (,v) (= ,orig ,v)))))
 
 ;; TODO: make this into a function
 (mac make-dynamic (name val)
@@ -524,7 +530,7 @@
     `(with (,u  ,val
             ,x  nil)
        ;; TODO: use letr ?
-       (= ,x (alias ,name
+       (= ,x (make-alias ,name
                                 ;; TODO: use (ref namespace ...) ?
                                 ;; TODO: how slow is it to create a new fn
                                 ;;       every time...?
@@ -573,7 +579,7 @@ foo -> 5
 
 (mac make-parameter (name param)
   `(do (= ,name (annotate 'parameter ,param))
-       ;(alias ,name ,u ,u)
+       ;(make-alias ,name ,u ,u)
        (make-w/ ,name)))
 
 #|(def parameter (init (o guard))
@@ -727,7 +733,7 @@ foo -> 5
   (case (type port)
     input  (racket-close-input-port port)
     output (racket-close-output-port port)
-           (err "Can't close " port)))
+           (err "can't close " port)))
 
 (def close ports
   (map1 close-port ports))
