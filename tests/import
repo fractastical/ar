@@ -1,5 +1,5 @@
 > (= foo (new-namespace (new-namespace (new-namespace)) (new-namespace)))
-#(tagged namespace {#<namespace:0> #<namespace:0> #<namespace:0> #<namespace:0>})
+#<namespace (len 4)>
 
 > foo!bar
 nil
@@ -21,7 +21,7 @@ error: undefined variable: foo
 > (= bar (new-namespace arc3-namespace))
 
 > (eval-w/ bar foo)
-#(tagged namespace {#<namespace:0> #<namespace:0> #<namespace:0> #<namespace:0>})
+#<namespace (len 4)>
 
 > (eval-w/ bar (= foo 10))
 10
@@ -30,7 +30,7 @@ error: undefined variable: foo
 10
 
 > foo
-#(tagged namespace {#<namespace:0> #<namespace:0> #<namespace:0> #<namespace:0>})
+#<namespace (len 4)>
 
 
 ;> (w/namespace bar (eval '(= foo 10)))
@@ -44,10 +44,10 @@ error: undefined variable: foo
 
 
 > (= foo (new-namespace namespace))
-#(tagged namespace {#<namespace:0> #<namespace:0>})
+#<namespace (len 2)>
 
 > (= bar (new-namespace foo))
-#(tagged namespace {#<namespace:0> #<namespace:0> #<namespace:0>})
+#<namespace (len 3)>
 
 > (eval-w/ foo
     (def foo (x)
@@ -110,4 +110,68 @@ error: undefined variable: foo
 #<fn:nou>
 
 > namespace
-#(tagged namespace {#<namespace:0> #<namespace:0>})
+#<namespace (len 2)>
+
+
+;=============================================================================
+;  Namespace reversal
+;=============================================================================
+
+> (= arc    (new-namespace arc3-namespace))
+#<namespace (len 2)>
+
+> (= arubic (new-namespace arc))
+#<namespace (len 3)>
+
+
+> (eval-w/ arc
+    (def qux (x)
+      10)
+    (def nou (x)
+      29))
+#<fn:nou>
+
+> (eval-w/ arubic
+    (def qux (x)
+      x)
+    (def corge (x)
+      (+ (qux x) (nou x))))
+#<fn:corge>
+
+
+> (eval-w/ arc
+    (qux 50))
+10
+
+> (eval-w/ arubic
+    (qux 50))
+50
+
+> (eval-w/ arc
+    (corge 50))
+error: undefined variable: corge
+
+> (eval-w/ arubic
+    (corge 50))
+79
+
+
+> (zap namespace-fn arubic rev)
+#<namespace (len 3)>
+
+
+> (eval-w/ arc
+    (qux 50))
+10
+
+> (eval-w/ arubic
+    (qux 50))
+10
+
+> (eval-w/ arc
+    (corge 50))
+error: undefined variable: corge
+
+> (eval-w/ arubic
+    (corge 50))
+79

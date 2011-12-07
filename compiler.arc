@@ -1600,13 +1600,14 @@
                    (f x))))))|#
 
 (racket-define (ac-with-find-file x f)
-  (racket-let* ((y  (load-normalize-path x))
-                (it (load-file-dir y)))
-    (racket-if (ac-true it)
-                 (racket-parameterize ((racket-current-directory it))
-                   (f y))
-               (racket-parameterize ((racket-current-directory (load-file-dir x)))
-                 (f x)))))
+  (racket-parameterize ((racket-port-count-lines-enabled  #t))
+    (racket-let* ((y  (load-normalize-path x))
+                  (it (load-file-dir y)))
+      (racket-if (ac-true it)
+                   (racket-parameterize ((racket-current-directory it))
+                     (f y))
+                 (racket-parameterize ((racket-current-directory (load-file-dir x)))
+                   (f x))))))
 
 
 (racket-define (ac-eval-all in)
@@ -1618,18 +1619,18 @@
 
 (racket-define (ac-load x)
   ;(racket-let ((x (load-normalize-path x)))
-  (racket-parameterize ((racket-compile-allow-set!-undefined #t)
-                        (racket-port-count-lines-enabled     #t)
+  #|(racket-parameterize ((racket-compile-allow-set!-undefined #t)
+                        ;(racket-port-count-lines-enabled     #t)
                         ;(racket-current-directory            (load-file-dir x))
                         ;(racket-compile-enforce-module-constants #f)
-                        )
+                        )|#
     ;(racket-displayln (racket-namespace-mapped-symbols))
     ;(racket-displayln (racket-compile-allow-set!-undefined))
-    (ac-with-find-file x
-      (racket-lambda (x)
-        (racket-call-with-input-file x
-          (racket-lambda (in)
-            (ac-eval-all in)))))))
+  (ac-with-find-file x
+    (racket-lambda (x)
+      (racket-call-with-input-file x
+        (racket-lambda (in)
+          (ac-eval-all in))))))
 
 ;(racket-display (ac-compile (ac-deep-toarc (racket-quote (foo (%splice 1 2 3))))))
 ;(racket-newline)

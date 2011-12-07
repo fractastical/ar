@@ -179,9 +179,15 @@
 
 
 ;; TODO: could use a better name
-(def wrap-namespace (x (o f last))
-  (let r rep.x
-    (annotate 'namespace (cons f.r r))))
+(def namespace-fn (x (o f idfn))
+  (annotate 'namespace (f:rep x)))
+
+;; TODO: could use a better name
+(def namespace-wrap (x (o f last))
+  (namespace-fn x (fn (x) (cons f.x x)))
+  #|(let r rep.x
+    (annotate 'namespace (cons f.r r)))|#
+  )
 
 
 #|(= imported-namespaces*
@@ -199,14 +205,18 @@
         ;; TODO: use dont
         (do (push abspath.x load-paths*)
             nil)
-      (withs (x     (load-normalize-path string.x)
+      (w/load-automatic-namespaces* t
+        (ac-with-find-file string.x (fn (x)
+                                      (prn "loading: " x)
+                                      (load x))))
+      #|(withs (x     (load-normalize-path string.x)
               path  abspath.x)
-        (prn "loading: " path)
+
         ;; TODO: use w/cwd ...?
         ;`(parameterize (racket-current-directory ,load-file-dir.x))
-        (parameterize (load-automatic-namespaces*  t
+        #|(parameterize (load-automatic-namespaces*  t
                        cwd                         load-file-dir.x)
-          (load x)
+          (load x))|#
           #|(aif imported-namespaces*.path
                             ;; TODO: should namespace come first or second...?
                  ;; TODO: fix the huge explosion of namespaces when you
@@ -218,7 +228,8 @@
                    #|(= namespace (new-namespace
                      (= imported-namespaces*.path namespace)))|#
                    ))|#
-          ))))
+          )|#
+      ))
 
 (def importfn (args)
   (w/load-paths* load-paths*
