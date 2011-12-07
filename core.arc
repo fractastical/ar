@@ -204,8 +204,7 @@
 (mac make-predicate (x (o y x))
          ;; TODO: this is just (sym x "?")
   `(def ,(racket-string->symbol
-           (racket-string-append
-             (racket-symbol->string x) "?"))
+           (racket-string-append (string1 x) "?"))
         (x) (isa x ',y)))
 
 (make-predicate cons)
@@ -226,7 +225,8 @@
   (if (fn? x) x [is _ x]))
 
 
-(def string1 (x)
+;; TODO: should these throw errors...?
+#|(def string1 (x)
   (if (string? x)
         x
       (char? x)
@@ -239,7 +239,7 @@
       (num? x)
         (racket-number->string x)
       (sym? x)
-        (racket-symbol->string x)))
+        (racket-symbol->string x)))|#
 
 (def string args
   (apply racket-string-append (map1 string1 args)))
@@ -622,6 +622,13 @@ foo -> 5
 (make-parameter load-suffix*  ac-load-suffix*)
 
 
+(parameter debug-mode* nil)
+
+(dynamic debug (fn args
+                 (when debug-mode*
+                   (apply prn (intersperse " " args)))))
+
+
 ;=============================================================================
 ;  I/O
 ;=============================================================================
@@ -796,10 +803,10 @@ foo -> 5
   ;(prn name)
   (parameterize (racket-current-directory name)
     (let x (map1 (fn (x)
-                   (let x (racket-path->string x)
+                   ;(let x (string x)
                      (if (dir-exists x)
                            (string x "/")
-                         x)))
+                         (string x)))
                  (racket-list->mlist (racket-directory-list)))
       (if f (keep f x)
             x))))

@@ -45,7 +45,7 @@ error: undefined variable: foo
       (bar x))
     (def bar (x)
       x))
-#<fn>
+#<fn:bar>
 
 > (eval-w/ bar
     (foo 50))
@@ -74,22 +74,22 @@ error: undefined variable: foo
 ;  Dynamic variables
 ;=============================================================================
 
-> (dynamic foo 5)
+> (dynamic dyn-foo 5)
 5
 
-> foo
+> dyn-foo
 5
 
-> (ac-compile 'foo)
-(#<fn:ac-lookup-global-arg> (#<fn:ac-lookup-global-raw> #<namespace (len 2)> (racket-quote foo)))
+> (ac-compile 'dyn-foo)
+(#<fn:ac-lookup-global-arg> (#<fn:ac-lookup-global-raw> #<namespace (len 2)> (racket-quote dyn-foo)))
 
-> (eval 'foo)
+> (eval 'dyn-foo)
 5
 
-> (= foo 10)
+> (= dyn-foo 10)
 10
 
-> foo
+> dyn-foo
 10
 
 
@@ -111,10 +111,21 @@ error: undefined variable: foo
 #<namespace (len 2)>
 
 > (import time)
+ loading:  time.arc
+ skipping: strings.arc
 nil
 
 > (import time)
-*** creating new namespace to avoid redefining tokens
+ skipping: time.arc
+nil
+
+> namespace
+#<namespace (len 2)>
+
+> (reimport time)
+ loading:  time.arc
+ loading:  strings.arc
+*** creating new namespace to avoid redefining utime
 nil
 
 > namespace

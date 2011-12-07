@@ -4,7 +4,7 @@
             (if empty.v
                   (racket-current-directory)
                 (racket-expand-user-path v)))
-    (fn (v) (racket-path->string v))))|#
+    (fn (v) (string v))))|#
 
 
 (def racket-vector->mlist (x)
@@ -32,7 +32,7 @@
   (zap string x)
   (if empty.x
         x
-      (racket-path->string:racket-expand-user-path x)))|#
+      (string:racket-expand-user-path x)))|#
 
 ;(require racket/path)
 
@@ -41,8 +41,7 @@
   (let x (racket-filename-extension string.x)
     (if (is x #f)
           nil
-        ;; TODO: maybe this should be in string1...?
-        (racket-bytes->string/utf-8 x)))
+        (string x)))
   ;(cadr:re-match ".+\\.(\\w+)$" string.x)
   )
 
@@ -74,7 +73,7 @@
       (string x "/")))
 
 #|(def joinpath args
-  (racket-path->string:apply racket-build-path
+  (string:apply racket-build-path
     (aloop (x   args
             acc nil)
       (if (no x)
@@ -103,7 +102,7 @@
               self.rest))))|#
 
 #|(def abspath ((o x))
-  (racket-path->string (racket-normalize-path (expandpath x))))|#
+  (string (racket-normalize-path (expandpath x))))|#
 
 (def absdir ((o x))
   (dirname abspath.x))

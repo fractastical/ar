@@ -1,4 +1,5 @@
 > (import boyer-moore)
+ loading:  boyer-moore.arc
 nil
 
 > (boyer-posmatch "foo" "foobar")

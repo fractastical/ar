@@ -1,5 +1,5 @@
 > (namespace arc3-namespace)
-#<void>
+#<namespace:0>
 
 ;=============================================================================
 ;  Compiler specific things
@@ -224,7 +224,7 @@ error: racket-lambda: default-value expression missing at: c in: (racket-lambda 
 
 > (let %nocompile nil
     (%nocompile (+ 10 5)))
-error: Function call on inappropriate object () 15
+error: function call on inappropriate object () 15
 
 
 ;=============================================================================

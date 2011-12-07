@@ -10,8 +10,9 @@
                (regexp pattern) in)
     (if (is result #f)
           nil
+                 ;; TODO: figure out how to get rid of this `if`
         (map [if (ac-tnil (racket-bytes? _))
-                   (racket-bytes->string/utf-8 _)
+                   (string _)
                  _]
              (racket-list->mlist result)))))
 

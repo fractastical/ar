@@ -152,6 +152,34 @@
 
 
 ;=============================================================================
+;  Strings
+;=============================================================================
+
+;; TODO: should this throw an error...?
+(racket-define (string1 x)
+  (racket-cond
+    ((racket-string? x)
+      x)
+    ((racket-symbol? x)
+      (racket-symbol->string x))
+    ((racket-path? x)
+      (racket-path->string x))
+    ((racket-number? x)
+      (racket-number->string x))
+    ((racket-keyword? x)
+      (racket-keyword->string x))
+    ((racket-bytes? x)
+      (racket-bytes->string/utf-8 x))
+    ((racket-mpair? x)
+      ;(apply racket-string-append (map1 string x))
+      (apply string x))
+    ((ac-no x)
+      "")
+    ((racket-char? x)
+      (racket-string x))))
+
+
+;=============================================================================
 ;  Symbols
 ;=============================================================================
 
@@ -164,9 +192,8 @@
                                  (ac-uniq-counter* (racket-+ (ac-uniq-counter*) 1))
                                  num))))
     (racket-string->uninterned-symbol
-      ;; TODO: should use (string ...) rather than the Racket functions
-      (racket-string-append (racket-symbol->string name)
-                            (racket-number->string num)))))
+      (racket-string-append (string1 name)
+                            (string1 num)))))
 
 (racket-define (ac-var x (def nil))
   ;(namespace-get arc3-namespace x def)
@@ -1014,7 +1041,7 @@
   (x (racket-mappend (x) (list y))))
 
 (racket-define (ac-keyword->symbol x)
-  (racket-string->symbol (racket-keyword->string x)))
+  (racket-string->symbol (string1 x)))
 
 (racket-define (ac-fn-keyword-args x default)
   (racket-let ((c (ac-keyword->symbol x)))
@@ -1569,17 +1596,17 @@
 ;=============================================================================
 
 #|(racket-define exec-dir*
-  (racket-path->string
+  (string1
     (racket-path-only
       (racket-normalize-path
         (racket-find-system-path (racket-quote run-file))))))|#
 
 (racket-define ac-load-paths*
   (racket-make-parameter
-    (list (racket-path->string (racket-current-directory))
+    (list (string1 (racket-current-directory))
           exec-dir*
-          (racket-path->string (racket-build-path exec-dir* "lib"))
-          (racket-path->string (racket-build-path exec-dir* "lang")))))
+          (string1 (racket-build-path exec-dir* "lib"))
+          (string1 (racket-build-path exec-dir* "lang")))))
 
 (racket-define ac-load-suffix* (racket-make-parameter ".arc"))
 

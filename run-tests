@@ -12,16 +12,16 @@
 (parameter verbose)
 (parameter expects-strings)
 
-(parameter debug-statements)
+;(parameter debug-statements)
 
 ;; TODO: remove line-number ?
 (parameter line-number)
 
 (parameter separator-width 78)
 
-(def debug args
+#|(def debug args
   (push (tostring:mapfn disp (intersperse " " args))
-        debug-statements))
+        debug-statements))|#
 
 (def writeuntil (str x)
   (whenlet c readc.str
@@ -52,8 +52,7 @@
                                                (fn ()  (read x)))
                           expects      (errsafe:cut allchars.x 1 -1)
                           line-number  line
-                                       ;; TODO: fix it so it doesn't call racket-path->string
-                          file-name    (basename:racket-path->string:name in))
+                          file-name    (basename:string:name in))
                      (++ line-number c)))))
 
         (do (readline in)
@@ -85,7 +84,8 @@
          expect  x!expects
          line    x!line-number
          name    x!file-name)
-    (w/debug-statements nil
+    ;(w/debug-statements nil
+    (w/debug-mode* t
       (let result (w/load-automatic-namespaces* nil
                     (w/uniq-counter* 1
                       (tostring:w/stderr stdout
@@ -116,9 +116,9 @@
                     (prn expect)
                     (prn "\n- Got:")
                     (prn result)
-                    (when debug-statements
+                    #|(when debug-statements
                       (prn "\n- Debug:")
-                      (eachfn prn rev.debug-statements))
+                      (eachfn prn rev.debug-statements))|#
                     (prn "\n" (newstring separator-width #\=))
                     nil)))))))
 

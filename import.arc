@@ -12,16 +12,16 @@
             (if empty.v
                   (racket-current-directory)
                 (racket-expand-user-path v)))
-    (fn (v) (racket-path->string v))))
+    (fn (v) (string v))))
 
 (def expandpath (x)
   (zap string x)
   (if empty.x
         x
-      (racket-path->string:racket-expand-user-path x)))
+      (string:racket-expand-user-path x)))
 
 (def joinpath args
-  (racket-path->string:apply racket-build-path
+  (string:apply racket-build-path
     (aloop (x   args
             acc nil)
       (if (no x)
@@ -38,7 +38,7 @@
     (unless empty.x
       (zap converter x)
       (when ac-tnil.x
-        (racket-path->string x)))))
+        (string x)))))
 
 (= dirname  (make-path->string racket-path-only:expandpath))
 (= basename (make-path->string racket-file-name-from-path:expandpath))
@@ -46,7 +46,7 @@
 
 (def abspath ((o x))
   ;(joinpath cwd x)
-  (racket-path->string:racket-path->complete-path expandpath.x))
+  (string:racket-path->complete-path expandpath.x))
 
 
 ;; TODO: ew
@@ -216,8 +216,8 @@
             (let path abspath.x
                   ;; TODO: fix this
               (if ((imported-paths*) path)
-                    (prn " skipping: " x)
-                  (do (prn " loading:  " x)
+                    (debug " skipping:" x)
+                  (do (debug " loading: " x)
                       (= ((imported-paths*) path) t)
                       (load x)))))))
       #|(withs (x     (load-normalize-path string.x)

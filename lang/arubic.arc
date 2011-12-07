@@ -53,7 +53,7 @@
 (= arubic-namespace (zap new-namespace namespace))
 
 ;; TODO: macro to generate these
-(mac w/arubir body
+(mac w/arubic body
   `(eval-w/ arubic-namespace ,@body))
 
 
