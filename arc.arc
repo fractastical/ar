@@ -53,8 +53,8 @@
 
 (def empty (seq)
   (or (no seq)
-      (and (or (is (type seq) 'string) (is (type seq) 'table))
-           (is (len seq) 0))))
+      (is seq '||)
+      (is (len seq) 0)))
 
 ; Like keep, seems like some shouldn't testify.  But find should,
 ; and all probably should.
@@ -336,10 +336,12 @@
 
 (def last (xs)
   (if (cons? xs)
-        (if (cdr xs)
-              (last (cdr xs))
-            (car xs))
-        (xs (- (len xs) 1))))
+        ((afn (x)
+           (if (cdr x)
+                 (self (cdr x))
+               (car x)))
+         xs)
+      (xs (- (len xs) 1))))
 
 (def rem (test seq)
   (let f (testify test)

@@ -128,6 +128,10 @@ The current differences are as follows:
 
 *   `implicit` has been renamed to `parameter`
 
+*   `empty` now works on the empty symbol `'||` as well as any sequence that has a `len` of `0`
+
+*   `in` is faster when given only two arguments: `(in x 5)`
+
 *   [The REPL](#repl) is implemented better
 
 *   [Implicit variables](#implicit) are implemented better

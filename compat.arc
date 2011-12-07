@@ -1,6 +1,5 @@
-;; TODO: use alias
-(= acons  cons?
-   alist  list?)
+(alias acons cons?)
+(alias alist list?)
 
 (def call-w/stdout (port thunk)
   (parameterize (racket-current-output-port port) (thunk)))

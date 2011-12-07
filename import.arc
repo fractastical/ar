@@ -195,15 +195,15 @@
   )
 
 
-#|(= imported-namespaces*
-   ;; TODO: ew
-   (listtab:list (list (joinpath exec-dir* "compiler.arc") arc3-namespace)
-                 (list (joinpath exec-dir* "core.arc")     arc3-namespace)
-                 (list (joinpath exec-dir* "ssyntax.arc")  arc3-namespace)
-                 (list (joinpath exec-dir* "compat.arc")   arc3-namespace)
-                 (list (joinpath exec-dir* "arc.arc")      arc3-namespace)
-                 (list (joinpath exec-dir* "extra.arc")    arc3-namespace)
-                 (list (joinpath exec-dir* "import.arc")   arc3-namespace)))|#
+(parameter imported-paths*
+  ;; TODO: ew
+  (listtab:list (list (joinpath exec-dir* "compiler.arc") arc3-namespace)
+                (list (joinpath exec-dir* "core.arc")     arc3-namespace)
+                (list (joinpath exec-dir* "ssyntax.arc")  arc3-namespace)
+                (list (joinpath exec-dir* "compat.arc")   arc3-namespace)
+                (list (joinpath exec-dir* "arc.arc")      arc3-namespace)
+                (list (joinpath exec-dir* "extra.arc")    arc3-namespace)
+                (list (joinpath exec-dir* "import.arc")   arc3-namespace)))
 
 (def importfn1 (x)
   (if (dirname x)
@@ -211,9 +211,15 @@
         (do (push abspath.x load-paths*)
             nil)
       (w/load-automatic-namespaces* t
-        (ac-with-find-file string.x (fn (x)
-                                      (prn "loading: " x)
-                                      (load x))))
+        (ac-with-find-file string.x
+          (fn (x)
+            (let path abspath.x
+                  ;; TODO: fix this
+              (if ((imported-paths*) path)
+                    (prn " skipping: " x)
+                  (do (prn " loading:  " x)
+                      (= ((imported-paths*) path) t)
+                      (load x)))))))
       #|(withs (x     (load-normalize-path string.x)
               path  abspath.x)
 
@@ -222,7 +228,7 @@
         #|(parameterize (load-automatic-namespaces*  t
                        cwd                         load-file-dir.x)
           (load x))|#
-          #|(aif imported-namespaces*.path
+          #|(aif imported-paths*.path
                             ;; TODO: should namespace come first or second...?
                  ;; TODO: fix the huge explosion of namespaces when you
                  ;;       import a module that was already imported
@@ -231,7 +237,7 @@
                (do (load x)
                    ;(zap new-namespace namespace)
                    #|(= namespace (new-namespace
-                     (= imported-namespaces*.path namespace)))|#
+                     (= imported-paths*.path namespace)))|#
                    ))|#
           )|#
       ))
@@ -249,3 +255,7 @@
        nil)|#
   ;`(importfn ,@(map string args))
   `(importfn ',args))
+
+(mac reimport args
+  `(w/imported-paths* (table)
+     (importfn ',args)))

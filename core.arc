@@ -189,6 +189,8 @@
 ;=============================================================================
 
 (def isa      (x y) (is (type x) y))
+
+#|
 ;; TODO: macro to generate these easier
 (def cons?    (x)   (isa x 'cons))
 (def int?     (x)   (isa x 'int))
@@ -197,9 +199,27 @@
 (def char?    (x)   (isa x 'char))
 (def fn?      (x)   (isa x 'fn))
 (def mac?     (x)   (isa x 'mac))
-(def keyword? (x)   (isa x 'keyword))
-(def num?     (x)   (ac-tnil (racket-number? x))) ;(or (int? x) (isa x 'num))
-(def list?    (x)   (if (no x) t (cons? x))) ;(or (no x) (cons? x))
+(def keyword? (x)   (isa x 'keyword))|#
+
+(mac make-predicate (x (o y x))
+         ;; TODO: this is just (sym x "?")
+  `(def ,(racket-string->symbol
+           (racket-string-append
+             (racket-symbol->string x) "?"))
+        (x) (isa x ',y)))
+
+(make-predicate cons)
+(make-predicate int)
+(make-predicate string)
+(make-predicate sym)
+(make-predicate char)
+(make-predicate fn)
+(make-predicate mac)
+(make-predicate keyword)
+(make-predicate table)
+
+(def num?  (x) (ac-tnil (racket-number? x))) ;(or (int? x) (isa x 'num))
+(def list? (x) (if (no x) t (cons? x))) ;(or (no x) (cons? x))
 
 
 (def testify (x)
@@ -340,11 +360,12 @@
          `(let ,g ,(car args)
             (if ,g ,g (or ,@(cdr args)))))))
 
-
 (mac in (x . choices)
-  (w/uniq g
-    `(let ,g ,x
-       (or ,@(map1 (fn (c) `(is ,g ,c)) choices)))))
+  (if (cdr choices)
+        (w/uniq g
+          `(let ,g ,x
+             (or ,@(map1 (fn (c) `(is ,g ,c)) choices))))
+      `(is ,x ,(car choices))))
 
 
 ;=============================================================================
@@ -736,7 +757,8 @@ foo -> 5
            (err "can't close " port)))
 
 (def close ports
-  (map1 close-port ports))
+  (map1 close-port ports)
+  nil)
 
 (ac-notimpl force-close)
 
@@ -872,7 +894,7 @@ foo -> 5
         (let m (ac-macro? (car x))
           (if (is m #f)
                 x
-              (apply m (cdr x))))
+              (apply (rep m) (cdr x))))
       x))
 
 (def macex (x)

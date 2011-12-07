@@ -1578,7 +1578,8 @@
   (racket-make-parameter
     (list (racket-path->string (racket-current-directory))
           exec-dir*
-          (racket-path->string (racket-build-path exec-dir* "lib")))))
+          (racket-path->string (racket-build-path exec-dir* "lib"))
+          (racket-path->string (racket-build-path exec-dir* "lang")))))
 
 (racket-define ac-load-suffix* (racket-make-parameter ".arc"))
 
