@@ -910,28 +910,37 @@
         a
         (ac-compile b)))
 
-(racket-define ac-global-assigner
+(racket-define (ac-global-assigner x a b)
+  (racket-cond
+    ;; This implements parameters
+    ((racket-eq? (type x) (racket-quote parameter))
+      ((rep x) b))
+    ((racket-eq? (type x) (racket-quote alias))
+      ((cadr (rep x)) b))
+    (racket-else
+      (sref (ac-namespace) b a))))
+
+(racket-define (ac-global-assign-undefined x a b)
+  (ac-global-assigner x a b))
+
+(racket-define (ac-global-assign-defined x a b)
+  (ac-global-assigner x a b))
+
+(racket-define ac-global-assign-raw
   (racket-let ((u (uniq)))
     (racket-lambda (a b)
                       ;; TODO: should this be ac-var or ac-lookup-global?
       (racket-let ((x (ac-var a u)))
-                   ;; This implements parameters
-        (racket-cond
-          #|((racket-parameter? x)
-            (x b))|#
-          ((racket-eq? (type x) (racket-quote parameter))
-            ((rep x) b))
-          ((racket-eq? (type x) (racket-quote alias))
-            ((cadr (rep x)) b))
-          (racket-else
-            (sref (ac-namespace) b a)))))))
+        (racket-if (racket-eq? x u)
+                     (ac-global-assign-undefined x a b)
+                   (ac-global-assign-defined x a b))))))
 
 (racket-define (ac-global-assign a b)
   ;; This allows annotate to assign a name to functions
   (list (racket-quote racket-parameterize)
         (list (list (racket-quote ac-assign-name)
                     (list (racket-quote racket-quote) a)))
-        (list ac-global-assigner
+        (list ac-global-assign-raw
               (list (racket-quote racket-quote) a)
               (ac-compile b))))
 

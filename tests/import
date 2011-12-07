@@ -94,3 +94,20 @@ error: undefined variable: foo
 
 > foo
 10
+
+
+;=============================================================================
+;  Implicit namespace creation
+;=============================================================================
+
+> (def nou ())
+#<fn:nou>
+
+> namespace
+#<namespace:0>
+
+> (def nou ())
+#<fn:nou>
+
+> namespace
+#(tagged namespace {#<namespace:0> #<namespace:0>})

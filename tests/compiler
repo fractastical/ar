@@ -243,8 +243,8 @@ error: Function call on inappropriate object () 15
 > ac-apply-non-fn
 #<fn:ac-apply-non-fn>
 
-> ac-global-assigner
-#<fn:ac-global-assigner>
+> ac-global-assign-raw
+#<fn:ac-global-assign-raw>
 
 > bound
 #<fn:bound>
