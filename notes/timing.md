@@ -52,6 +52,11 @@ Timing notes
           Total cpu time observed: 2474ms (out of 2544ms)
           Number of samples taken: 58 (once every 43ms)
 
+
+        Direct access:
+          Total cpu time observed: 1528ms (out of 1636ms)
+          Number of samples taken: 43 (once every 36ms)
+
   * `namespace-set-variable-value!` is slower than `set!`:
 
         > (timeit (%nocompile (racket-set! foo 10)))

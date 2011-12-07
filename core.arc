@@ -123,6 +123,15 @@
   (let g (uniq)
     `(fn ,g (no (apply ,f ,g)))))
 
+#|(mac compose args
+  (cons ac-compose args))
+
+(mac complement (f)
+  (list ac-complement f))|#
+
+#|(redef ac-complement (f)
+  (fn args (no (apply f args))))|#
+
 
 ;=============================================================================
 ;  ac

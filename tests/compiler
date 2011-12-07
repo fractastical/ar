@@ -18,11 +18,17 @@ error: racket-parameterize: bad syntax in: racket-parameterize
 > (ac-compile '(foo:bar 1))
 (#<fn:ac-funcall1> (#<fn:ac-lookup-global> foo) (#<fn:ac-funcall1> (#<fn:ac-lookup-global> bar) 1))
 
+> (ac-compile '(foo:bar:qux 1))
+(#<fn:ac-funcall1> (#<fn:ac-lookup-global> foo) (#<fn:ac-funcall1> (#<fn:ac-lookup-global> bar) (#<fn:ac-funcall1> (#<fn:ac-lookup-global> qux) 1)))
+
 > (ac-compile '(~foo 1))
 (#<fn:ac-funcall1> (#<fn:ac-lookup-global> no) (#<fn:ac-funcall1> (#<fn:ac-lookup-global> foo) 1))
 
 > (ac-compile '(~foo:bar 1))
 (#<fn:ac-funcall1> (#<fn:ac-lookup-global> no) (#<fn:ac-funcall1> (#<fn:ac-lookup-global> foo) (#<fn:ac-funcall1> (#<fn:ac-lookup-global> bar) 1)))
+
+> (ac-compile '(foo:~bar 1))
+(#<fn:ac-funcall1> (#<fn:ac-lookup-global> foo) (#<fn:ac-funcall1> (#<fn:ac-lookup-global> no) (#<fn:ac-funcall1> (#<fn:ac-lookup-global> bar) 1)))
 
 
 ;=============================================================================
@@ -236,6 +242,12 @@ error: Function call on inappropriate object () 15
 
 > ac-apply-non-fn
 #<fn:ac-apply-non-fn>
+
+> ac-global-assigner
+#<fn:ac-global-assigner>
+
+> bound
+#<fn:bound>
 
 
 ;=============================================================================

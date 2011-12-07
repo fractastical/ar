@@ -142,6 +142,9 @@
   `(w/namespace ,x
      (maplast eval ',body)))
 
+(mac w/arc3 body
+  `(eval-w/ arc3-namespace ,@body))
+
 
 (= imported-namespaces*
    ;; TODO: ew
