@@ -1,6 +1,41 @@
 Timing notes
 ============
 
+  * Namespaces are costly:
+
+        1   2      3    4    6    6    7
+        0%  1732%  31%  22%  20%  17%  12%
+
+        06 77 82 83 86 89 ... 92 95 98 100
+
+        #<namespace (len 1)>
+        > (timeit ''foo)
+        iter: 3,550,488  gc: 0  mem: 966424
+
+        #<namespace (len 2)>
+        > (timeit ''foo)
+        iter: 193,802  gc: 220  mem: 2369368
+
+        #<namespace (len 3)>
+        > (timeit ''foo)
+        iter: 148,374  gc: 224  mem: -10849240
+
+        #<namespace (len 4)>
+        > (timeit ''foo)
+        iter: 121,625  gc: 240  mem: -535848
+
+        #<namespace (len 5)>
+        > (timeit ''foo)
+        iter: 101,397  gc: 224  mem: 1595008
+
+        #<namespace (len 6)>
+        > (timeit ''foo)
+        iter: 86,834  gc: 236  mem: 5720480
+
+        #<namespace (len 7)>
+        > (timeit ''foo)
+        iter: 77,401  gc: 244  mem: 1045880
+
   * `quote` is awfully fast, and so is `list`:
 
         > (timeit '(foo bar qux))

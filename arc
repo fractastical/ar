@@ -150,13 +150,20 @@
           ;(ac-load "lib/time.arc")
           ;(ac-load "lib/compile.arc")
 
-      (unless (null? arguments)
-        (if (all)
-              (map ac-load arguments)
-            (ac-load (car arguments))))
+      (let ((importfn1  (namespace-variable-value 'importfn1 #f)))
+        (unless (null? arguments)
+          (if (all)
+                (map importfn1 arguments)
+                ;(importfn arguments)
+                ;(map ac-load arguments)
+              (importfn1 (car arguments))
+              ;(ac-load (car arguments))
+              ))
 
-      (when (or (repl) (null? arguments))
-        (ac-load "repl.arc")))
+        (when (or (repl) (null? arguments))
+          (importfn1 "repl")
+          ;(ac-load "repl.arc")
+          )))
   ))
 
   ;; This is to prevent () from being printed when the REPL exits

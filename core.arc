@@ -539,7 +539,7 @@
 
 (mac parameterize (x . body)
   `(%nocompile (racket-parameterize ,(map1 (fn ((x y))
-                                             `(,x (%compile ,y)))
+                                             `((,rep ,x) (%compile ,y)))
                                            (pair x))
                  (%compile ,@(or body (list nil))))))
 
@@ -553,8 +553,8 @@
 
 (mac make-w/ (name)
   `(mac ,(sym "w/" name) (val . body)
-                     ;; TODO: should probably use %compile
-     `(parameterize ((,rep ,',name) ,val) ,@body)))
+                    ;; TODO: should probably use %compile
+     `(parameterize (,',name ,val) ,@body)))
 
 #|
 ;; foo.arc

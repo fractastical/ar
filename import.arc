@@ -105,6 +105,10 @@
   ;(prn x)
   (sref (car rep.x) v k))
 
+(extend print (primitive x port) (isa x 'namespace)
+  (disp "#<namespace (len " port)
+  (disp (len rep.x) port)
+  (disp ")>" port))
 
 ;(parameter namespace)
 #|
@@ -174,6 +178,12 @@
   `(eval-w/ arc3-namespace ,@body))
 
 
+;; TODO: could use a better name
+(def wrap-namespace (x (o f last))
+  (let r rep.x
+    (annotate 'namespace (cons f.r r))))
+
+
 #|(= imported-namespaces*
    ;; TODO: ew
    (listtab:list (list (joinpath exec-dir* "compiler.arc") arc3-namespace)
@@ -184,32 +194,36 @@
                  (list (joinpath exec-dir* "extra.arc")    arc3-namespace)
                  (list (joinpath exec-dir* "import.arc")   arc3-namespace)))|#
 
+(def importfn1 (x)
+  (if (dirname x)
+        ;; TODO: use dont
+        (do (push abspath.x load-paths*)
+            nil)
+      (withs (x     (load-normalize-path string.x)
+              path  abspath.x)
+        (prn "loading: " path)
+        ;; TODO: use w/cwd ...?
+        ;`(parameterize (racket-current-directory ,load-file-dir.x))
+        (parameterize (load-automatic-namespaces*  t
+                       cwd                         load-file-dir.x)
+          (load x)
+          #|(aif imported-namespaces*.path
+                            ;; TODO: should namespace come first or second...?
+                 ;; TODO: fix the huge explosion of namespaces when you
+                 ;;       import a module that was already imported
+                 ;(namespace (new-namespace namespace it))
+                 nil
+               (do (load x)
+                   ;(zap new-namespace namespace)
+                   #|(= namespace (new-namespace
+                     (= imported-namespaces*.path namespace)))|#
+                   ))|#
+          ))))
+
 (def importfn (args)
   (w/load-paths* load-paths*
     (each x args
-      (if (dirname x)
-            ;; TODO: use dont
-            (do (push abspath.x load-paths*)
-                nil)
-          (withs (x     (load-normalize-path string.x)
-                  path  abspath.x)
-            (prn "loading: " path)
-            ;; TODO: use w/cwd ...?
-            ;`(parameterize (racket-current-directory ,load-file-dir.x))
-            (w/cwd load-file-dir.x
-              (w/load-automatic-namespaces* t (load x))
-              #|(aif imported-namespaces*.path
-                                ;; TODO: should namespace come first or second...?
-                     ;; TODO: fix the huge explosion of namespaces when you
-                     ;;       import a module that was already imported
-                     ;(namespace (new-namespace namespace it))
-                     nil
-                   (do (load x)
-                       ;(zap new-namespace namespace)
-                       #|(= namespace (new-namespace
-                         (= imported-namespaces*.path namespace)))|#
-                       ))|#
-              ))))))
+      (importfn1 x))))
 
 (mac import args
   #|
