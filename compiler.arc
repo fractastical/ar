@@ -942,33 +942,12 @@
 ; code, when evaled by Arc, will construct an Arc list, the
 ; expansion of the quasiquotation expression.
 ;
-; This implementation is Alan Bawden's quasiquotation expansion
-; algorithm from "Quasiquotation in Lisp"
+; This implementation is a modification of Alan Bawden's quasiquotation
+; expansion algorithm from "Quasiquotation in Lisp"
 ; http://repository.readscheme.org/ftp/papers/pepm99/bawden.pdf
 ;
 ; You can redefine qq-expand in Arc if you want to implement a
 ; different expansion algorithm.
-
-#|(racket-define (qq-expand-list x)
-  (racket-cond
-    ;; TODO: don't hardcode the symbol unquote
-    ((ac-caris x (racket-quote unquote))
-      (list list (cadr x)))
-    ;; TODO: don't hardcode the symbol unquote-splicing
-    ((ac-caris x (racket-quote unquote-splicing))
-      (cadr x))
-    ;; TODO: don't hardcode the symbol quasiquote
-    ((ac-caris x (racket-quote quasiquote))
-      (qq-expand-list (qq-expand (cadr x))))
-    ((racket-mpair? x)
-      (list list (qq-expand-pair x)))
-    (racket-else
-      (list quote (list x)))))
-
-(racket-define (qq-expand-pair x)
-  (list racket-mappend
-        (qq-expand-list (car x))
-        (qq-expand      (cdr x))))|#
 
 (racket-define (qq-expand-pair x)
   (racket-if (racket-mpair? x)
@@ -1000,16 +979,6 @@
     (racket-if (ac-no x)
                  x
                (list quote x))))
-
-#|'`(foo bar ,@qux ,corge)
-
-(cons 'foo
-      (cons 'bar
-            (join qux
-                  (cons corge
-                        nil))))|#
-
-;(cons (cons rep (cons x nil)) (cons (cons '%compile (cons y nil)) nil))
 
 (racket-define (qq-expand x)
   (racket-cond
