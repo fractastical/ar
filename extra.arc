@@ -77,6 +77,11 @@
                          (%nocompile (,apply orig ,u))))
                   )))))
 
+(def dispfile (val file)
+  ;; TODO: should probably use a temporary file
+  (w/outfile o file (disp val o))
+  val)
+
 #|(mac extend (name parms test . body)
   (w/uniq (k a u)
     `(let orig ,name

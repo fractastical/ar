@@ -4,7 +4,7 @@
 
 (parameter output)
 
-;(prn script-args)
+(prn script-args)
 
 (def prompt ()
   (disp "Remove y/n: ")
@@ -54,8 +54,7 @@
 (each x script-args
   (w/cwd dirname.x
     (w/infile x basename.x
-      (prn (string:find-comments x))
-      )))
+      (dispfile (string:find-comments x) basename.x))))
 
 ;(prompt)
 
