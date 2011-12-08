@@ -303,6 +303,54 @@ error: function call on inappropriate object () 15
 
 
 ;=============================================================================
+;  Assignment
+;=============================================================================
+
+> (macex '(= (foo bar) 5))
+(sref foo 5 bar)
+
+> (macex '(= (foo 'bar) 5))
+u
+
+> (macex '(= (foo (bar qux)) 5))
+u
+
+
+;; TODO: not sure about this
+> (macex '(zap + (foo bar) 1))
+((fn (g1) (= (foo g1) (+ (foo g1) 1))) bar)
+
+> (macex '(zap + (foo 'bar) 1))
+((fn (g1) (= (foo g1) (+ (foo g1) 1))) (quote bar))
+
+
+> (macex '(zap + (foo (bar)) 1))
+((fn (g1) (= (foo g1) (+ (foo g1) 1))) (bar))
+
+> (macex '(zap + (foo (bar qux)) 1))
+((fn (g1) (= (foo g1) (+ (foo g1) 1))) (bar qux))
+
+
+> (macex '(zap + (foo (bar) (qux)) 1))
+((fn (g1 g2) (= (foo g1 g2) (+ (foo g1 g2) 1))) (bar) (qux))
+
+
+> (macex '(or= (foo (bar qux)) 5))
+((fn (g1) (unless (foo g1) (= (foo g1) 5))) (bar qux))
+
+
+> (macex '(push 5 (foo (bar qux))))
+((fn (g1) (= (foo g1) (cons 5 (foo g1)))) (bar qux))
+
+
+> (macex '(swap (foo (bar qux)) (foo (bar qux))))
+u
+
+
+> (macex '(rotate (foo (bar qux)) (foo (bar qux)) (foo (bar qux))))
+u
+
+;=============================================================================
 ;  quasiquote
 ;=============================================================================
 

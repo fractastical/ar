@@ -761,6 +761,14 @@
           y
         (macex y))))
 
+(def macex-all (x)
+  (let x (macex x)
+    (if (caris x ac-fn)
+          (list* 'fn (cadr x) (map macex-all (cddr x)))
+        (cons? x)
+          (map macex-all x)
+        x)))
+
 
 ;=============================================================================
 ;  Compiler

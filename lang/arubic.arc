@@ -43,7 +43,7 @@
   `(eval-w/ arubic-namespace ,@body))
 
 
-(fnify map mappend some all keep)
+(fnify map mappend some all keep rem)
 
 
 (remac square-bracket args

@@ -206,11 +206,25 @@
              ;; TODO: why does Arc 3.1 call macex here?
   (let place ssexpand-full.place
     (if (cons? place)
-          (iflet f (setter car.place)
-            (apply f cadr.place val cddr.place)
-            ; assumed to be data structure in fn position
-            `(sref ,car.place ,val ,@cdr.place))
+          (if (some cons? cdr.place)
+                (let u (map [uniq] cdr.place)
+                  `(with ,(mappend list u cdr.place)
+                     ,(let place (cons car.place u)
+                        (iflet f (setter car.place)
+                          (apply f cadr.place val cddr.place)
+                          ; assumed to be data structure in fn position
+                          `(sref ,car.place ,val ,@cdr.place)))))
+              (iflet f (setter car.place)
+                (apply f cadr.place val cddr.place)
+                ; assumed to be data structure in fn position
+                `(sref ,car.place ,val ,@cdr.place)))
         `(assign ,place ,val))))
+
+#|(if (some cons? cdr.place)
+      (w/uniq u
+        `(let ,u ,@cdr.place
+           (sref ,car.place ,val ,u)))|#
+
 
 (def expand=list (terms)
   `(do ,@(map [apply expand= _] (pair terms))))
@@ -328,15 +342,42 @@
 ;  Mutation / Assignment
 ;=============================================================================
 
+(mac w/setonce (name form)
+  #|(if (cons? name)
+        (w/uniq u
+        (map [uniq] name)
+          `(if (cons? ,name)
+                 (with (,u (map [uniq] (cdr ,name))
+
+                        )
+                   `(with ,(mappend list ,u (cdr ,name))
+                      ,(let ,name (cons (car ,name) ,u)
+                         ,form)))
+               ,form)))|#
+  (w/uniq u
+    `(if (cons? ,name)
+           (let ,u (map [uniq] (cdr ,name))
+             `(with ,(mappend list ,u (cdr ,name))
+                ,(let ,name (cons (car ,name) ,u)
+                   ,form)))
+         ,form)))
+
+
 (mac push (x place)
-  `(= ,place (cons ,x ,place)))
+  (w/setonce place
+    `(= ,place (cons ,x ,place))))
 
 (mac swap (place1 place2)
   (w/uniq (g1 g2)
-    `(with (,g1 ,place1
-            ,g2 ,place2)
-       (= ,place1 ,g2)
-       (= ,place2 ,g1))))
+    (if (cons? place1)
+          #|(let u (map [uniq] (cdr place1))
+            )|#
+    ;(w/setonce (place1 place2))
+    ;(w/setonce place2)
+      `(with (,g1 ,place1
+              ,g2 ,place2)
+         (= ,place1 ,g2)
+         (= ,place2 ,g1)))))
 
 (mac rotate places
   (w/uniq u
@@ -369,8 +410,20 @@
                        (rem ,u ,v)
                      (adjoin ,u ,v ,@args))))))
 
+
 (mac zap (f x . args)
-  `(= ,x (,f ,x ,@args)))
+  (w/setonce x `(= ,x (,f ,x ,@args)))
+  #|(if (cons? x)
+        (let u (map [uniq] (cdr x))
+          `(with ,(mappend list u (cdr x))
+             ,(let x (cons (car x) u)
+                `(= ,x (,f ,x ,@args)))))
+    `(= ,x (,f ,x ,@args)))|#
+  )
+
+#|(mac zap (f x . args)
+  (setonce x `(= ,x (,f ,x ,@args))))|#
+;(setonce foo `(= ,foo (,f ,foo ,@args)))
 
 (mac ++ (place (o i 1))
   `(zap + ,place ,i))
@@ -379,7 +432,10 @@
   `(zap + ,place ,i))
 
 (mac or= (place expr)
-  `(or ,place (= ,place ,expr)))
+  ;`(or ,place (= ,place ,expr))
+  (w/setonce place
+    `(unless ,place
+       (= ,place ,expr))))
 
 
 ; Can't simply mod pr to print strings represented as lists of chars,
