@@ -1,0 +1,63 @@
+#! /usr/bin/env arc
+
+(import re script)
+
+(parameter output)
+
+;(prn script-args)
+
+(def prompt ()
+  (disp "Remove y/n: ")
+  (do1 (caselet x (readline stdin)
+         "y" t
+         "n" nil
+         ""  nil
+             (do (prn "Sorry, did not understand " x)
+                 (prompt)))
+       (prn)))
+
+#|(def find-comment (in)
+  (re-replace* "(#\\|[\\S\\s]+?\\|\\#)|(;.*$)" in
+    (fn (x y z n)
+      (prn x " " y " " z " " n)
+      "")))|#
+
+
+(require syntax-color/scheme-lexer)
+
+(def lex (in)
+  (values (str type br start end) (racket-scheme-lexer in)
+    (list str type)))
+
+(def find-comments (input)
+  (aloop ()
+    (let (str type) lex.input
+      (if (is type 'eof)
+            nil
+          (is type 'comment)
+                    ;; TODO: doesn't work for block comments
+            (if (or (empty str)
+                              ;; TODO: ew
+                    (and (prn (string ";" str))
+                         (prompt)))
+                  (let (str type) lex.input
+                    (if (is type 'white-space)
+                          (self)
+                        (cons str (self))))
+                      ;; TODO: ew
+                (cons (string ";" str) (self)))
+                  #|(if (is str.0 #\newline)
+                        (cons (cut str 1) (self))
+                      (cons str (self)))|#
+          (cons str (self))))))
+
+(each x script-args
+  (w/cwd dirname.x
+    (w/infile x basename.x
+      (prn (string:find-comments x))
+      )))
+
+;(prompt)
+
+;> (find-comment "foobar;f\nbarfoo")
+;"foobarbarfoo"

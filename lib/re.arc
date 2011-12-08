@@ -21,16 +21,25 @@
 (def re-looking-at (pattern (o in stdin))
   (ac-tnil:racket-regexp-match-peek (regexp pattern) in))
 
+
+(def re-replace (pattern in replace)
+  (racket-regexp-replace regexp.pattern in replace))
+
+;; TODO: what should this be called...?
+(def re-replace* (pattern in replace)
+  (racket-regexp-replace* regexp.pattern in replace))
+
 (mac re-multi-replace (x . args)
   ;; TODO: can this use afneach?
   ((afn (((from to (o g)) . rest))
      ;(debug "re-multi-replace" from to g)
      (list (if g 'racket-regexp-replace*
                  'racket-regexp-replace)
-           (string from)
+           (regexp:string from)
            (if rest self.rest x)
            (if sym?.to string.to to)))
    (rev args)))
+
 
 (def re-split (x y)
   (racket-list->mlist:racket-regexp-split (regexp x) y))
