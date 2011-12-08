@@ -76,7 +76,7 @@
          (recstring [in (x _) #\: #\~ #\& #\. #\!] x))))
 
 (redef ssexpand (x)
-  (if (ssyntax x) ;(sym? x)
+  (if (ssyntax x)
         (if (or (ac-insym? #\. x)
                 (ac-insym? #\! x))
               (ac-expand-sexpr x)

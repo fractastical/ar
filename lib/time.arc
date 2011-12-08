@@ -23,20 +23,6 @@
              (- (memory) ,gmem)))))
 
 
-#|(mac timeit1 (x limit)
-  (w/uniq (time gc mem n)
-    `(with (,time (msec)
-            ,gc   (gc-msec)
-            ,mem  (memory)
-            ,n    0)
-       (while (< (- (msec) ,time) ,limit)
-         ,x
-         (++ ,n))
-       (list ,n
-             ;(- (msec)    ,time)
-             (- (gc-msec) ,gc)
-             (- (memory)  ,mem)))))|#
-
 (mac timeit1 (x limit)
   (w/uniq (u n time gc mem)
     `(with (,n     0
@@ -49,18 +35,9 @@
           (when (< (- (msec) ,time) ,limit)
             (,u))))
        (list ,n
-             ;(- (msec)    ,time)
              (- (gc-msec) ,gc)
              (- (memory)  ,mem)))))
 
-
-#|(mac timeit (x (o repeat 100))
-  `(let (a b c) (map inexact:avg
-                     (apply zip (n-of ,repeat (timeit1 ,x 100))))
-     (prn "iter: "   comma.a
-          "  gc: "   b
-          "  mem: "  c)
-     nil))|#
 
 (mac timeit (x (o limit 10000))
   `(let (a b c) (timeit1 ,x ,limit)

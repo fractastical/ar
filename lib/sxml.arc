@@ -9,8 +9,6 @@
 
 
 (def noop (s type depth))
-;  (if (is type "declaration")
-;        (pr "\n")))
 
 (def pretty (s type depth)
   (when (or (is type 'start) (acons:car s))
@@ -55,10 +53,7 @@
                                     (when res
                                       (apply warn
                                         (string "<" l " /> was closed, but it contained content:")
-;                                        (tostring (parse res 1))
-                                        res
-;                                        "\n"
-                                        )))
+                                        res)))
                                 (do (pr ">")
                                     (parse (car res) (+ depth 1))
                                     (parse (cdr res) (+ depth 1))
@@ -69,7 +64,7 @@
                            (none l html-void-elements*))
                         (pr "<" l "></" l ">")
 
-                        (pr "<" l " />")))))
+                      (pr "<" l " />")))))
 
 
 (def ->string (s (o depth 0))
@@ -81,12 +76,11 @@
 
 (def ->xml (root)
   (w/parser 'xml
-  ;  (f nil "declaration" 0)
     (string xml-declaration* (->string root))))
 
 (mac w/pretty args
   `(w/mode ,pretty ,@args))
-#|
+
 
 ;; why doesn't it work?!
 ;(mac w/pretty body
@@ -95,14 +89,3 @@
 ;       (assign noop ,pretty)
 ;       ,@body
 ;       (assign noop ,x))))
-
-
-;; remove when the above macro works
-
-;(def w/pretty args)
-
-(def ->pretty-html (root)
-  (->html root pretty))
-
-(def ->pretty-xml (root)
-  (->xml root pretty))|#

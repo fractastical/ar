@@ -1,27 +1,3 @@
-#|(assign quote (annotate (racket-quote mac)
-                ;; Could pass ac-quote directly, but then it wouldn't
-                ;; work if somebody overwrites ac-quote later
-                (fn (x)
-                  (cons ac-quote x))))
-
-
-(assign quasiquote (annotate 'mac
-                     (fn args
-                       (apply qq-expand args))))
-
-(assign if (annotate 'mac
-             (fn args
-               (cons ac-if (racket-list->mlist args)))))
-
-(assign %nocompile (annotate 'mac
-                     (fn args
-                       (cons ac-nocompile (racket-list->mlist args)))))
-
-(assign %splice (annotate 'mac
-                  (fn args
-                    (cons ac-splice (racket-list->mlist args)))))|#
-
-
 ;=============================================================================
 ;  Core
 ;=============================================================================
@@ -123,15 +99,6 @@
   (let g (uniq)
     `(fn ,g (no (apply ,f ,g)))))
 
-#|(mac compose args
-  (cons ac-compose args))
-
-(mac complement (f)
-  (list ac-complement f))|#
-
-#|(redef ac-complement (f)
-  (fn args (no (apply f args))))|#
-
 
 ;=============================================================================
 ;  ac
@@ -188,18 +155,9 @@
 ;  Types
 ;=============================================================================
 
-(def isa      (x y) (is (type x) y))
+(def isa (x y)
+  (is (type x) y))
 
-#|
-;; TODO: macro to generate these easier
-(def cons?    (x)   (isa x 'cons))
-(def int?     (x)   (isa x 'int))
-(def string?  (x)   (isa x 'string))
-(def sym?     (x)   (isa x 'sym))
-(def char?    (x)   (isa x 'char))
-(def fn?      (x)   (isa x 'fn))
-(def mac?     (x)   (isa x 'mac))
-(def keyword? (x)   (isa x 'keyword))|#
 
 (mac make-predicate (x (o y x))
          ;; TODO: this is just (sym x "?")
@@ -217,34 +175,18 @@
 (make-predicate keyword)
 (make-predicate table)
 
-(def num?  (x) (ac-tnil (racket-number? x))) ;(or (int? x) (isa x 'num))
-(def list? (x) (if (no x) t (cons? x))) ;(or (no x) (cons? x))
-
+(def num?  (x) (ac-tnil (racket-number? x)))
+(def list? (x) (if (no x) t (cons? x)))
 
 (def testify (x)
   (if (fn? x) x [is _ x]))
 
 
-;; TODO: should these throw errors...?
-#|(def string1 (x)
-  (if (string? x)
-        x
-      (char? x)
-        (racket-string x)
-      (cons? x)
-        ;(apply racket-string-append (map1 string x))
-        (apply string x)
-      (no x)
-        ""
-      (num? x)
-        (racket-number->string x)
-      (sym? x)
-        (racket-symbol->string x)))|#
-
 (def string args
   (apply racket-string-append (map1 string1 args)))
 
 
+;; TODO: should these throw errors...?
 (def sym1 (x)
   (if (sym? x)
         x
@@ -456,32 +398,20 @@
         (join x y)))
 
 (def <2 (x y)
-  #|(racket-display (string? x))
-  (racket-display " ")
-  (racket-display y)
-  (racket-newline)|#
   (ac-tnil
-    (if (num? x) ;(and (num? x) (num? y))
-          (racket-< x y)
-        (string? x) ;(and (string? x) (string? y))
-          (racket-string<? x y)
-        (sym? x) ;(and (sym? x) (sym? y))
-          (racket-string<? (sym x) (sym y))
-        (char? x) ;(and (char? x) (char? y))
-          (racket-char<? x y)
-        (err "can't <" x y))))
+    (if (num? x)    (racket-< x y)
+        (string? x) (racket-string<? x y)
+        (sym? x)    (racket-string<? (sym x) (sym y))
+        (char? x)   (racket-char<? x y)
+                    (err "can't <" x y))))
 
 (def >2 (x y)
   (ac-tnil
-    (if (num? x) ;(and (num? x) (num? y))
-          (racket-> x y)
-        (string? x) ;(and (string? x) (string? y))
-          (racket-string>? x y)
-        (sym? x) ;(and (sym? x) (sym? y))
-          (racket-string>? (string x) (string y))
-        (char? x) ;(and (char? x) (char? y))
-          (racket-char>? x y)
-        (err "can't >" x y))))
+    (if (num? x)    (racket-> x y)
+        (string? x) (racket-string>? x y)
+        (sym? x)    (racket-string>? (string x) (string y))
+        (char? x)   (racket-char>? x y)
+                    (err "can't >" x y))))
 
 (= +  (ac-binary +-2 reduce)
    <  (ac-binary  <2 ac-pairwise)
@@ -570,44 +500,14 @@
                                            (pair x))
                  (%compile ,@(or body (list nil))))))
 
-#|(mac make-w/ (name)
-  (w/uniq u
-    `(mac ,(sym "w/" name) (val . body)
-       ;; TODO: very clunky
-       (let ,u (car (rep (%nocompile (ac-lookup-global-raw ,(ac-namespace)
-                                                           (racket-quote ,name)))))
-         `(parameterize (,,u ,val) ,@body)))))|#
-
 (mac make-w/ (name)
   `(mac ,(sym "w/" name) (val . body)
                     ;; TODO: should probably use %compile
      `(parameterize (,',name ,val) ,@body)))
 
-#|
-;; foo.arc
-
-(parameter foo 5)
-
-;; bar.arc
-
-(import foo)
-
-(w/foo 10 foo) -> 10
-foo -> 5
-
-(= foo 50)
-|#
-
 (mac make-parameter (name param)
   `(do (= ,name (annotate 'parameter ,param))
-       ;(make-alias ,name ,u ,u)
        (make-w/ ,name)))
-
-#|(def parameter (init (o guard))
-  ;; TODO: ew
-  (if guard
-        (racket-make-parameter init guard)
-      (racket-make-parameter init)))|#
 
 (mac parameter (name (o init))
   (w/uniq u
@@ -647,8 +547,6 @@ foo -> 5
   (racket-flush-output port))
 
 (def disp (x (o port stdout))
-  #|(racket-display port)
-  (racket-newline)|#
   (print ac-disp x port))
 
 (def write (x (o port stdout))
@@ -684,32 +582,13 @@ foo -> 5
         (readstring1 x eof)
       (sread x eof)))
 
-#|
-;; TODO: implement w/stdout and w/stdin here too
-(mac w/stderr (port . body)
-  `(parameterize (racket-current-error-port ,port)
-     ,@body))
-
-(mac w/stdout (port . body)
-  `(parameterize (racket-current-output-port ,port)
-     ,@body))
-
-(mac w/stdin (port . body)
-  `(parameterize (racket-current-input-port ,port)
-     ,@body))|#
-
-#|(mac w/stdout (str . body)
-  `(call-w/stdout ,str (fn () ,@body)))
-
-(mac w/stdin (str . body)
-  `(call-w/stdin ,str (fn () ,@body)))|#
-
 
 (= infile     racket-open-input-file)
 
 (def outfile (filename (o append))
   (let flag (if append 'append 'truncate)
     (racket-open-output-file filename #:mode 'text #:exists flag)))
+
 
 (= instring   racket-open-input-string
    outstring  racket-open-output-string)
@@ -723,6 +602,7 @@ foo -> 5
 
 (= writec (ac-make-write racket-write-char)
    writeb (ac-make-write racket-write-byte))
+
 
 (def open-socket (num)
   (racket-tcp-listen num 50 #t))
@@ -738,6 +618,7 @@ foo -> 5
     (list (limited-input-port in 100000)
           out
           (client-ip out))))
+
 #|
 ;; TODO: implement destructuring in fns
 ;; TODO: should pipe call (cont 'wait)?
@@ -770,17 +651,6 @@ foo -> 5
 (ac-notimpl force-close)
 
 
-#|
-;; TODO: replace with version in arc.arc
-(def prn args
-  (map1 (fn (x)
-          (disp x)
-          (disp " "))
-        args)
-  (racket-newline)
-  nil)|#
-
-
 ;=============================================================================
 ;  System
 ;=============================================================================
@@ -797,16 +667,14 @@ foo -> 5
 (ac-notimpl setuid)
 
 (def dir ((o name "") (o f))
-  ;; TODO: ew
+  ;; TODO: all of this is ew
   (= name (expandpath name))
   (if (empty name) (= name "."))
-  ;(prn name)
   (parameterize (racket-current-directory name)
     (let x (map1 (fn (x)
-                   ;(let x (string x)
-                     (if (dir-exists x)
-                           (string x "/")
-                         (string x)))
+                   (if (dir-exists x)
+                         (string x "/")
+                       (string x)))
                  (racket-list->mlist (racket-directory-list)))
       (if f (keep f x)
             x))))
@@ -862,24 +730,7 @@ foo -> 5
    sleep           racket-sleep)
 
 
-#|(def make-thread-cell (v (o preserved))
-  (racket-make-thread-cell v (nil->racket-false preserved)))
-
-(def thread-cell-ref (cell)
-  (racket-thread-cell-ref cell))
-
-(def thread-cell-set (cell v)
-  (racket-thread-cell-set! cell v))
-
-(= ar-the-sema  (make-semaphore 1)
-   ar-sema-cell (make-thread-cell nil))
-
-(def atomic-invoke (f)
-  (if (thread-cell-ref ar-sema-cell)
-        (f)
-      (do (thread-cell-set ar-sema-cell t)
-          (after (racket-call-with-semaphore ar-the-sema f)
-                 (thread-cell-set ar-sema-cell nil)))))|#
+;; TODO: ac-sema-cell, look at ar
 
 (def atomic-invoke (f)
   (if (racket-thread-cell-ref ac-sema-cell)
@@ -923,6 +774,4 @@ foo -> 5
 ;=============================================================================
 
 (mac require (x)
-  ;`(%nocompile (racket-namespace-require (racket-quote (prefix racket- ,x))))
-  ;`(%nocompile (racket-require (racket-prefix-in racket- ,x)))
   `(%nocompile (racket-namespace-require/copy (racket-quote (prefix racket- ,x)))))

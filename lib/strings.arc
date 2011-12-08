@@ -1,7 +1,6 @@
 ; Matching.  Spun off 29 Jul 06.
-
-; arc> (tostring (writec (coerce 133 'char)))
 ;
+; arc> (tostring (writec (coerce 133 'char)))
 ;> (define ss (open-output-string))
 ;> (write-char (integer->char 133) ss)
 ;> (get-output-string ss)

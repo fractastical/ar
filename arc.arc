@@ -265,12 +265,6 @@
   `(do ,@(map [apply expand= _] ; (fn ((p v)) (expand= p v))
               (pair terms))))
 
-#|(def expand=list (terms)
-  (if (cddr terms)
-        `(do ,@(map (fn ((p v)) (expand= p v))  ; [apply expand= _]
-                    (pair terms)))
-      (apply expand= terms)))|#
-
 (remac = args
   (expand=list args))
 
@@ -436,38 +430,15 @@
                       (rem ,gx ,val)
                       (adjoin ,gx ,val ,@args)))))))
 
-(mac ++ (place (o i 1))
-  (if (isa place 'sym)
-      `(= ,place (+ ,place ,i))
-      (w/uniq gi
-        (let (binds val setter) (setforms place)
-          `(atwiths ,(+ binds (list gi i))
-             (,setter (+ ,val ,gi)))))))
-
-(mac -- (place (o i 1))
-  (if (isa place 'sym)
-      `(= ,place (- ,place ,i))
-      (w/uniq gi
-        (let (binds val setter) (setforms place)
-          `(atwiths ,(+ binds (list gi i))
-             (,setter (- ,val ,gi)))))))
-
-; E.g. (++ x) equiv to (zap + x 1)
-
-#|(mac zap (op place . args)
-  (with (gop    (uniq)
-         gargs  (map [uniq] args)
-         mix    (afn seqs
-                  (if (some no seqs)
-                      nil
-                      (+ (map car seqs)
-                         (apply self (map cdr seqs))))))
-    (let (binds val setter) (setforms place)
-      `(atwiths ,(+ binds (list gop op) (mix gargs args))
-         (,setter (,gop ,val ,@gargs))))))|#
 
 (mac zap (f x . args)
   `(= ,x (,f ,x ,@args)))
+
+(mac ++ (place (o i 1))
+  `(zap + ,place ,i))
+
+(mac -- (place (o i 1))
+  `(zap + ,place ,i))
 
 ; Can't simply mod pr to print strings represented as lists of chars,
 ; because empty string will get printed as nil.  Would need to rep strings

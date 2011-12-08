@@ -1,11 +1,3 @@
-#|(parameter load-paths* (list cwd (abspath) (abspath "lib/")))
-(parameter load-suffix* ".arc")
-
-(def load-file-dir (x)
-  (car:mem (fn (y)
-             (file-exists (joinpath y x)))
-           load-paths*))|#
-
 (make-parameter cwd
   (racket-make-derived-parameter racket-current-directory
     (fn (v) (zap string v)
@@ -45,7 +37,6 @@
 
 
 (def abspath ((o x))
-  ;(joinpath cwd x)
   (string:racket-path->complete-path expandpath.x))
 
 
@@ -54,13 +45,6 @@
 (redef load-file-dir (x)
   ;; this is just (car:mem [file-exists (joinpath _ x)] load-paths*)
   (find [file-exists:joinpath _ x] load-paths*))
-#|  (aloop (xs load-paths*)
-    (if (no xs)
-          nil
-        (file-exists:joinpath car.xs x)
-          (car xs)
-        (self cdr.xs))))
-|#
 
 
 (def new-namespace args
@@ -80,8 +64,6 @@
 ;; TODO: should use object.arc
 ;; TODO: extend should work with keyword args
 (defcall namespace (x k (o d))
-;(extend ac-apply-non-fn (x k (o d)) (%nocompile (isa x (racket-quote namespace)))
-  ;(%nocompile (racket-displayln x))
   (let self (%nocompile nil)
     (assign self (fn (x)
                    (if x ((%nocompile (car x))
@@ -92,21 +74,9 @@
                                (d)
                              d))))
     (self (%nocompile (rep x))))
-
-  #|(aloop (x (%nocompile (rep x)))
-    )|#
-  #|(aloop (x rep.x)
-    (car.x k (fn ()
-               (if cdr.x  (self cdr.x)
-                          d))))|#
-    #|(namespace-get car.x car.args
-      (fn ()
-        (if cdr.x  cadr.args
-                   (self cdr.x))))|#
   )
 
 (extend sref (x v k) (isa x 'namespace)
-  ;(prn x)
   (sref (car rep.x) v k))
 
 (extend print (primitive x port) (isa x 'namespace)
@@ -114,50 +84,8 @@
   (disp (len rep.x) port)
   (disp ")>" port))
 
-;(parameter namespace)
-#|
-(unless ac-direct-globals
-  #|
-  (extend ac-lookup-global (space k) (%nocompile (namespace))
-    ;(%nocompile (prn k " " it))
-    ;(%nocompile (racket-displayln k))
-    ;(%nocompile (racket-displayln it))
-    #|
-    ;; TODO: w/fail and isnt/fail and fail?
-    (withs (fail  (%nocompile (uniq))
-            v     (it k fail))
-      (if (%nocompile (is v fail))
-            (%nocompile (err "undefined variable:" k))
-          v))|#
-          ;; TODO: shouldn't this be wrapped in %nocompile...?
-    (it k (ac-undefined-var k)))
-  |#
-#|
-  (extend ac-global-assign (a b) namespace
-    (let x (it a)
-      ;; This allows annotate to assign a name to functions
-
-      ;; This implements parameters
-      ;; TODO: this should probably do the check at runtime,
-      ;;       rather than at compile time
-      `(racket-parameterize ((ac-assign-name (racket-quote ,a)))
-         ,(if (ac-tnil:racket-parameter? x)
-                (list x (ac-compile b))
-              `(,sref ,it ,(ac-compile b) (racket-quote ,a))))))|#
-  )|#
 
 (parameter load-automatic-namespaces*)
-
-#|(extend ac-global-assign-defined (x a b) (and load-automatic-namespaces*
-                                              (nor (in type.x 'parameter 'alias)
-                                                   ;(in a      'thatexpr  'that)
-                                                   ))
-  ;(zap new-namespace namespace)
-  ;(orig nil 'namespace (new-namespace namespace))
-  (ac-namespace (new-namespace (ac-namespace)))
-  (load-automatic-namespaces* nil)
-  (orig x a b))|#
-
 
 ;; TODO: not sure about this
 (let u (uniq)
@@ -190,8 +118,6 @@
 ;; TODO: could use a better name
 (def namespace-wrap (x (o f last))
   (namespace-fn x (fn (x) (cons f.x x)))
-  #|(let r rep.x
-    (annotate 'namespace (cons f.r r)))|#
   )
 
 
@@ -220,26 +146,6 @@
                   (do (debug " loading: " x)
                       (= ((imported-paths*) path) t)
                       (load x)))))))
-      #|(withs (x     (load-normalize-path string.x)
-              path  abspath.x)
-
-        ;; TODO: use w/cwd ...?
-        ;`(parameterize (racket-current-directory ,load-file-dir.x))
-        #|(parameterize (load-automatic-namespaces*  t
-                       cwd                         load-file-dir.x)
-          (load x))|#
-          #|(aif imported-paths*.path
-                            ;; TODO: should namespace come first or second...?
-                 ;; TODO: fix the huge explosion of namespaces when you
-                 ;;       import a module that was already imported
-                 ;(namespace (new-namespace namespace it))
-                 nil
-               (do (load x)
-                   ;(zap new-namespace namespace)
-                   #|(= namespace (new-namespace
-                     (= imported-paths*.path namespace)))|#
-                   ))|#
-          )|#
       ))
 
 (def importfn (args)
@@ -248,12 +154,6 @@
       (importfn1 x))))
 
 (mac import args
-  #|
-  ;; TODO: use dont
-  `(do
-       ;(namespace (new-namespace namespace))
-       nil)|#
-  ;`(importfn ,@(map string args))
   `(importfn ',args))
 
 (mac reimport args

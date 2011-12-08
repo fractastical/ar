@@ -2,7 +2,8 @@
 
 (import re script)
 
-(parameter output)
+;(parameter output)
+(parameter ignore (regexp "TODO: "))
 
 (prn script-args)
 
@@ -39,6 +40,7 @@
             (if (or (empty str)
                               ;; TODO: ew
                     (and (prn (string ";" str))
+                         (no:re-match ignore str)
                          (prompt)))
                   (let (str type) lex.input
                     (if (is type 'white-space)
@@ -53,8 +55,8 @@
 
 (each x script-args
   (w/cwd dirname.x
-    (w/infile x basename.x
-      (dispfile (string:find-comments x) basename.x))))
+    (w/infile f basename.x
+      (dispfile (string:find-comments f) basename.x))))
 
 ;(prompt)
 

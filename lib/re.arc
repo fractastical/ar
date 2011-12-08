@@ -32,7 +32,6 @@
 (mac re-multi-replace (x . args)
   ;; TODO: can this use afneach?
   ((afn (((from to (o g)) . rest))
-     ;(debug "re-multi-replace" from to g)
      (list (if g 'racket-regexp-replace*
                  'racket-regexp-replace)
            (regexp:string from)
