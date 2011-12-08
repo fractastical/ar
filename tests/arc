@@ -205,6 +205,70 @@ error: mcar: expects argument of type <mutable-pair>; given 3
 
 
 ;=============================================================================
+;  nil
+;=============================================================================
+
+> nil
+nil
+
+> 'nil
+nil
+
+
+> (type nil)
+sym
+
+> (isa nil 'sym)
+t
+
+
+> (type 'nil)
+sym
+
+> (isa 'nil 'sym)
+t
+
+
+> (is nil nil)
+t
+
+> (is nil 'nil)
+t
+
+> (is 'nil nil)
+t
+
+> (is 'nil 'nil)
+t
+
+
+;=============================================================================
+;  quasiquote
+;=============================================================================
+
+> `(foo bar qux corge)
+(foo bar qux corge)
+
+
+> (with (qux    '(1 2 3 4 5)
+         corge  10)
+    `(foo bar ,@qux ,corge))
+(foo bar 1 2 3 4 5 10)
+
+
+> (with (qux    '(1 2 3 4 5)
+         corge  10)
+    `(foo (bar nou) ,@qux ,corge))
+(foo (bar nou) 1 2 3 4 5 10)
+
+
+> (with (qux    '(1 2 3 4 5)
+         corge  10)
+    `(foo `(bar nou) ,@qux ,corge))
+(foo (#<fn:mcons> (#<mac:quote> bar) (#<fn:mcons> (#<mac:quote> nou) nil)) 1 2 3 4 5 10)
+
+
+;=============================================================================
 ;  let
 ;=============================================================================
 

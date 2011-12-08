@@ -132,9 +132,9 @@ The current differences are as follows:
 
 *   `in` is faster when given only two arguments: `(in x 5)`
 
-*   Usage of `setforms` has been reduced as much as possible. For instance, `(zap + x 1)` just expands into `(= x (+ x 1))` and `(push x foo)` expands into `(= foo (cons x foo))`. The only place I haven't removed `setforms` from is `=`
+*   `setforms` has been removed. For instance, `(zap + x 1)` just expands into `(= x (+ x 1))` and `(push x foo)` expands into `(= foo (cons x foo))`
 
-*   `setforms` no longer calls `atomic-invoke`. If you want to *guarantee* that assignment is thread-safe, wrap it yourself
+*   `=` no longer calls `atomic-invoke`. If you want to *guarantee* that assignment is thread-safe, wrap it yourself
 
 *   [The REPL](#repl) is implemented better
 

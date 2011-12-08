@@ -303,6 +303,59 @@ error: function call on inappropriate object () 15
 
 
 ;=============================================================================
+;  quasiquote
+;=============================================================================
+
+> (macex `foo)
+foo
+
+> (qq-expand `foo)
+(#<mac:quote> foo)
+
+
+> (macex `,(+ 1 2))
+3
+
+> (qq-expand `,(+ 1 2))
+3
+
+
+> (macex `,@(list 1 2 3))
+,@ cannot be used immediately after `
+
+> (qq-expand `,@(list 1 2 3))
+,@ cannot be used immediately after `
+
+
+> (macex '`(foo bar qux corge))
+(#<fn:mcons> (#<mac:quote> foo) (#<fn:mcons> (#<mac:quote> bar) (#<fn:mcons> (#<mac:quote> qux) (#<fn:mcons> (#<mac:quote> corge) nil))))
+
+> (qq-expand '`(foo bar qux corge))
+(#<fn:mcons> (#<mac:quote> #<fn:mcons>) (#<fn:mcons> (#<fn:mcons> (#<mac:quote> #<mac:quote>) (#<fn:mcons> (#<mac:quote> foo) nil)) (#<fn:mcons> (#<fn:mcons> (#<mac:quote> #<fn:mcons>) (#<fn:mcons> (#<fn:mcons> (#<mac:quote> #<mac:quote>) (#<fn:mcons> (#<mac:quote> bar) nil)) (#<fn:mcons> (#<fn:mcons> (#<mac:quote> #<fn:mcons>) (#<fn:mcons> (#<fn:mcons> (#<mac:quote> #<mac:quote>) (#<fn:mcons> (#<mac:quote> qux) nil)) (#<fn:mcons> (#<fn:mcons> (#<mac:quote> #<fn:mcons>) (#<fn:mcons> (#<fn:mcons> (#<mac:quote> #<mac:quote>) (#<fn:mcons> (#<mac:quote> corge) nil)) (#<fn:mcons> (#<mac:quote> nil) nil))) nil))) nil))) nil)))
+
+
+> (macex '`(foo bar ,@qux ,corge))
+(#<fn:mcons> (#<mac:quote> foo) (#<fn:mcons> (#<mac:quote> bar) (#<fn:mappend> qux (#<fn:mcons> corge nil))))
+
+> (qq-expand '`(foo bar ,@qux ,corge))
+(#<fn:mcons> (#<mac:quote> #<fn:mcons>) (#<fn:mcons> (#<fn:mcons> (#<mac:quote> #<mac:quote>) (#<fn:mcons> (#<mac:quote> foo) nil)) (#<fn:mcons> (#<fn:mcons> (#<mac:quote> #<fn:mcons>) (#<fn:mcons> (#<fn:mcons> (#<mac:quote> #<mac:quote>) (#<fn:mcons> (#<mac:quote> bar) nil)) (#<fn:mcons> (#<fn:mcons> (#<mac:quote> #<fn:mappend>) (#<fn:mcons> (#<mac:quote> qux) (#<fn:mcons> (#<fn:mcons> (#<mac:quote> #<fn:mcons>) (#<fn:mcons> (#<mac:quote> corge) (#<fn:mcons> (#<mac:quote> nil) nil))) nil))) nil))) nil)))
+
+
+> (macex '`(foo (bar nou) ,@qux ,corge))
+(#<fn:mcons> (#<mac:quote> foo) (#<fn:mcons> (#<fn:mcons> (#<mac:quote> bar) (#<fn:mcons> (#<mac:quote> nou) nil)) (#<fn:mappend> qux (#<fn:mcons> corge nil))))
+
+> (qq-expand '`(foo (bar nou) ,@qux ,corge))
+(#<fn:mcons> (#<mac:quote> #<fn:mcons>) (#<fn:mcons> (#<fn:mcons> (#<mac:quote> #<mac:quote>) (#<fn:mcons> (#<mac:quote> foo) nil)) (#<fn:mcons> (#<fn:mcons> (#<mac:quote> #<fn:mcons>) (#<fn:mcons> (#<fn:mcons> (#<mac:quote> #<fn:mcons>) (#<fn:mcons> (#<fn:mcons> (#<mac:quote> #<mac:quote>) (#<fn:mcons> (#<mac:quote> bar) nil)) (#<fn:mcons> (#<fn:mcons> (#<mac:quote> #<fn:mcons>) (#<fn:mcons> (#<fn:mcons> (#<mac:quote> #<mac:quote>) (#<fn:mcons> (#<mac:quote> nou) nil)) (#<fn:mcons> (#<mac:quote> nil) nil))) nil))) (#<fn:mcons> (#<fn:mcons> (#<mac:quote> #<fn:mappend>) (#<fn:mcons> (#<mac:quote> qux) (#<fn:mcons> (#<fn:mcons> (#<mac:quote> #<fn:mcons>) (#<fn:mcons> (#<mac:quote> corge) (#<fn:mcons> (#<mac:quote> nil) nil))) nil))) nil))) nil)))
+
+
+> (macex '`(foo `(bar nou) ,@qux ,corge))
+(#<fn:mcons> (#<mac:quote> foo) (#<fn:mcons> (#<fn:mcons> (#<mac:quote> #<fn:mcons>) (#<fn:mcons> (#<fn:mcons> (#<mac:quote> #<mac:quote>) (#<fn:mcons> (#<mac:quote> bar) nil)) (#<fn:mcons> (#<fn:mcons> (#<mac:quote> #<fn:mcons>) (#<fn:mcons> (#<fn:mcons> (#<mac:quote> #<mac:quote>) (#<fn:mcons> (#<mac:quote> nou) nil)) (#<fn:mcons> (#<mac:quote> nil) nil))) nil))) (#<fn:mappend> qux (#<fn:mcons> corge nil))))
+
+> (qq-expand '`(foo `(bar nou) ,@qux ,corge))
+(#<fn:mcons> (#<mac:quote> #<fn:mcons>) (#<fn:mcons> (#<fn:mcons> (#<mac:quote> #<mac:quote>) (#<fn:mcons> (#<mac:quote> foo) nil)) (#<fn:mcons> (#<fn:mcons> (#<mac:quote> #<fn:mcons>) (#<fn:mcons> (#<fn:mcons> (#<mac:quote> #<fn:mcons>) (#<fn:mcons> (#<fn:mcons> (#<mac:quote> #<mac:quote>) (#<fn:mcons> (#<mac:quote> #<fn:mcons>) nil)) (#<fn:mcons> (#<fn:mcons> (#<mac:quote> #<fn:mcons>) (#<fn:mcons> (#<fn:mcons> (#<mac:quote> #<fn:mcons>) (#<fn:mcons> (#<fn:mcons> (#<mac:quote> #<mac:quote>) (#<fn:mcons> (#<mac:quote> #<mac:quote>) nil)) (#<fn:mcons> (#<fn:mcons> (#<mac:quote> #<fn:mcons>) (#<fn:mcons> (#<fn:mcons> (#<mac:quote> #<mac:quote>) (#<fn:mcons> (#<mac:quote> bar) nil)) (#<fn:mcons> (#<mac:quote> nil) nil))) nil))) (#<fn:mcons> (#<fn:mcons> (#<mac:quote> #<fn:mcons>) (#<fn:mcons> (#<fn:mcons> (#<mac:quote> #<fn:mcons>) (#<fn:mcons> (#<fn:mcons> (#<mac:quote> #<mac:quote>) (#<fn:mcons> (#<mac:quote> #<fn:mcons>) nil)) (#<fn:mcons> (#<fn:mcons> (#<mac:quote> #<fn:mcons>) (#<fn:mcons> (#<fn:mcons> (#<mac:quote> #<fn:mcons>) (#<fn:mcons> (#<fn:mcons> (#<mac:quote> #<mac:quote>) (#<fn:mcons> (#<mac:quote> #<mac:quote>) nil)) (#<fn:mcons> (#<fn:mcons> (#<mac:quote> #<fn:mcons>) (#<fn:mcons> (#<fn:mcons> (#<mac:quote> #<mac:quote>) (#<fn:mcons> (#<mac:quote> nou) nil)) (#<fn:mcons> (#<mac:quote> nil) nil))) nil))) (#<fn:mcons> (#<fn:mcons> (#<mac:quote> #<fn:mcons>) (#<fn:mcons> (#<fn:mcons> (#<mac:quote> #<mac:quote>) (#<fn:mcons> (#<mac:quote> nil) nil)) (#<fn:mcons> (#<mac:quote> nil) nil))) nil))) nil))) (#<fn:mcons> (#<mac:quote> nil) nil))) nil))) nil))) (#<fn:mcons> (#<fn:mcons> (#<mac:quote> #<fn:mappend>) (#<fn:mcons> (#<mac:quote> qux) (#<fn:mcons> (#<fn:mcons> (#<mac:quote> #<fn:mcons>) (#<fn:mcons> (#<mac:quote> corge) (#<fn:mcons> (#<mac:quote> nil) nil))) nil))) nil))) nil)))
+
+
+;=============================================================================
 ;  expand=
 ;=============================================================================
 

@@ -18,10 +18,9 @@
 
 
 (mac buildeach (name f)
-  (w/uniq args
-    `(remac ,name ,args
-       ;; TODO: clunky, shouldn't use car, cadr, and cddr
-       `(,',f (fn (,(car ,args)) ,@(cddr ,args)) ,(cadr ,args)))))
+  (w/uniq (args expr body)
+    `(remac ,name (,args ,expr . ,body)
+       `(,',f (fn (,,args) ,@,body) ,,expr))))
 
 ;; TODO: w/let
 (let mappend mappend
@@ -31,19 +30,6 @@
                         `((= ,f ,x)
                           (buildeach ,x ,f))))
                     args))))
-
-(def eachfn (f x)
-  (if alist.x
-        ((afn (x)
-           (when acons.x
-             (f car.x)
-             (self cdr.x)))
-         x)
-      (isa x 'table)
-        (maptable (fn args f.args) x)
-      (for y 0 (- len.x 1)
-        (f x.y)))
-  nil)
 
 
 ;=============================================================================
@@ -58,8 +44,6 @@
 
 
 (fnify map mappend some all keep)
-
-(buildeach each eachfn)
 
 
 (remac square-bracket args

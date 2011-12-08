@@ -552,7 +552,7 @@
           ;; (~and 3 nil) => ((complement and) 3 nil) => (no (and 3 nil))
           ((ac-caris f complement)
             (ac-compile (list (racket-quote no)
-                              (cons (car (cdr f)) args))))
+                              (cons (cadr f) args))))
           (racket-else
             (racket-let ((args  (ac-args args)))
               (racket-cond
@@ -918,14 +918,18 @@
 ;  quote
 ;=============================================================================
 
-(racket-define quote (annotate (racket-quote mac)
-                       (racket-lambda (x)
-                         ;; TODO: not sure about the %nocompile part: is it
-                         ;;       fast enough?
-                         ;(list %nocompile (list (racket-lambda () x)))
-                         (list %nocompile
-                           (list (racket-procedure-rename (racket-lambda () x)
-                                                          (racket-quote quoted)))))))
+(racket-define quote
+  (annotate (racket-quote mac)
+    (racket-lambda (x)
+     ;; TODO: not sure about the %nocompile part: is it
+     ;;       fast enough?
+     ;(list %nocompile (list (racket-lambda () x)))
+     (racket-if (racket-eq? x (racket-quote nil))
+                  nil ;x
+                (list %nocompile
+                  (list (racket-procedure-rename
+                          (racket-lambda () x)
+                          (racket-quote quoted))))))))
 
 (racket-hash-set! ac-names quote (racket-quote quote))
 
@@ -945,7 +949,7 @@
 ; You can redefine qq-expand in Arc if you want to implement a
 ; different expansion algorithm.
 
-(racket-define (qq-expand-list x)
+#|(racket-define (qq-expand-list x)
   (racket-cond
     ;; TODO: don't hardcode the symbol unquote
     ((ac-caris x (racket-quote unquote))
@@ -964,7 +968,48 @@
 (racket-define (qq-expand-pair x)
   (list racket-mappend
         (qq-expand-list (car x))
-        (qq-expand      (cdr x))))
+        (qq-expand      (cdr x))))|#
+
+(racket-define (qq-expand-pair x)
+  (racket-if (racket-mpair? x)
+      (racket-let ((c (car x)))
+        (racket-cond
+          ;; TODO: don't hardcode the symbol unquote
+          ((ac-caris c (racket-quote unquote))
+            (list cons
+                  (cadr c)
+                  (qq-expand-pair (cdr x))))
+          ;; TODO: don't hardcode the symbol unquote-splicing
+          ((ac-caris c (racket-quote unquote-splicing))
+            (list racket-mappend
+                  (cadr c)
+                  (qq-expand-pair (cdr x))))
+          ;; TODO: don't hardcode the symbol quasiquote
+          ((ac-caris c (racket-quote quasiquote))
+            (list cons
+                  (qq-expand-pair (qq-expand (cadr c)))
+                  (qq-expand-pair (cdr x))))
+          ((racket-mpair? c)
+            (list cons
+                  (qq-expand-pair c)
+                  (qq-expand-pair (cdr x))))
+          (racket-else
+            (list cons
+                  (list quote c)
+                  (qq-expand-pair (cdr x))))))
+    (racket-if (ac-no x)
+                 x
+               (list quote x))))
+
+#|'`(foo bar ,@qux ,corge)
+
+(cons 'foo
+      (cons 'bar
+            (join qux
+                  (cons corge
+                        nil))))|#
+
+;(cons (cons rep (cons x nil)) (cons (cons '%compile (cons y nil)) nil))
 
 (racket-define (qq-expand x)
   (racket-cond
@@ -973,7 +1018,7 @@
       (cadr x))
     ;; TODO: don't hardcode the symbol unquote-splicing
     ((ac-caris x (racket-quote unquote-splicing))
-      (err "illegal use of ,@ in non-list quasiquote expansion"))
+      (err ",@ cannot be used immediately after `"))
     ;; TODO: don't hardcode the symbol quasiquote
     ((ac-caris x (racket-quote quasiquote))
       (qq-expand (qq-expand (cadr x))))

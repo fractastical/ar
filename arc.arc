@@ -242,22 +242,23 @@
 (mac repeat (n . body)
   `(for ,(uniq) 1 ,n ,@body))
 
-; could bind index instead of gensym
+
+(def eachfn (f x)
+  (if alist.x
+        ((afn (x)
+           (when acons.x
+             (f car.x)
+             (self cdr.x)))
+         x)
+      (isa x 'table)
+        (maptable (fn args f.args) x)
+      (for y 0 (- len.x 1)
+        (f x.y)))
+  nil)
 
 (mac each (var expr . body)
-  (w/uniq (gseq gf gv)
-    `(let ,gseq ,expr
-       (if (alist ,gseq)
-            ((rfn ,gf (,gv)
-               (when (acons ,gv)
-                 (let ,var (car ,gv) ,@body)
-                 (,gf (cdr ,gv))))
-             ,gseq)
-           (isa ,gseq 'table)
-            (maptable (fn ,var ,@body)
-                      ,gseq)
-            (for ,gv 0 (- (len ,gseq) 1)
-              (let ,var (,gseq ,gv) ,@body))))))
+  `(eachfn (fn (,var) ,@body) ,expr))
+
 
 ; (nthcdr x y) = (cut y x).
 
