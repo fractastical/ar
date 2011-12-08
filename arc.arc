@@ -385,18 +385,11 @@
        (= ,place1 ,g2)
        (= ,place2 ,g1))))
 
-;; TODO: figure out how this works, so I can remove setforms from it
 (mac rotate places
-  (with (vars (map [uniq] places)
-         forms (map setforms places))
-    `(atwiths ,(mappend (fn (g (binds val setter))
-                          (+ binds (list g val)))
-                        vars
-                        forms)
-       ,@(map (fn (g (binds val setter))
-                (list setter g))
-              (+ (cdr vars) (list (car vars)))
-              forms))))
+  (w/uniq u
+    (let shift (join (cdr places) (list u))
+      `(let ,u ,(car places)
+         (= ,@(mappend list places shift))))))
 
 (mac pop (place)
   (w/uniq u
