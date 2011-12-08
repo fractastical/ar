@@ -257,7 +257,7 @@
         `(assign ,place ,val)
       (let (vars prev setter) (setforms place)
         (w/uniq g
-          `(atwith ,(+ vars (list g val))
+          `(with ,(+ vars (list g val))
              (,setter ,g))))))
 
 (def expand=list (terms)
