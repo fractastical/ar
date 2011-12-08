@@ -41,9 +41,7 @@
                 (list (join (list u car.place)
                             (mappend list argsyms cdr.place))
                       `(,u ,@argsyms)
-                      `(fn (,v) (sref ,u ,v ,car.argsyms))))
-              ;`(sref ,car.place ,v ,@cdr.place)
-              )
+                      `(fn (,v) (sref ,u ,v ,car.argsyms)))))
           (list (list u place)
                 u
                 `(fn (,v) (assign ,place ,v)))))))

@@ -1,16 +1,3 @@
-#|(defset assoc (x y)
-  (w/uniq g
-    (list (list g x)
-          `(assoc ,g ,y)
-          `(fn (val) (scar (assoc-ref ,g ,y) val)))))
-
-(defset alref (x y)
-  (w/uniq g
-    (list (list g x)
-          `(alref ,g ,y)
-          `(fn (val) (scar (cdr:assoc ,g ,y) val)))))|#
-
-
 (def zip args
   ;; TODO: how fast is map applied to multiple lists?
   (apply map list args))

@@ -150,54 +150,19 @@
   `(atomic (withs ,@args)))
 
 
+;=============================================================================
+;  = Assignment
+;=============================================================================
 ; A bit gross that it works based on the *name* in the car, but maybe
 ; wrong to worry.  Macros live in expression land.
-
+;
 ; seems meaningful to e.g. (push 1 (pop x)) if (car x) is a cons.
 ; can't in cl though.  could I define a setter for push or pop?
+
 (= setter (table))
-
-#|(mac defset (name parms . body)
-  (w/uniq gexpr
-    `(sref setter
-           (fn (,gexpr)
-             (let ,parms (cdr ,gexpr)
-               ,@body))
-           ',name)))
-
-(defset car (x)
-  (w/uniq g
-    (list (list g x)
-          `(car ,g)
-          `(fn (val) (scar ,g val)))))
-
-(defset cdr (x)
-  (w/uniq g
-    (list (list g x)
-          `(cdr ,g)
-          `(fn (val) (scdr ,g val)))))
-
-(defset caar (x)
-  (w/uniq g
-    (list (list g x)
-          `(caar ,g)
-          `(fn (val) (scar (car ,g) val)))))
-
-(defset cadr (x)
-  (w/uniq g
-    (list (list g x)
-          `(cadr ,g)
-          `(fn (val) (scar (cdr ,g) val)))))
-
-(defset cddr (x)
-  (w/uniq g
-    (list (list g x)
-          `(cddr ,g)
-          `(fn (val) (scdr (cdr ,g) val)))))|#
 
 (mac defset (name parms . body)
   `(sref setter (fn ,parms ,@body) ',name))
-
 
 (defset car (name val)
   `(scar ,name ,val))
@@ -245,71 +210,14 @@
             (apply f cadr.place val cddr.place)
             ; assumed to be data structure in fn position
             `(sref ,car.place ,val ,@cdr.place))
-            #|(do (when (caris car.place ac-fn)
-                  (warn "Inverting what looks like a function call" place))
-                )|#
-        #|(ssyntax place)
-          (expand= ssexpand.place val)|#
         `(assign ,place ,val))))
 
-;((gs573 5) (car gs573) (fn (val) (scar gs573 val)))
-
-#|(def setforms (expr0)
-  (let expr (macex expr0)
-    (if (isa expr 'sym)
-          (if (ssyntax expr)
-                (setforms (ssexpand expr))
-              (w/uniq (g h)
-                (list (list g expr)
-                      g
-                      `(fn (,h) (assign ,expr ,h)))))
-        ; make it also work for uncompressed calls to compose
-        (and (acons expr) (metafn (car expr)))
-          (setforms (expand-metafn-call (ssexpand (car expr)) (cdr expr)))
-        (and (acons expr) (acons (car expr)) (is (caar expr) 'get))
-          (setforms (list (cadr expr) (cadr (car expr))))
-        (let f (setter (car expr))
-          (if f (f expr)
-                ; assumed to be data structure in fn position
-                (do
-                    (w/uniq (g h)
-                      (let argsyms (map [uniq] (cdr expr))
-                         (list (+ (list g (car expr))
-                                  (mappend list argsyms (cdr expr)))
-                               `(,g ,@argsyms)
-                               `(fn (,h) (sref ,g ,h ,(car argsyms))))))))))))|#
-
-#|(def metafn (x)
-  (or (ssyntax x)
-      (and (acons x) (in (car x) 'compose 'complement))))
-
-(def expand-metafn-call (f args)
-  (if (is (car f) 'compose)
-       ((afn (fs)
-          (if (caris (car fs) 'compose)            ; nested compose
-               (self (join (cdr (car fs)) (cdr fs)))
-              (cdr fs)
-               (list (car fs) (self (cdr fs)))
-              (cons (car fs) args)))
-        (cdr f))
-      (is (car f) 'no)
-       (err "can't invert " (cons f args))
-       (cons f args)))|#
-
-#|(def expand= (place val)
-  (if (and (isa place 'sym) (~ssyntax place))
-        `(assign ,place ,val)
-      (let (vars prev setter) (setforms place)
-        (w/uniq g
-          `(with ,(+ vars (list g val))
-             (,setter ,g))))))|#
-
 (def expand=list (terms)
-  `(do ,@(map [apply expand= _] ; (fn ((p v)) (expand= p v))
-              (pair terms))))
+  `(do ,@(map [apply expand= _] (pair terms))))
 
 (remac = args
   (expand=list args))
+
 
 (mac loop (start test update . body)
   (w/uniq (gfn gparm)
