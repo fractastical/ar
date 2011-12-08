@@ -211,30 +211,29 @@
 (def setforms (expr0)
   (let expr (macex expr0)
     (if (isa expr 'sym)
-         (if (ssyntax expr)
-             (setforms (ssexpand expr))
-             (w/uniq (g h)
-               (list (list g expr)
-                     g
-                     `(fn (,h) (assign ,expr ,h)))))
+          (if (ssyntax expr)
+                (setforms (ssexpand expr))
+              (w/uniq (g h)
+                (list (list g expr)
+                      g
+                      `(fn (,h) (assign ,expr ,h)))))
         ; make it also work for uncompressed calls to compose
         (and (acons expr) (metafn (car expr)))
-         (setforms (expand-metafn-call (ssexpand (car expr)) (cdr expr)))
+          (setforms (expand-metafn-call (ssexpand (car expr)) (cdr expr)))
         (and (acons expr) (acons (car expr)) (is (caar expr) 'get))
-         (setforms (list (cadr expr) (cadr (car expr))))
-         (let f (setter (car expr))
-           (if f
-               (f expr)
-               ; assumed to be data structure in fn position
-               (do (when (caris (car expr) 'fn)
-                     (warn "Inverting what looks like a function call"
-                           expr0 expr))
-                   (w/uniq (g h)
-                     (let argsyms (map [uniq] (cdr expr))
-                        (list (+ (list g (car expr))
-                                 (mappend list argsyms (cdr expr)))
-                              `(,g ,@argsyms)
-                              `(fn (,h) (sref ,g ,h ,(car argsyms))))))))))))
+          (setforms (list (cadr expr) (cadr (car expr))))
+        (let f (setter (car expr))
+          (if f (f expr)
+                ; assumed to be data structure in fn position
+                (do (when (caris (car expr) 'fn)
+                      (warn "Inverting what looks like a function call"
+                            expr0 expr))
+                    (w/uniq (g h)
+                      (let argsyms (map [uniq] (cdr expr))
+                         (list (+ (list g (car expr))
+                                  (mappend list argsyms (cdr expr)))
+                               `(,g ,@argsyms)
+                               `(fn (,h) (sref ,g ,h ,(car argsyms))))))))))))
 
 (def metafn (x)
   (or (ssyntax x)
@@ -255,7 +254,7 @@
 
 (def expand= (place val)
   (if (and (isa place 'sym) (~ssyntax place))
-      `(assign ,place ,val)
+        `(assign ,place ,val)
       (let (vars prev setter) (setforms place)
         (w/uniq g
           `(atwith ,(+ vars (list g val))
@@ -371,21 +370,22 @@
        ,@(cdr args)
        ,g)))
 
+
+;=============================================================================
+;  Mutation / Assignment
+;=============================================================================
+
 (mac push (x place)
-  (w/uniq gx
-    (let (binds val setter) (setforms place)
-      `(let ,gx ,x
-         (atwiths ,binds
-           (,setter (cons ,gx ,val)))))))
+  `(= ,place (cons ,x ,place)))
 
 (mac swap (place1 place2)
   (w/uniq (g1 g2)
-    (with ((binds1 val1 setter1) (setforms place1)
-           (binds2 val2 setter2) (setforms place2))
-      `(atwiths ,(+ binds1 (list g1 val1) binds2 (list g2 val2))
-         (,setter1 ,g2)
-         (,setter2 ,g1)))))
+    `(with (,g1 ,place1
+            ,g2 ,place2)
+       (= ,place1 ,g2)
+       (= ,place2 ,g1))))
 
+;; TODO: figure out how this works, so I can remove setforms from it
 (mac rotate places
   (with (vars (map [uniq] places)
          forms (map setforms places))
@@ -399,37 +399,29 @@
               forms))))
 
 (mac pop (place)
-  (w/uniq g
-    (let (binds val setter) (setforms place)
-      `(atwiths ,(+ binds (list g val))
-         (do1 (car ,g)
-              (,setter (cdr ,g)))))))
+  (w/uniq u
+    `(let ,u ,place
+       (do1 (car ,u)
+            (= ,place (cdr ,u))))))
 
 (def adjoin (x xs (o test iso))
   (if (some [test x _] xs)
-      xs
+        xs
       (cons x xs)))
 
 (mac pushnew (x place . args)
-  (w/uniq gx
-    (let (binds val setter) (setforms place)
-      `(atwiths ,(+ (list gx x) binds)
-         (,setter (adjoin ,gx ,val ,@args))))))
+  `(= ,place (adjoin ,x ,place ,@args)))
 
 (mac pull (test place)
-  (w/uniq g
-    (let (binds val setter) (setforms place)
-      `(atwiths ,(+ (list g test) binds)
-         (,setter (rem ,g ,val))))))
+  `(= ,place (rem ,test ,place)))
 
 (mac togglemem (x place . args)
-  (w/uniq gx
-    (let (binds val setter) (setforms place)
-      `(atwiths ,(+ (list gx x) binds)
-         (,setter (if (mem ,gx ,val)
-                      (rem ,gx ,val)
-                      (adjoin ,gx ,val ,@args)))))))
-
+  (w/uniq (u v)
+    `(with (,u  ,x
+            ,v  ,place)
+       (= ,place (if (mem ,u ,v)
+                       (rem ,u ,v)
+                     (adjoin ,u ,v ,@args))))))
 
 (mac zap (f x . args)
   `(= ,x (,f ,x ,@args)))
@@ -439,6 +431,10 @@
 
 (mac -- (place (o i 1))
   `(zap + ,place ,i))
+
+(mac or= (place expr)
+  `(or ,place (= ,place ,expr)))
+
 
 ; Can't simply mod pr to print strings represented as lists of chars,
 ; because empty string will get printed as nil.  Would need to rep strings
@@ -1321,11 +1317,6 @@
         (when ,g
           ,@(map [list _ g] fs)))
       ,x)))
-
-(mac or= (place expr)
-  (let (binds val setter) (setforms place)
-    `(atwiths ,binds
-       (or ,val (,setter ,expr)))))
 
 (= hooks* (table))
 

@@ -132,6 +132,8 @@ The current differences are as follows:
 
 *   `in` is faster when given only two arguments: `(in x 5)`
 
+*   Usage of `setforms` has been reduced as much as possible. For instance, `(zap + x 1)` just expands into `(= x (+ x 1))` and `(push x foo)` expands into `(= foo (cons x foo))`. The only place I haven't removed `setforms` from (yet) is `=` and `rotate`
+
 *   [The REPL](#repl) is implemented better
 
 *   [Implicit variables](#implicit) are implemented better
