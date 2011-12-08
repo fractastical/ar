@@ -303,6 +303,78 @@ error: function call on inappropriate object () 15
 
 
 ;=============================================================================
+;  expand=
+;=============================================================================
+
+> (expand= 'foo 10)
+(assign foo 10)
+
+
+> (expand= 'foo.bar 10)
+(sref foo 10 bar)
+
+> (expand= '(foo bar) 10)
+(sref foo 10 bar)
+
+> (expand= 'foo!bar 10)
+(sref foo 10 (quote bar))
+
+
+> (expand= '(car foo) 10)
+(scar foo 10)
+
+
+> (expand= '(assoc foo 'bar) 10)
+(scar (assoc-ref foo (quote bar)) 10)
+
+> (expand= '(alref foo 'bar) 10)
+(scar (cdr (assoc foo (quote bar))) 10)
+
+
+> (expand= '(foo (car (car foo))) 10)
+(sref foo 10 (car (car foo)))
+
+> (expand= '(foo:car:car foo) 10)
+(sref foo 10 (car (car foo)))
+
+
+> (expand= '(car (car (car foo))) 10)
+(scar (car (car foo)) 10)
+
+> (expand= '(car:car:car foo) 10)
+(scar (car (car foo)) 10)
+
+
+> (expand= '(~foo:bar:qux (~~bar bar:qux 5)) 10)
+(sref no 10 (foo (bar (qux (no (no (bar (#<mac:compose> bar qux) 5)))))))
+
+
+;=============================================================================
+;  setforms
+;=============================================================================
+
+> (setforms 'foo)
+((g1 foo) g1 (fn (g2) (assign foo g2)))
+
+> (setforms '(car 5))
+((g1 5) (car g1) (fn (g2) (scar g1 g2)))
+
+> (setforms '(car (car (car 5))))
+((g1 (car (car 5))) (car g1) (fn (g2) (scar g1 g2)))
+
+> (setforms '(foo 5))
+((g1 foo g3 5) (g1 g3) (fn (g2) (sref g1 g2 g3)))
+
+
+;=============================================================================
+;  ssyntax
+;=============================================================================
+
+> (ssexpand-full '(~foo:bar:qux (~~bar bar:qux 5)))
+(no (foo (bar (qux (no (no (bar (#<mac:compose> bar qux) 5)))))))
+
+
+;=============================================================================
 ;  Keyword args
 ;=============================================================================
 

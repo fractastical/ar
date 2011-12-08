@@ -1,4 +1,4 @@
-(defset assoc (x y)
+#|(defset assoc (x y)
   (w/uniq g
     (list (list g x)
           `(assoc ,g ,y)
@@ -8,7 +8,7 @@
   (w/uniq g
     (list (list g x)
           `(alref ,g ,y)
-          `(fn (val) (scar (cdr:assoc ,g ,y) val)))))
+          `(fn (val) (scar (cdr:assoc ,g ,y) val)))))|#
 
 
 (def zip args
