@@ -14,22 +14,22 @@
   nil)
 
 (mac curly-bracket args
-  `(obj ,@args))
+  `(,obj ,@args))
 
 
 (mac buildeach (name f)
   (w/uniq (args expr body)
-    `(remac ,name (,args ,expr . ,body)
-       `(,',f (fn (,,args) ,@,body) ,,expr))))
+    `(,remac ,name (,args ,expr . ,body)
+       `(,,f (,fn (,,args) ,@,body) ,,expr))))
 
 ;; TODO: w/let
 (let mappend mappend
   (mac fnify args
-    `(do ,@(mappend (fn (x)
-                      (let f (sym x 'fn)
-                        `((= ,f ,x)
-                          (buildeach ,x ,f))))
-                    args))))
+    `(,do ,@(mappend (fn (x)
+                       (let f (sym x 'fn)
+                         `((,= ,f ,x)
+                           (,buildeach ,x ,f))))
+                     args))))
 
 
 ;=============================================================================
@@ -40,14 +40,14 @@
 
 ;; TODO: macro to generate these
 (mac w/arubic body
-  `(eval-w/ arubic-namespace ,@body))
+  `(,eval-w/ ,arubic-namespace ,@body))
 
 
 (fnify map mappend some all keep rem)
 
 
 (remac square-bracket args
-  `(list ,@args))
+  `(,list ,@args))
 
 (redef isa (x y . args)
   (let x type.x

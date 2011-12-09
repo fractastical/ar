@@ -80,13 +80,13 @@
 
 (mac litmatch (pat string (o start 0))
   (w/uniq (gstring gstart)
-    `(with (,gstring ,string ,gstart ,start)
-       (unless (> (+ ,gstart ,(len pat)) (len ,gstring))
-         (and ,@(let acc nil
-                  (forlen i pat
-                    (push `(is ,(pat i) (,gstring (+ ,gstart ,i)))
-                           acc))
-                  (rev acc)))))))
+    `(,with (,gstring ,string ,gstart ,start)
+       (,unless (,> (,+ ,gstart ,(len pat)) (,len ,gstring))
+         (,and ,@(let acc nil
+                   (forlen i pat
+                     (push `(,is ,(pat i) (,gstring (,+ ,gstart ,i)))
+                            acc))
+                   (rev acc)))))))
 
 ; litmatch would be cleaner if map worked for string and integer args:
 
@@ -97,14 +97,14 @@
 
 (mac endmatch (pat string)
   (w/uniq (gstring glen)
-    `(withs (,gstring ,string ,glen (len ,gstring))
-       (unless (> ,(len pat) (len ,gstring))
-         (and ,@(let acc nil
-                  (forlen i pat
-                    (push `(is ,(pat (- (len pat) 1 i))
-                               (,gstring (- ,glen 1 ,i)))
-                           acc))
-                  (rev acc)))))))
+    `(,withs (,gstring ,string ,glen (,len ,gstring))
+       (,unless (,> ,(len pat) (,len ,gstring))
+         (,and ,@(let acc nil
+                   (forlen i pat
+                     (push `(,is ,(pat (- (len pat) 1 i))
+                                 (,gstring (,- ,glen 1 ,i)))
+                            acc))
+                   (rev acc)))))))
 
 (def posmatch (pat seq (o start 0))
   (catch

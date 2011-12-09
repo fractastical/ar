@@ -1,6 +1,16 @@
 Timing notes
 ============
 
+  * Unquoting macros and functions inside a macro has a small speed boost:
+
+        Normal macros:
+          Total cpu time observed: 1248ms (out of 1304ms)
+          Number of samples taken: 31 (once every 40ms)
+
+        Unquoted macros:
+          Total cpu time observed: 1154ms (out of 1208ms)
+          Number of samples taken: 29 (once every 40ms)
+
   * `procedure-rename` has a very small (12%) cost:
 
         Direct:
@@ -12,6 +22,47 @@ Timing notes
           iter: 3,083,123  gc: 0  mem: 1144280
 
   * Namespaces are costly:
+
+        #<namespace (len 1)>
+        > (timeit (+ 1 2))
+        iter: 3,087,359  gc: 0  mem: 1150720
+
+        #<namespace (len 2)>
+        > (timeit (+ 1 2))
+        iter: 673,656  gc: 208  mem: 2043552
+
+        #<namespace (len 3)>
+        > (timeit (+ 1 2))
+        iter: 542,289  gc: 196  mem: 3957072
+
+        #<namespace (len 4)>
+        > (timeit (+ 1 2))
+        iter: 451,246  gc: 240  mem: -5491480
+
+        #<namespace (len 5)>
+        > (timeit (+ 1 2))
+        iter: 383,279  gc: 208  mem: 1315664
+
+        #<namespace (len 6)>
+        > (timeit (+ 1 2))
+        iter: 339,967  gc: 204  mem: -2596248
+
+        #<namespace (len 7)>
+        > (timeit (+ 1 2))
+        iter: 303,009  gc: 244  mem: -9807392
+
+        #<namespace (len 8)>
+        > (timeit (+ 1 2))
+        iter: 271,724  gc: 232  mem: 2706624
+
+        #<namespace (len 9)>
+        > (timeit (+ 1 2))
+        iter: 237,372  gc: 456  mem: -6715504
+
+        #<namespace (len 10)>
+        > (timeit (+ 1 2))
+        iter: 221,411  gc: 276  mem: 823096
+
 
         1   2      3    4    6    6    7
         0%  1732%  31%  22%  20%  17%  12%

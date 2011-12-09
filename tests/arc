@@ -265,7 +265,83 @@ t
 > (with (qux    '(1 2 3 4 5)
          corge  10)
     `(foo `(bar nou) ,@qux ,corge))
-(foo (#<fn:mcons> (#<mac:quote> bar) (#<fn:mcons> (#<mac:quote> nou) nil)) 1 2 3 4 5 10)
+(foo (#<fn:cons> (#<mac:quote> bar) (#<fn:cons> (#<mac:quote> nou) nil)) 1 2 3 4 5 10)
+
+
+;=============================================================================
+;  quasisyntax
+;=============================================================================
+
+> #`'+
++
+
+
+> #`(+ - * /)
+(#<fn:+> #<fn:-> #<fn:*> #<fn:/>)
+
+> #`(+ - '* /)
+(#<fn:+> #<fn:-> * #<fn:/>)
+
+> #`(+ - ''* /)
+(#<fn:+> #<fn:-> (quote *) #<fn:/>)
+
+
+> (let body '(1 2 3)
+    #`(fn ('a 'b 'c) (,@body)))
+(#<mac:fn> (a b c) (1 2 3))
+
+> (let body '(1 2 3)
+    #`(fn (('o '_)) (,@body)))
+(#<mac:fn> ((o _)) (1 2 3))
+
+
+> (let body '((+ 1 2) (+ 2 3))
+    #`(fn ('a 'b 'c) body))
+(#<mac:fn> (a b c) ((+ 1 2) (+ 2 3)))
+
+> (let body '((+ 1 2) (+ 2 3))
+    #`(fn (('o '_)) body))
+(#<mac:fn> ((o _)) ((+ 1 2) (+ 2 3)))
+
+
+> (let body '((+ 1 2) (+ 2 3))
+    #`(fn ('a 'b 'c) (,@body)))
+(#<mac:fn> (a b c) ((+ 1 2) (+ 2 3)))
+
+> (let body '((+ 1 2) (+ 2 3))
+    #`(fn (('o '_)) (,@body)))
+(#<mac:fn> ((o _)) ((+ 1 2) (+ 2 3)))
+
+
+> (let name 'foo
+    #`(+ foo))
+u
+
+> (let name 'foo
+    #`(+ 'foo))
+u
+
+> (let name 'foo
+    #`(+ ',foo))
+u
+
+
+> (with (qux    '(1 2 3 4 5)
+         corge  10)
+    #`(+ - ,@qux corge ,corge))
+(#<fn:+> #<fn:-> 1 2 3 4 5 10 10)
+
+
+> (with (qux    '(1 2 3 4 5)
+         corge  10)
+    #`(+ (- /) ,@qux corge ,corge))
+(#<fn:+> (#<fn:-> #<fn:/>) 1 2 3 4 5 10 10)
+
+
+> (with (qux    '(1 2 3 4 5)
+         corge  10)
+    #`(+ #`(- /) ,@qux corge ,corge))
+(#<fn:+> (#<fn:cons> #<fn:-> (#<fn:cons> #<fn:/> nil)) 1 2 3 4 5 10 10)
 
 
 ;=============================================================================

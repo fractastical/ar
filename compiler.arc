@@ -319,6 +319,9 @@
 (racket-define cons  racket-mcons)
 (racket-define list  racket-mlist)
 
+(racket-hash-set! ac-names cons (racket-quote cons))
+(racket-hash-set! ac-names list (racket-quote list))
+
 (racket-define (car x)
   (racket-if (ac-no x)
                nil
@@ -1002,6 +1005,82 @@
                               (racket-apply qq-expand args))))
 
 (racket-hash-set! ac-names quasiquote (racket-quote quasiquote))
+
+
+;=============================================================================
+;  quasisyntax
+;=============================================================================
+; qs-expand takes an Arc list containing a quasisyntax expression
+; (the x in #`x), and returns an Arc list containing Arc code.  The Arc
+; code, when evaled by Arc, will construct an Arc list, the
+; expansion of the quasisyntax expression.
+;
+; This implementation is a modification of the quasiquote algorithm above
+;
+; You can redefine qs-expand in Arc if you want to implement a
+; different expansion algorithm.
+
+(racket-define (qs-expand-pair x)
+  (racket-if (racket-mpair? x)
+      (racket-let ((c (car x)))
+        (racket-cond
+          ;; TODO: don't hardcode the symbol quote
+          ((ac-caris c (racket-quote quote))
+            (list cons
+                  (cons quote (cdr c))
+                  (qs-expand-pair (cdr x))))
+          ;; TODO: don't hardcode the symbol unquote
+          ((ac-caris c (racket-quote unquote))
+            (list cons
+                  (cadr c)
+                  (qs-expand-pair (cdr x))))
+          ;; TODO: don't hardcode the symbol unquote-splicing
+          ((ac-caris c (racket-quote unquote-splicing))
+            (list racket-mappend
+                  (cadr c)
+                  (qs-expand-pair (cdr x))))
+          ;; TODO: don't hardcode the symbol quasisyntax
+          ((ac-caris c (racket-quote quasisyntax))
+            (list cons
+                  (qs-expand-pair (qs-expand (cadr c)))
+                  (qs-expand-pair (cdr x))))
+          ((racket-mpair? c)
+            (list cons
+                  (qs-expand-pair c)
+                  (qs-expand-pair (cdr x))))
+          (racket-else
+            (list cons
+                  c
+                  (qs-expand-pair (cdr x))))))
+    (racket-if (ac-no x)
+                 x
+               x)))
+
+(racket-define (qs-expand x)
+  (racket-cond
+    ;; TODO: don't hardcode the symbol quote
+    ((ac-caris x (racket-quote quote))
+      (cons quote (cdr x)))
+    ;; TODO: don't hardcode the symbol unquote
+    ((ac-caris x (racket-quote unquote))
+      (cadr x))
+    ;; TODO: don't hardcode the symbol unquote-splicing
+    ((ac-caris x (racket-quote unquote-splicing))
+      (err ",@ cannot be used immediately after #`"))
+    ;; TODO: don't hardcode the symbol quasisyntax
+    ((ac-caris x (racket-quote quasisyntax))
+      (qs-expand (qs-expand (cadr x))))
+    ((racket-mpair? x)
+      (qs-expand-pair x))
+    (racket-else
+      x)))
+
+;; TODO: make this prettier
+(racket-define quasisyntax (annotate (racket-quote mac)
+                             (racket-lambda args
+                               (racket-apply qs-expand args))))
+
+(racket-hash-set! ac-names quasisyntax (racket-quote quasisyntax))
 
 
 ;=============================================================================

@@ -5,16 +5,16 @@
 
 (mac rloop (name parms . body)
   (let (l r) (apply zip pair.parms)
-    `((rfn ,name ,l ,@body) ,@r)))
+    `((,rfn ,name ,l ,@body) ,@r)))
 
 (mac aloop (parms . body)
-  `(rloop self ,parms ,@body))
+  `(,rloop self ,parms ,@body))
 
 
 (mac afneach (parms x . body)
   (w/uniq u
-    `((afn (,u)
-        (whenlet ,parms ,u
+    `((,afn (,u)
+        (,whenlet ,parms ,u
           ,@body))
       ,x)))
 
@@ -27,8 +27,8 @@
 
 
 (mac catcherr (expr)
-  `(on-err (fn (c) (details c))
-           (fn () ,expr nil)))
+  `(,on-err (,fn (c) (,details c))
+            (,fn ()  ,expr ,nil)))
 
 (def xml-encode (s)
   (multisubst '(("&" "&amp;")
@@ -43,20 +43,20 @@
 
 (mac extend (name parms test . body)
   (w/uniq u
-    `(let orig ,name
-       (= ,name (fn ,u
-                  ;; TODO: (apply (fn ,parms ...) ,u) ?
-                  (let ,parms ,u
-                    (aif ,test
-                           (do ,@body)
-                         (%nocompile (,apply orig ,u))))
+    `(,let orig ,name
+       (,= ,name (,fn ,u
+                   ;; TODO: (apply (fn ,parms ...) ,u) ?
+                   (,let ,parms ,u
+                     (,aif ,test
+                             (,do ,@body)
+                           (,%nocompile (,apply orig ,u))))
                   )))))
 
 
 (= defcall-types* (table))
 
 (mac defcall (name parms . body)
-  `(= (defcall-types* ',name) (fn ,parms ,@body)))
+  `(,= (,defcall-types* ',name) (,fn ,parms ,@body)))
 
 (extend ac-apply-non-fn (x . args)
   (%nocompile (orig defcall-types* (type x)))
@@ -64,4 +64,4 @@
 
 
 (mac %eval body
-  (eval `(do ,@body)))
+  (eval `(,do ,@body)))

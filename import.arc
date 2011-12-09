@@ -58,7 +58,7 @@
                            args))))
 
 (mac w/new-namespace (x . body)
-  `(w/namespace (new-namespace ,x)
+  `(,w/namespace (,new-namespace ,x)
      ,@body))
 
 ;; TODO: should use object.arc
@@ -94,21 +94,21 @@
 
 (remac safeset (var val)
   (if load-automatic-namespaces*
-        `(do (when (bound ',var)
-               (zap new-namespace namespace)
-               (disp "*** creating new namespace to avoid redefining " stderr)
-               (disp ',var stderr)
-               (disp #\newline stderr))
-             (= ,var ,val))
+        `(,do (,when (,bound ',var)
+                (,zap new-namespace namespace)
+                (,disp "*** creating new namespace to avoid redefining " ,stderr)
+                (,disp ',var ,stderr)
+                (,disp #\newline ,stderr))
+             (,= ,var ,val))
       (orig var val)))
 
 
 (mac eval-w/ (x . body)
-  `(w/namespace ,x
-     (maplast eval ',body)))
+  `(,w/namespace ,x
+     (,maplast ,eval ',body)))
 
 (mac w/arc3 body
-  `(eval-w/ arc3-namespace ,@body))
+  `(,eval-w/ ,arc3-namespace ,@body))
 
 
 ;; TODO: could use a better name
@@ -154,8 +154,8 @@
       (importfn1 x))))
 
 (mac import args
-  `(importfn ',args))
+  `(,importfn ',args))
 
 (mac reimport args
-  `(w/imported-paths* (table)
-     (importfn ',args)))
+  `(,w/imported-paths* (,table)
+     (,importfn ',args)))

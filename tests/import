@@ -194,3 +194,44 @@ error: undefined variable: corge
 > (eval-w/ arubic
     (corge 50))
 79
+
+
+;=============================================================================
+;  Hygienic macros
+;=============================================================================
+
+> (= arc    (new-namespace arc3-namespace))
+#<namespace (len 2)>
+
+> (= arubic (new-namespace arc))
+#<namespace (len 3)>
+
+
+> (eval-w/ arc
+    (def bar ()
+      10)
+    (mac qux ()
+      `(bar))
+    (qux))
+10u
+
+> (eval-w/ arubic
+    (def bar ()
+      20)
+    (qux))
+20
+
+
+> (eval-w/ arc
+    (mac qux ()
+      `(,bar)))
+*** redefining qux
+#<mac:qux>
+
+> (eval-w/ arc
+    (qux))
+10u
+
+> (eval-w/ arubic
+    (qux))
+10

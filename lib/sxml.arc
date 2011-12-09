@@ -79,7 +79,7 @@
     (string xml-declaration* (->string root))))
 
 (mac w/pretty args
-  `(w/mode ,pretty ,@args))
+  `(,w/mode ,pretty ,@args))
 
 
 ;; why doesn't it work?!
