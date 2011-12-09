@@ -128,6 +128,7 @@
   (w/cwd (or dirname.n ".") ; dirname
   (w/infile file basename.n ; basename
   (w/new-namespace namespace
+    ;(prn (racket-namespace-mapped-symbols namespace))
     (whilet x (parse-string file)
       (eval-test x env)))))))
 

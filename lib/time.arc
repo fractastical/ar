@@ -46,3 +46,13 @@
              "  gc: "   b
              "  mem: "  c)
         nil)))
+
+
+(mac timeit-range (x time (o variance 5))
+  (w/uniq (a b c)
+    #`(let (a b c) (timeit1 x 1000)
+        (if (< a (* (- 100 variance) 0.01 time))
+              (err:string a " is lower than expected: " time)
+            (> a (* (+ 1 (* variance 0.01)) time))
+              (err:string a " is higher than expected: " time)
+            t))))

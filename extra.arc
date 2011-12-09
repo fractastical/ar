@@ -12,8 +12,7 @@
   #`(rloop 'self parms ,@body))
 
 
-;; TODO: could use a better name
-(mac afneach (parms x . body)
+(mac afnlet (parms x . body)
   (w/uniq u
     #`((afn (u)
          (whenlet parms u
@@ -69,3 +68,7 @@
 
 (mac %eval body
   (eval #`(do ,@body)))
+
+
+(def listify (x)
+  (if (cons? x) x (list x)))

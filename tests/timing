@@ -1,0 +1,10 @@
+> (w/arc3 (import time))
+ loading:  time.arc
+ skipping: strings.arc
+nil
+
+> (w/arc3 (timeit-range (+ 1 2) 300000 #|3097468|#))
+t
+
+> (timeit-range (+ 1 2) 62000 #|638625|#)
+t

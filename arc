@@ -1,6 +1,10 @@
 #! /usr/bin/env racket
 #lang racket/base
 
+#|(define-package n
+  (provide (prefix-out racket- (all-from-out racket/base))
+           #%app #%top #%datum #%top-interaction))|#
+
 #|(require racket/mpair)
 (provide (all-defined-out))|#
 
@@ -102,6 +106,19 @@
 (define exec-dir
   (path->string (path-only (normalize-path (find-system-path 'run-file)))))
 
+(define (ac-require-base)
+  ;(namespace-require/copy '(only '#%kernel ))
+  (namespace-require/expansion-time '(only racket/private/pre-base
+                                       #%app #%top #%datum #%top-interaction))
+
+  ;; TODO: ew
+  (namespace-require/copy '(prefix racket- racket/base))
+  ;(namespace-require/copy "arc")
+  ;(namespace-require/copy 'm)
+  #|(namespace-require/copy '(rename racket/private/pre-base
+                             #%app #%top #%datum #%top-interaction))|#
+  )
+
 (parameterize ((current-namespace (make-base-empty-namespace)))
   ;(namespace-require '(only racket/base #%app #%datum #%top #%top-interaction))
   #|(namespace-require '(only racket/private/pre-base
@@ -112,10 +129,11 @@
                             #%require #%app #%top #%top-interaction))|#
   #|(namespace-require '(only racket/private/pre-base
                             #%top-interaction #%app #%top #%datum #%require))|#
-  (namespace-require/copy '(only racket/private/pre-base
-                             #%top-interaction #%app #%top #%datum))
 
-  (namespace-require/copy '(prefix racket- racket/base))
+  (ac-require-base)
+
+  #|(namespace-require/copy '(only racket/private/pre-base
+                             #%app #%top #%datum #%top-interaction))|#
   ;(namespace-require '(prefix racket- racket/base))
   ;(namespace-require '(prefix racket- racket/base))
   ;(namespace-require '(prefix racket- racket/mpair))
@@ -123,7 +141,8 @@
   ;(namespace-require '(prefix racket- racket/system))
   ;(namespace-require "compiler.arc")
 
-  (namespace-set-variable-value! 'exec-dir* exec-dir #f)
+  (namespace-set-variable-value! 'exec-dir*       exec-dir        #f)
+  (namespace-set-variable-value! 'ac-require-base ac-require-base #f)
 
   (profile-thunk (lambda ()
     (load/use-compiled (build-path exec-dir "compiler.arc"))

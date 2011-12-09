@@ -472,10 +472,10 @@
   #`(= name (annotate ''alias (list get set))))
 
 (mac alias (name orig)
-  (w/uniq v
+  (w/uniq (x n v)
     #`(make-alias name
-        (fn ()  orig)
-        (fn (v) (= orig v)))))
+        (fn ()      orig)
+        (fn (x v n) (= orig v)))))
 
 ;; TODO: make this into a function
 (mac make-dynamic (name val)
@@ -487,14 +487,14 @@
                                  ;; TODO: use (ref namespace ...) ?
                                  ;; TODO: how slow is it to create a new fn
                                  ;;       every time...?
-               (fn ()  (let v (ac-var ',name (fn () x))
-                         ;(,ac-prn ,v)
-                         (if (is v x) u v)))
+               (fn ()      (let v (ac-var ',name (fn () x))
+                             ;(,ac-prn ,v)
+                             (if (is v x) u v)))
                #|,(fn ()  (let v (ac-var name (fn () x))
                           (ac-prn v)
                           (if (is v x) u v)))|#
                        ;; TODO: does namespace need to be quoted?
-               (fn (v) (sref 'namespace v ',name))
+               (fn (x v u) (sref 'namespace v u))
                ;,(fn (v) (sref namespace v name))
                ))
         u)))
@@ -510,10 +510,10 @@
                                             (pair x))
                   (%compile ,@(or body (list nil))))))
 
-(mac make-w/ (name)
+(mac make-w/ (param (o name param))
   (w/uniq (val body)
     #`(mac ,(sym "w/" name) (val . body)
-        #`(parameterize (,',name val) ,@body))))
+        #`(parameterize (,',param val) ,@body))))
 
 (mac make-parameter (name param)
   #`(do (= name (annotate ''parameter param))
@@ -531,6 +531,25 @@
 (make-parameter load-paths*   ac-load-paths*)
 (make-parameter load-suffix*  ac-load-suffix*)
 
+#|(make-parameter namespace
+  (racket-make-derived-parameter ac-namespace
+    (fn (v) (when (ac-tnil (racket-namespace? v))
+              (racket-current-namespace v))
+            v)
+    ;; TODO: idfn
+    (fn (x) x)))|#
+
+#|(make-w/ ac-namespace namespace)
+
+;; TODO: tests to see how fast aliases are
+(make-alias namespace
+  ac-namespace
+  (fn (x v n) (when (ac-tnil (racket-namespace? v))
+                ;(prn "alias " x " setting " n " to " v)
+                (racket-current-namespace v))
+              (ac-namespace v)
+              ;(prn (is namespace (racket-current-namespace)))
+              ))|#
 
 (parameter debug-mode* nil)
 

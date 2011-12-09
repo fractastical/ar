@@ -47,19 +47,38 @@
   (find [file-exists:joinpath _ x] load-paths*))
 
 
+(parameter namespace-load-type* 'inherit)
+
 (def new-namespace args
-  (annotate 'namespace
-            (cons (racket-make-empty-namespace)
-                  (mappend (fn (x)
-                             (let x (rep x)
-                               (if (cons? x)
-                                     x
-                                   (list x))))
-                           args))))
+  (let args (mappend listify:rep args)
+    (case namespace-load-type*
+      ;package (apply namespace-package args)
+      inherit (apply namespace-inherit args)
+      ;copy    (apply namespace-copy    args)
+              (err "unknown namespace creation type:" namespace-load-type*))))
 
 (mac w/new-namespace (x . body)
-  #`(w/namespace (new-namespace x)
-      ,@body))
+  #`(w/namespace (new-namespace x) ,@body))
+
+
+#|(def namespace-copy1 ((o x   (racket-current-namespace))
+                      (o new (racket-make-empty-namespace)))
+  (each n (racket-list->mlist:racket-namespace-mapped-symbols x)
+    (namespace-set new n (namespace-get x n)))
+  new)
+
+(def namespace-copy args
+  (let new (racket-make-base-empty-namespace)
+    ;(prn (racket-namespace-mapped-symbols new))
+    (each x rev.args
+      (namespace-copy1 x new))
+    (parameterize (racket-current-namespace new)
+      (ac-require-base))
+    new))|#
+
+
+(def namespace-inherit args
+  (annotate 'namespace (cons (racket-make-empty-namespace) args)))
 
 ;; TODO: should use object.arc
 ;; TODO: extend should work with keyword args
@@ -84,6 +103,21 @@
   (disp (len rep.x) port)
   (disp ")>" port))
 
+#|
+;; TODO: need a better name
+(def namespace-partition ((o x))
+  (case namespace-load-type*
+    ;; TODO: a little hacky
+    inherit (if x (= namespace x)
+                  (zap new-namespace namespace))
+    copy    (if x (do (racket-current-namespace x)
+                      (= namespace x))
+                  (let new (apply namespace-copy (listify rep.namespace))
+                    (racket-current-namespace new)
+                    (= namespace new)
+                    new))
+            (err "unknown namespace load type:" namespace-load-type*)))|#
+
 
 (parameter load-automatic-namespaces*)
 
@@ -97,6 +131,7 @@
         #`(do (when (bound ',var)
                                    ;; TODO: does namespace need to be quoted?
                 (zap new-namespace 'namespace)
+                ;(namespace-partition)
                 (disp "*** creating new namespace to avoid redefining " stderr)
                 (disp ',var stderr)
                 (disp #\newline stderr))

@@ -30,7 +30,7 @@
   (racket-regexp-replace* regexp.pattern in replace))
 
 (mac re-multi-replace (x . args)
-  ;; TODO: can this use afneach?
+  ;; TODO: can this use afnlet?
   ((afn (((from to (o g)) . rest))
      (list (if g racket-regexp-replace*
                  racket-regexp-replace)

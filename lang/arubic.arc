@@ -36,7 +36,7 @@
 ;  Changes
 ;=============================================================================
 
-(= arubic-namespace (zap new-namespace namespace))
+(= arubic-namespace (zap new-namespace namespace)) ;(namespace-partition)
 
 ;; TODO: macro to generate these
 (mac w/arubic body

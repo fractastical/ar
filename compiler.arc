@@ -606,7 +606,8 @@
 (racket-define (ac-global-var x)
   (racket-let* ((name (ac-namespace))
                                  ;; woot optimizations
-                (x    (racket-if (racket-eq? name (racket-current-namespace))
+                (x    (racket-if (racket-namespace? name)
+                                 ;(racket-eq? name (racket-current-namespace))
                                    x
                                  (list ac-lookup-global-raw
                                        name
@@ -636,7 +637,8 @@
       ((rep x) b))
     ;; This implements aliases
     ((racket-eq? (type x) (racket-quote alias))
-      ((cadr (rep x)) b))
+      ;; TODO: not sure if `b` or `a` should go first
+      ((cadr (rep x)) x b a))
     (racket-else
       (sref (ac-namespace) b a)))
   b)
@@ -1255,9 +1257,12 @@
     (racket-else x)))
 
 (racket-define (eval x (runtime nil))
+  ;(ac-prn (racket-eq? (ac-namespace) arc3-namespace))
   (racket-eval (ac-deep-fromarc (ac-compile x))
                (racket-if (ac-no runtime)
-                            (racket-current-namespace)
+                            (racket-if (racket-namespace? (ac-namespace))
+                                         (ac-namespace)
+                                       (racket-current-namespace))
                           runtime)))
 
 

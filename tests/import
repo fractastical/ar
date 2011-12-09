@@ -1,3 +1,11 @@
+> (= namespace-load-type* 'inherit)
+inherit
+
+
+;=============================================================================
+;  Inheritance
+;=============================================================================
+
 > (= foo (new-namespace (new-namespace (new-namespace)) (new-namespace)))
 #<namespace (len 4)>
 
@@ -19,7 +27,7 @@ error: undefined variable: foo
 
 
 > (= bar (new-namespace namespace))
-#<namespace (len 3)>
+#<namespace (len 2)>
 
 > (eval-w/ bar foo)
 #<namespace (len 4)>
@@ -35,10 +43,10 @@ error: undefined variable: foo
 
 
 > (= foo (new-namespace namespace))
-#<namespace (len 3)>
+#<namespace (len 2)>
 
 > (= bar (new-namespace foo))
-#<namespace (len 4)>
+#<namespace (len 3)>
 
 > (eval-w/ foo
     (def foo (x)
@@ -81,7 +89,7 @@ error: undefined variable: foo
 5
 
 > (ac-compile 'dyn-foo)
-(#<fn:ac-lookup-global-arg> (#<fn:ac-lookup-global-raw> #<namespace (len 2)> (racket-quote dyn-foo)))
+(#<fn:ac-lookup-global-arg> (#<fn:ac-lookup-global-raw> #<namespace:0> (racket-quote dyn-foo)))
 
 > (eval 'dyn-foo)
 5
@@ -97,18 +105,24 @@ error: undefined variable: foo
 ;  Implicit namespace creation
 ;=============================================================================
 
+> (= old-load-type* namespace-load-type*)
+
+> (= namespace-load-type* 'inherit)
+inherit
+
+
 > (def nou ())
 #<fn:nou>
 
 > namespace
-#<namespace (len 2)>
+#<namespace:0>
 
 > (def nou ())
 *** redefining nou
 #<fn:nou>
 
 > namespace
-#<namespace (len 2)>
+#<namespace:0>
 
 > (import time)
  loading:  time.arc
@@ -120,16 +134,19 @@ nil
 nil
 
 > namespace
-#<namespace (len 2)>
+#<namespace:0>
 
 > (reimport time)
  loading:  time.arc
  loading:  strings.arc
-*** creating new namespace to avoid redefining utime
+*** creating new namespace to avoid redefining tokens
 nil
 
 > namespace
-#<namespace (len 3)>
+#<namespace (len 2)>
+
+
+> (= namespace-load-type* old-load-type*)
 
 
 ;=============================================================================
@@ -197,6 +214,102 @@ error: undefined variable: corge
 
 
 ;=============================================================================
+;  Namespace copying
+;=============================================================================
+
+> (= old-namespace namespace)
+
+> (is namespace old-namespace)
+t
+
+> (is arc3-namespace (racket-current-namespace))
+t
+
+
+> (= namespace (w/namespace-load-type* 'copy (new-namespace namespace)))
+#<namespace:0>
+
+> (is namespace (racket-current-namespace))
+t
+
+> (is arc3-namespace (racket-current-namespace))
+nil
+
+> (is namespace old-namespace)
+nil
+
+
+> (= namespace old-namespace)
+
+> (is namespace old-namespace)
+t
+
+> (is namespace (racket-current-namespace))
+nil
+
+> (is arc3-namespace (racket-current-namespace))
+t
+
+
+> (= foo (w/namespace-load-type* 'copy (new-namespace arc3-namespace)))
+#<namespace:0>
+
+> (eval-w/ foo
+    (def qux ()
+      10)
+    (def corge ()
+      (qux)))
+#<fn:corge>
+
+
+> (= bar (w/namespace-load-type* 'copy (new-namespace foo)))
+#<namespace:0>
+
+> (eval-w/ bar
+    (def qux ()
+      50)
+    (corge))
+*** redefining qux
+10
+
+> (eval-w/ bar
+    (qux))
+50
+
+
+> (eval-w/ foo
+    (qux))
+10
+
+> (eval-w/ foo
+    (corge))
+10
+
+
+> (eval-w/ foo
+    (nou))
+error: undefined variable: nou
+
+> (eval-w/ bar
+    (nou))
+error: undefined variable: nou
+
+
+> (eval-w/ foo
+    (def nou ()
+      76))
+#<fn:nou>
+
+> (eval-w/ foo
+    (nou))
+76
+
+> (eval-w/ bar
+    (nou))
+error: undefined variable: nou
+
+
+;=============================================================================
 ;  Hygienic macros
 ;=============================================================================
 
@@ -213,7 +326,7 @@ error: undefined variable: corge
     (mac qux ()
       `(bar))
     (qux))
-10u
+10
 
 > (eval-w/ arubic
     (def bar ()
@@ -230,7 +343,7 @@ error: undefined variable: corge
 
 > (eval-w/ arc
     (qux))
-10u
+10
 
 > (eval-w/ arubic
     (qux))
