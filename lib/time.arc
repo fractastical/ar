@@ -16,32 +16,33 @@
 ;; Edited to return a list rather than printing the numbers directly
 (mac utime body
   (w/uniq (gtime ggc gmem)
-    `(,with (,gtime (,msec) ,ggc (,gc-msec) ,gmem (,memory))
-       ,@body
-       (,list (,- (,msec) ,gtime)
-              (,- (,gc-msec) ,ggc)
-              (,- (,memory) ,gmem)))))
+    #`(with (gtime (msec) ggc (gc-msec) gmem (memory))
+        ,@body
+        (list (- (msec)    gtime)
+              (- (gc-msec) ggc)
+              (- (memory)  gmem)))))
 
 
 (mac timeit1 (x limit)
   (w/uniq (u n time gc mem)
-    `(,with (,n     0
-             ,time  (,msec)
-             ,gc    (,gc-msec)
-             ,mem   (,memory))
-       ((,rfn ,u ()
-          ,x
-          (,++ ,n)
-          (,when (,< (,- (,msec) ,time) ,limit)
-            (,u))))
-       (,list ,n
-              (,- (,gc-msec) ,gc)
-              (,- (,memory)  ,mem)))))
+    #`(with (n     0
+             time  (msec)
+             gc    (gc-msec)
+             mem   (memory))
+        ((rfn u ()
+           x
+           (++ n)
+           (when (< (- (msec) time) limit)
+             (u))))
+        (list n
+              (- (gc-msec) gc)
+              (- (memory)  mem)))))
 
 
 (mac timeit (x (o limit 10000))
-  `(,let (a b c) (,timeit1 ,x ,limit)
-     (,prn "iter: "   (,comma a)
-           "  gc: "   b
-           "  mem: "  c)
-     ,nil))
+  (w/uniq (a b c)
+    #`(let (a b c) (timeit1 x limit)
+        (prn "iter: "   (comma a)
+             "  gc: "   b
+             "  mem: "  c)
+        nil)))

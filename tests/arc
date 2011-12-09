@@ -246,6 +246,11 @@ t
 ;  quasiquote
 ;=============================================================================
 
+> (w/uniq qux
+    `(,qux ,qux . ,qux))
+(g1 g1 . g1)u
+
+
 > (let name 'foo
     `',name)
 (quote foo)
@@ -284,6 +289,25 @@ t
 ;=============================================================================
 ;  quasisyntax
 ;=============================================================================
+
+> (w/uniq qux
+    #`(qux qux . qux))
+(g1 g1 . g1)u
+
+
+> (let name 'foo
+    (w/uniq (val body)
+      #`(mac ,(sym "w/" name) (val . body)
+          #`(parameterize (,',name val) ,@body))))
+u
+
+
+> #`(nil nil [push '_ nil])
+(nil nil (#<mac:square-bracket> #<mac:push> _ nil))
+
+> #`(map [uniq] (cdr nil))
+(#<fn:map> (#<mac:square-bracket> #<fn:uniq>) (#<fn:cdr> nil))
+
 
 > #`'+
 +

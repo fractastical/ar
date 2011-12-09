@@ -61,8 +61,8 @@
 
 
 (mac errdet (body)
-  `(,on-err (,fn (e) (,pr (,+ "error: " (,details e))))
-            (,fn ()  (,write ,body))))
+  #`(on-err (fn ('e) (pr (+ "error: " (details 'e))))
+            (fn ()   (write ,body))))
 
 
 (def backescape (str)

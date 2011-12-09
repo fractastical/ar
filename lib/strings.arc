@@ -78,14 +78,15 @@
         (if (< i 16) (writec #\0))
         (pr (coerce i 'string 16))))))
 
+;; TODO: why is this a macro?
 (mac litmatch (pat string (o start 0))
   (w/uniq (gstring gstart)
-    `(,with (,gstring ,string ,gstart ,start)
-       (,unless (,> (,+ ,gstart ,(len pat)) (,len ,gstring))
-         (,and ,@(let acc nil
+    #`(with (gstring string gstart start)
+        (unless (> (+ gstart ,(len pat)) (len gstring))
+          (and ,@(let acc nil
                    (forlen i pat
-                     (push `(,is ,(pat i) (,gstring (,+ ,gstart ,i)))
-                            acc))
+                     (push #`(is ,(pat i) (gstring (+ gstart i)))
+                           acc))
                    (rev acc)))))))
 
 ; litmatch would be cleaner if map worked for string and integer args:
@@ -95,15 +96,16 @@
 ;                    (len pat)
 ;                    pat)
 
+;; TODO: why is this a macro?
 (mac endmatch (pat string)
   (w/uniq (gstring glen)
-    `(,withs (,gstring ,string ,glen (,len ,gstring))
-       (,unless (,> ,(len pat) (,len ,gstring))
-         (,and ,@(let acc nil
+    #`(withs (gstring string glen (len gstring))
+        (unless (> ,(len pat) (len gstring))
+          (and ,@(let acc nil
                    (forlen i pat
-                     (push `(,is ,(pat (- (len pat) 1 i))
-                                 (,gstring (,- ,glen 1 ,i)))
-                            acc))
+                     (push #`(is ,(pat (- (len pat) 1 i))
+                                 (gstring (- glen 1 i)))
+                           acc))
                    (rev acc)))))))
 
 (def posmatch (pat seq (o start 0))

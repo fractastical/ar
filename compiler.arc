@@ -1060,6 +1060,12 @@
             (list cons
                   (qs-expand-pair (qs-expand (cadr c)))
                   (qs-expand-pair (cdr x))))
+          #|
+          ;; TODO: don't hardcode the symbol quasiquote
+          ((ac-caris c (racket-quote quasiquote))
+            (list cons
+                  (qq-expand-pair (qq-expand (cadr c)))
+                  (qq-expand-pair (cdr x))))|#
           ((racket-mpair? c)
             (list cons
                   (qs-expand-pair c)
@@ -1086,6 +1092,10 @@
     ;; TODO: don't hardcode the symbol quasisyntax
     ((ac-caris x (racket-quote quasisyntax))
       (qs-expand (qs-expand (cadr x))))
+    #|
+    ;; TODO: don't hardcode the symbol quasiquote
+    ((ac-caris x (racket-quote quasiquote))
+      (qq-expand (qq-expand (cadr x))))|#
     ((racket-mpair? x)
       (qs-expand-pair x))
     (racket-else
