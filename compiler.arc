@@ -1020,6 +1020,22 @@
 ; You can redefine qs-expand in Arc if you want to implement a
 ; different expansion algorithm.
 
+(racket-define (qs-expand-quote x)
+  (racket-let ((c (car x)))
+    (racket-cond
+      ;; TODO: don't hardcode the symbol unquote
+      ((ac-caris c (racket-quote unquote))
+        (list cons
+              (list quote quote)
+              (cons list (cdr c))))
+      ;; TODO: don't hardcode the symbol unquote-splicing
+      ((ac-caris c (racket-quote unquote-splicing))
+        (list cons
+              (list quote quote)
+              (cons racket-mappend (cdr c))))
+      (racket-else
+        (cons quote x)))))
+
 (racket-define (qs-expand-pair x)
   (racket-if (racket-mpair? x)
       (racket-let ((c (car x)))
@@ -1027,7 +1043,7 @@
           ;; TODO: don't hardcode the symbol quote
           ((ac-caris c (racket-quote quote))
             (list cons
-                  (cons quote (cdr c))
+                  (qs-expand-quote (cdr c))
                   (qs-expand-pair (cdr x))))
           ;; TODO: don't hardcode the symbol unquote
           ((ac-caris c (racket-quote unquote))
@@ -1060,7 +1076,7 @@
   (racket-cond
     ;; TODO: don't hardcode the symbol quote
     ((ac-caris x (racket-quote quote))
-      (cons quote (cdr x)))
+      (qs-expand-quote (cdr x)))
     ;; TODO: don't hardcode the symbol unquote
     ((ac-caris x (racket-quote unquote))
       (cadr x))

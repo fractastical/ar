@@ -360,6 +360,15 @@ u
 ;  quasiquote
 ;=============================================================================
 
+> (let name 'foo
+    (qq-expand `',name))
+(#<fn:cons> (#<mac:quote> quote) (#<fn:cons> (#<mac:quote> foo) nil))
+
+> (let name '(foo bar qux)
+    (qq-expand `',@name))
+(#<fn:cons> (#<mac:quote> quote) (#<fn:cons> (#<mac:quote> foo) (#<fn:cons> (#<mac:quote> bar) (#<fn:cons> (#<mac:quote> qux) nil))))
+
+
 > (macex-all `foo)
 foo
 
@@ -412,6 +421,15 @@ error: ,@ cannot be used immediately after `
 ;=============================================================================
 ;  quasisyntax
 ;=============================================================================
+
+> (let name 'foo
+    (qq-expand #`',name))
+(#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> foo) nil))
+
+> (let name '(foo bar qux)
+    (qq-expand #`',@name))
+(#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> foo) (#<fn:cons> (#<mac:quote> bar) (#<fn:cons> (#<mac:quote> qux) nil))))
+
 
 > (let body '(1 2 3)
     (macex1 #`(fn ('a 'b 'c) (,@body))))

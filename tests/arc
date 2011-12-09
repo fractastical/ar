@@ -246,6 +246,19 @@ t
 ;  quasiquote
 ;=============================================================================
 
+> (let name 'foo
+    `',name)
+(quote foo)
+
+> (let name '(foo bar qux)
+    `',@name)
+(quote foo bar qux)
+
+> (let name '(foo bar qux)
+    `(+ ',@name))
+(+ (quote foo bar qux))
+
+
 > `(foo bar qux corge)
 (foo bar qux corge)
 
@@ -314,16 +327,37 @@ t
 
 
 > (let name 'foo
-    #`(+ foo))
-u
+    #`name)
+foo
 
 > (let name 'foo
-    #`(+ 'foo))
-u
+    #`'name)
+name
 
 > (let name 'foo
-    #`(+ ',foo))
-u
+    #`',name)
+(#<mac:quote> foo)
+
+> (let name '(foo bar qux)
+    #`',@name)
+(#<mac:quote> foo bar qux)
+
+
+> (let name 'foo
+    #`(+ name))
+(#<fn:+> foo)
+
+> (let name 'foo
+    #`(+ 'name))
+(#<fn:+> name)
+
+> (let name 'foo
+    #`(+ ',name))
+(#<fn:+> (#<mac:quote> foo))
+
+> (let name '(foo bar qux)
+    #`(+ ',@name))
+(#<fn:+> (#<mac:quote> foo bar qux))
 
 
 > (with (qux    '(1 2 3 4 5)
