@@ -1,6 +1,14 @@
 Timing notes
 ============
 
+  * How is calling `(list)` faster than just using `nil`?!
+
+        > (timeit (list))
+        iter: 4,325,157  gc: 0  mem: 2343880
+
+        > (timeit nil)
+        iter: 3,878,884  gc: 0  mem: 2755496
+
   * Using `maplast` is a bit slower than using `(eval #\`(do ...))` but has
     less garbage collection:
 

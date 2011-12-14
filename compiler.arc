@@ -884,6 +884,11 @@
     (racket-else
       (racket-parameterize ((ac-fn-let* nil))
         (racket-let ((x (ac-fn-normal-args x)))
+          ;(ac-add-to ac-fn-let* (make-current-env (ac-local-env)))
+          #|(racket-parameterize ((ac-fn-let* (racket-mappend (ac-fn-let*)
+                                                            (list ))))
+              )|#
+          ;(ac-prn (ac-fn-let*))
           (ac-fn-body (racket-if (ac-true (ac-fn-let*))
                                    (list (list* (racket-quote racket-let*)
                                                 (ac-fn-let*)

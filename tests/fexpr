@@ -1,0 +1,56 @@
+> (= namespace arc3-namespace)
+#<namespace:0>
+
+> (import fexpr)
+ loading:  fexpr.arc
+nil
+
+> (fexpr foo (env x y z)
+    (list env x y z))
+#<mac:foo>
+
+
+;> (macex1 '(fexpr foo (env x y z)
+             (list env x y z)))
+u
+
+
+> (macex1 '(foo 1 2 3))
+(#<fn> (#<fn:ac-lookup-global-arg> g2) 1 2 3)
+
+> (macex1 '(let a 5 (foo 1 2 3)))
+((racket-lambda (a) (racket-let* ((g2 (#<fn:list> (racket-quote a) a))) (#<fn> g2 1 2 3))) 5)
+
+> (macex1 '(with (a 5 b 10)
+             (foo 1 2 3)))
+((racket-lambda (a b) (racket-let* ((g2 (#<fn:list> (racket-quote a) a (racket-quote b) b))) (#<fn> g2 1 2 3))) 5 10)
+
+> (macex1 '(let a 5
+             (with ()
+               (with ()
+                 (foo 1 2 3)))))
+((racket-lambda (a) (racket-let* ((g2 (#<fn:list> (racket-quote a) a))) ((racket-lambda nil ((racket-lambda nil (#<fn> g2 1 2 3))))))) 5)
+
+
+> (macex1 '(let a 5
+             (let a 10
+               (let a 15
+                 (foo 1 2 3)))))
+((racket-lambda (a) (racket-let* ((g2 (#<fn:list> (racket-quote a) a))) ((racket-lambda (a) (racket-let* ((g2 (#<fn:list> (racket-quote a) a))) ((racket-lambda (a) (racket-let* ((g2 (#<fn:list> (racket-quote a) a))) (#<fn> g2 1 2 3))) 15))) 10))) 5)
+
+
+> (foo 1 2 3)
+(nil 1 2 3)
+
+> (let a 5 (foo 1 2 3))
+((a 5) 1 2 3)
+
+> (with (a 5 b 10)
+    (foo 1 2 3))
+((a 5 b 10) 1 2 3)
+
+> (let a 5
+    (let a 10
+      (let a 15
+        (foo 1 2 3))))
+((a 15) 1 2 3)

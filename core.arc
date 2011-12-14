@@ -201,6 +201,8 @@
 
 (def num?  (x) (ac-tnil (racket-number? x)))
 (def list? (x) (if (no x) t (cons? x)))
+;; TODO: should this be here...?
+(def uniq? (x) (no (ac-tnil (racket-symbol-interned? x))))
 
 (def testify (x)
   (if (fn? x) x [is _ x]))
@@ -841,7 +843,7 @@
                   (and macex-rename*
                        (or (fn? x)
                            (mac? x)))
-                    (name x)
+                    (or (name x) x)
                   x)
             (macex-all y)))))
 
