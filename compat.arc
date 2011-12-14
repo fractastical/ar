@@ -21,16 +21,9 @@
 
 ;(= assoc (reverse-args assoc))
 
-
-; setforms returns (vars get set) for a place based on car of an expr
-;  vars is a list of gensyms alternating with expressions whose vals they
-;   should be bound to, suitable for use as first arg to withs
-;  get is an expression returning the current value in the place
-;  set is an expression representing a function of one argument
-;   that stores a new value in the place
-(def setforms (place)
+#|(def setforms (place)
   (w/uniq (u v)
-    (let place ssexpand-full.place
+    (let place expand-full.place
       (if (cons? place)
             (iflet f (setter car.place)
               (list (list u cadr.place)
@@ -44,4 +37,4 @@
                       `(fn (,v) (,sref ,u ,v ,car.argsyms)))))
           (list (list u place)
                 u
-                `(fn (,v) (,assign ,place ,v)))))))
+                `(fn (,v) (,assign ,place ,v)))))))|#

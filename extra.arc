@@ -48,11 +48,8 @@
         (= name (fn u
                   ;; TODO: (apply (fn ,parms ...) ,u) ?
                   (let parms u
-                    (aif test
-                           (do ,@body)
-                         ;; TODO: does this need %nocompile...?
-                         ;;       probably not
-                         (%nocompile (apply 'orig u))))
+                    (aif test (do ,@body)
+                              (apply 'orig u)))
                  )))))
 
 
@@ -62,13 +59,39 @@
   #`(= (defcall-types* ',name) (fn parms ,@body)))
 
 (extend ac-apply-non-fn (x . args)
-  (%nocompile (orig defcall-types* (type x)))
+  (orig defcall-types* (type x))
   (apply it x args))
-
-
-(mac %eval body
-  (eval #`(do ,@body)))
 
 
 (def listify (x)
   (if (cons? x) x (list x)))
+
+
+;=============================================================================
+;  %nocompile / %splice / %eval
+;=============================================================================
+
+(def ac-nocompile (x)
+  (let x (let self ((x x))
+           (mappend (fn (x)
+                          ;; TODO: don't hardcode the symbol %compile
+                      (if (caris x '%compile)
+                            (ac-args (cdr x))
+                          (cons? x)
+                            (list (self x))
+                          (list x)))
+                     x))
+    (if (no (cdr x))
+          (car x)
+        (cons 'racket-begin x))))
+
+(nomac %nocompile args
+  (if (cdr args)
+        `(racket-begin ,@args)
+      (car args)))
+
+(nomac %splice args
+  (cons ac-splice args))
+
+(mac %eval body
+  (maplast eval body))

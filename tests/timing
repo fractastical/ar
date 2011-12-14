@@ -8,3 +8,6 @@ t
 
 > (timeit-range (+ 1 2) 62000 #|638625|#)
 t
+
+> (timeit-range 'foo 5000)
+t

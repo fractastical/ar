@@ -83,16 +83,17 @@
 ;; TODO: should use object.arc
 ;; TODO: extend should work with keyword args
 (defcall namespace (x k (o d))
-  (let self (%nocompile nil)
-    (assign self (fn (x)
-                   (if x ((%nocompile (car x))
-                          k
-                          (fn ()
-                            (self (%nocompile (cdr x)))))
-                         (if (%nocompile (fn? d))
-                               (d)
-                             d))))
-    (self (%nocompile (rep x))))
+  ;; TODO: use afn or aloop
+  (let self nil ;(%nocompile )
+    (= self (fn (x)
+              (if x ((car x) ;(%nocompile )
+                     k
+                     (fn ()
+                       (self (cdr x)))) ;(%nocompile )
+                    (if (fn? d) ;(%nocompile )
+                          (d)
+                        d))))
+    (self (rep x))) ;(%nocompile )
   )
 
 (extend sref (x v k) (isa x 'namespace)
@@ -126,7 +127,16 @@
   (extend bound (x) (isa namespace 'namespace)
     (isnt (namespace-get (car rep.namespace) x u) u)))
 
-(remac safeset (var val)
+(redef redefine-warning (var)
+  (if load-automatic-namespaces*
+        (do (zap new-namespace namespace)
+            ;(namespace-partition)
+            (disp "*** creating new namespace to avoid redefining " stderr)
+            (disp var stderr)
+            (disp #\newline stderr))
+      (orig var)))
+
+#|(remac safeset (var val)
   (if load-automatic-namespaces*
         #`(do (when (bound ',var)
                                    ;; TODO: does namespace need to be quoted?
@@ -136,7 +146,7 @@
                 (disp ',var stderr)
                 (disp #\newline stderr))
               (= var val))
-      (orig var val)))
+      (orig var val)))|#
 
 
 (mac eval-w/ (x . body)
@@ -168,20 +178,20 @@
                 (list (joinpath exec-dir* "import.arc")   arc3-namespace)))
 
 (def importfn1 (x)
-  (if (dirname x)
-        ;; TODO: use dont
-        (do (push abspath.x load-paths*)
-            nil)
-      (w/load-automatic-namespaces* t
-        (ac-with-find-file string.x
-          (fn (x)
-            (let path abspath.x
-                  ;; TODO: fix this
-              (if ((imported-paths*) path)
-                    (debug " skipping:" x)
-                  (do (debug " loading: " x)
-                      (= ((imported-paths*) path) t)
-                      (load x)))))))
+  (if (basename x)
+        (w/load-automatic-namespaces* t
+          (ac-with-find-file string.x
+            (fn (x)
+              (let path abspath.x
+                    ;; TODO: fix this
+                (if ((imported-paths*) path)
+                      (debug " skipping:" x)
+                    (do (debug " loading: " x)
+                        (= ((imported-paths*) path) t)
+                        (load x)))))))
+      ;; TODO: use dont
+      (do (push abspath.x load-paths*)
+          nil)
       ))
 
 (def importfn (args)

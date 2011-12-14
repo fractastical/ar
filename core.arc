@@ -2,41 +2,65 @@
 ;  Core
 ;=============================================================================
 
-(assign do (annotate 'mac
-             (fn args
-               (if (cdr args)
-                     #`((fn () ,@args))
-                   (car args)))))
+(sref sig 'args '=)
+(assign = (annotate 'mac
+            (fn args
+              (ac-compile (cons assign args)))))
+                          ;#`(assign ,@args)
 
-(assign safeset (annotate 'mac
-                  (fn (var val)
-                    #`(do (if (bound ',var)
-                                   ;; TODO: figure out a way to unquote these
-                                   ;;       too
-                              (do ('disp "*** redefining " 'stderr)
-                                  ('disp ',var 'stderr)
-                                  ('disp #\newline 'stderr)))
-                          (assign var val)))))
+(sref sig 'args 'do)
+(= do (annotate 'mac
+        (fn args
+          (ac-compile (if (cdr args)
+                            (list (list* fn nil args))
+                            ; #`((fn () ,@args))
+                          (car args))))))
 
-(assign def (annotate 'mac
-              (fn (name parms . body)
-                #`(do (sref sig ',parms ',name)
-                      (safeset name (fn parms ,@body))))))
+(sref sig '(var) 'redefine-warning)
+(= redefine-warning
+   (fn (var)
+     (disp "*** redefining " stderr)
+     (disp var stderr)
+     (disp #\newline stderr)))
+
+(sref sig '(var val) 'safeset)
+(= safeset (annotate 'mac
+             (fn (var val)
+               (ac-compile #`(do (if (bound ',var)
+                                   (redefine-warning ',var))
+                                 (= var val))))))
+
+;; TODO: get rid of these sref's
+(sref sig '(name parms . body) 'def)
+(= def (annotate 'mac
+         (fn (name parms . body)
+           (ac-compile #`(do (sref sig ',parms ',name)
+                             (safeset name (fn parms ,@body)))))))
+
+(sref sig '(name parms . body) 'nomac)
+(= nomac (annotate 'mac
+           (fn (name parms . body)
+             (ac-compile #`(do (sref sig ',parms ',name)
+                               (safeset name (annotate ''mac (fn parms ,@body))))))))
+
+
+;=============================================================================
+;  Core utilities
+;=============================================================================
+
+(nomac mac (name parms . body)
+  (ac-compile #`(nomac name parms (ac-compile (do ,@body)))))
+
 
 (def no (x) (is x nil))
 
 (def pair (xs (o f list))
   (if (no xs)
-       nil
+        nil
       (no (cdr xs))
-       (list (list (car xs)))
+        (list (list (car xs)))
       (cons (f (car xs) (cadr xs))
             (pair (cddr xs) f))))
-
-(assign mac (annotate 'mac
-              (fn (name parms . body)
-                #`(do (sref sig ',parms ',name)
-                      (safeset name (annotate ''mac (fn parms ,@body)))))))
 
 
 (mac with (parms . body)
@@ -48,12 +72,10 @@
   #`(with (var val) ,@body))
 
 
-(mac = args #`(assign ,@args))
-
 (mac remac (name parms . body)
   #`(let 'orig (rep name)
       (sref sig ',parms ',name)
-      (= name (annotate ''mac (fn parms ,@body)))))
+      (= name (annotate ''mac (fn parms (ac-compile (do ,@body)))))))
 
 (mac redef (name args . body)
   #`(let 'orig name
@@ -332,6 +354,7 @@
 
 
 (def scar (x val)
+  ;; TODO: racket-set-mcar!
   (sref x val 0))
 
 (def scdr (x val)
@@ -503,12 +526,19 @@
   #`(make-dynamic name init))
 
 
-(mac parameterize (x . body)
+#|(mac parameterize (x . body)
   `(,%nocompile (racket-parameterize ,(map1 (fn ((x y))
                                               ;; TODO: should probably use %compile for x
                                               #`((rep x) ('%compile y)))
                                             (pair x))
-                  (%compile ,@(or body (list nil))))))
+                  (%compile ,@(or body (list nil))))))|#
+
+(nomac parameterize (x . body)
+  `(racket-parameterize ,(map1 (fn ((x y))
+                                 ;; TODO: should probably use %compile for x
+                                 #`((rep x) ,(ac-compile y)))
+                               (pair x))
+     ,@(or (ac-args body) nil)))
 
 (mac make-w/ (param (o name param))
   (w/uniq (val body)
@@ -675,6 +705,7 @@
            (err "can't close " port)))
 
 (def close ports
+  ;; TODO: eachfn
   (map1 close-port ports)
   nil)
 
@@ -795,17 +826,22 @@
 (parameter macex-rename* t)
 
 (def macex-all (x)
-  (if (caris x fn)
-        (list* (macex-all (car x))
+  (if (caris x ac-fn)
+        (list* 'fn ;(macex-all (car x))
                (cadr x)
                (map macex-all (cddr x)))
-      (or (caris x if)
-          (caris x quote))
+      #|(or (caris x ac-if)
+          ;(caris x quote)
+          )
         (cons (macex-all (car x))
-              (map macex-all (cdr x)))
-      ;; TODO: ew, symbol hardcoding
-      (caris x 'quote)
-        (cons 'quote (cdr x))
+              (map macex-all (cdr x)))|#
+      (caris x ac-if)
+        (cons 'if (map macex-all (cdr x)))
+      (caris x quote)
+        x
+      #|(caris x ac-quote)
+        "#<quoted>"|#
+        ;(cons 'quote (cdr x))
       (let y (macex1 x)
         (if (is x y)
               (if (cons? x)
@@ -829,7 +865,12 @@
 ;  Racket
 ;=============================================================================
 
-(mac require (x)
+#|(mac require (x)
     ;; TODO: use dont
   #`(do (%nocompile (racket-namespace-require/copy ('racket-quote ('prefix 'racket- x))))
-        nil))
+        nil))|#
+
+(nomac require (x)
+    ;; TODO: use dont
+  #`('racket-begin (racket-namespace-require/copy ('racket-quote ('prefix 'racket- x)))
+                   nil))

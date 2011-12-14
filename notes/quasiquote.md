@@ -26,7 +26,8 @@ This algorithm works even with nested quasiquotes:
 Quasisyntax
 ===========
 
-Nu also provides a convenient syntax for writing hygienic macros: `quasisyntax`. Compare the following two macro definitions:
+Nu also provides a convenient syntax for writing hygienic macros:
+`quasisyntax`. Compare the following two macro definitions:
 
     ;; quasisyntax
     (mac complement (f)
@@ -38,7 +39,9 @@ Nu also provides a convenient syntax for writing hygienic macros: `quasisyntax`.
       (w/uniq g
         `(,fn ,g (,no (,apply ,f ,g)))))
 
-As you can see, with `quasisyntax`, you no longer need to `unquote` everything: the default is to unquote. But you can still create anaphoric macros by quoting the symbol:
+As you can see, with `quasisyntax`, you no longer need to `unquote`
+everything: the default is to unquote. But you can still create anaphoric
+macros by quoting the symbol:
 
     ;; quasisyntax
     (mac afn (parms . body)
@@ -59,3 +62,54 @@ And you can include `(quote ...)` by doubling the quotes:
     (mac mac (name parms . body)
       `(,do (,sref ,sig ',parms ',name)
             (,safeset ,name (,annotate 'mac (,fn ,parms ,@body)))))
+
+
+Converting quasiquote to quasisyntax
+====================================
+
+It is usually very easy and even mechanical to convert existing Arc macros to
+be hygienic. Let's transform this macro:
+
+    (mac aif (expr . body)
+      `(let it ,expr
+         (if it
+             ,@(if (cddr body)
+                     `(,(car body) (aif ,@(cdr body)))
+                   body))))
+
+First, replace all instances of `\`` with `#\``. Now, look at every symbol.
+If the symbol is unquoted, remove the unquote. If the symbol is anaphoric,
+add a quote. If the symbol is already quoted, add another quote. Otherwise,
+leave the symbol exactly as-is. That's it! Let's look at what the above macro
+looks like when following these rules:
+
+    (mac aif (expr . body)
+      #`(let 'it expr
+          (if 'it
+              ,@(if (cddr body)
+                      #`(,(car body) (aif ,@(cdr body)))
+                    body))))
+
+Even nested quasiquotes can be transformed into nested quasisyntaxes. As an
+example, I translated these macros:
+
+    (mac make-w/ (name)
+      `(mac ,(sym "w/" name) (val . body)
+         `(parameterize (,',name ,val) ,@body)))
+
+    (mac buildeach (name f)
+      (w/uniq (args expr body)
+        `(remac ,name (,args ,expr . ,body)
+           `(,',f (fn (,,args) ,@,body) ,,expr))))
+
+Into this:
+
+    (mac make-w/ (param (o name param))
+      (w/uniq (val body)
+        #`(mac ,(sym "w/" name) (val . body)
+            #`(parameterize (,',param val) ,@body))))
+
+    (mac buildeach (name f)
+      (w/uniq (args expr body)
+        #`(remac name (args expr . body)
+            #`(f (fn (args) ,@body) expr))))

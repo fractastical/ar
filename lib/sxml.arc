@@ -86,6 +86,6 @@
 ;(mac w/pretty body
 ;  (w/uniq x
 ;    `(let ,x ,noop
-;       (assign noop ,pretty)
+;       (= noop ,pretty)
 ;       ,@body
-;       (assign noop ,x))))
+;       (= noop ,x))))

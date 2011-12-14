@@ -21,11 +21,13 @@ The current differences are as follows:
 
 *   Compiler names uniformly start with `ac-` rather than `ac-` and `ar-`
 
-*   Does not provide `(ail-code ...)`. Instead, `(%nocompile ...)` causes the expression to not be compiled at all: it passes directly to Racket. This is needed for Racket macros. Unlike `ail-code`, however, you can use `(%compile ...)` within `%nocompile` to cause that expression to be compiled, like so:
+*   Does not provide `(ail-code ...)`. Instead, `(%nocompile ...)` causes the expression to not be compiled at all: it passes directly to Racket. Most of the time this isn't needed. If you want to write a macro that calls Racket macros, it's better to use `nomac`. If you want an expression within `%nocompile` to be compiled, you can splice it in with `ac-compile` like so:
 
-        (%nocompile (some-racket-macro ... (%compile ...)))
+        #`(%nocompile ('some-racket-macro ... ,(ac-compile ...)))
 
-    This is similar to `quasiquote` and `unquote`
+*   Arc macros no longer compile their bodies by default. Instead, they need to explicitly call `ac-compile`. This isn't usually noticable because the `mac` form does this for you. The only time you'll notice any difference is when generating a macro manually, such as with `(annotate 'mac (fn ...))`
+
+    This makes the compiler much simpler (and also a bit faster too). It also makes it cleaner to write macros that call Racket macros. It also means that (at least theoretically) it's possible to write `fn`, `assign`, and `if` in Arc itself.
 
 *   Also supports a `(%splice ...)` form which splices the items into the list at compile-time. Thus, `(+ (%splice 1 2 3))` is exactly the same as `(+ 1 2 3)`. This is useful within macro expansions.
 
@@ -130,11 +132,13 @@ The current differences are as follows:
 
 *   `empty` now works on the empty symbol `'||` as well as any sequence that has a `len` of `0`
 
-*   `in` is faster when given only two arguments: `(in x 5)`
+*   `in` is faster when given only two arguments: `(in x 5)` expands into `(is x 5)`
 
-*   `setforms` has been removed. For instance, `(zap + x 1)` just expands into `(= x (+ x 1))` and `(push x foo)` expands into `(= foo (cons x foo))`
+*   `setforms` has been implemented better. For instance, `(zap + x 1)` just expands into `(assign x (+ x 1))` and `(push x foo)` expands into `(assign foo (cons x foo))`
 
 *   `=` no longer calls `atomic-invoke`. If you want to *guarantee* that assignment is thread-safe, wrap it yourself
+
+*   Nu no longer has `defset`: everything is done in `sref`. This idea is courtesy of rocketnia.
 
 *   [The REPL](#repl) is implemented better
 
@@ -166,7 +170,7 @@ Why would you want to do this? Two reasons:
 
     ...then the macro will be using the local definition of `no` rather than the global one. It's possible to work around this by using gensyms, but that's impractical in this case. Instead, all you have to do is unquote the functions and macros inside quasiquote: now they will always use the global definition, and the above example will work fine. That's all that's needed to make macros hygienic.
 
-    What's interesting about this technique is that it's *extremely super* easy to implement: no big complicated hygiene systems. It also makes it really easy for the person writing the macro to specify whether they want hygiene or not: if you unquote the value, it's hygienic. If you don't unquote it, it's not. No need for a separate macro system!
+    What's interesting about this technique is that it's *extremely super easy* to implement: no big complicated hygiene systems. It also makes it really easy for the person writing the macro to specify whether they want hygiene or not: if you unquote the value, it's hygienic. If you don't unquote it, it's not. No need for a separate macro system!
 
     And this works perfectly with Nu namespaces as well: if you unquote a value, it'll refer to the name in the namespace where the macro is defined. If you don't unquote it, it'll use the value in the current namespace.
 

@@ -1,6 +1,15 @@
 Timing notes
 ============
 
+  * Using `maplast` is a bit slower than using `(eval #\`(do ...))` but has
+    less garbage collection:
+
+        > (timeit (maplast eval '((+ 1 2) (+ 2 3))))
+        iter: 52,745  gc: 176  mem: 10483304
+
+        > (timeit (eval #`(do (+ 1 2) (+ 2 3))))
+        iter: 56,063  gc: 856  mem: -7997816
+
   * Unquoting macros and functions inside a macro has a small speed boost:
 
         Normal macros:

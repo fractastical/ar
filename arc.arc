@@ -153,13 +153,10 @@
 ;=============================================================================
 ;  = Assignment
 ;=============================================================================
-; A bit gross that it works based on the *name* in the car, but maybe
-; wrong to worry.  Macros live in expression land.
-;
 ; seems meaningful to e.g. (push 1 (pop x)) if (car x) is a cons.
 ; can't in cl though.  could I define a setter for push or pop?
 
-(= setter (table))
+#|(= setter (table))
 
 (mac defset (name parms . body)
   #`(sref setter (fn parms ,@body) ',name))
@@ -183,30 +180,37 @@
   #`(scar (assoc-ref name index) val))
 
 (defset alref (name val index)
-  #`(scar (cdr (assoc name index)) val))
+  #`(scar (cdr (assoc name index)) val))|#
+
+#|
+(sref (fn (g252)
+        ((fn (g253)
+           (ac-assign foo (cdr g252)) g253) (car g252)))
+      (cons 1 ((fn (g252)
+                 ((fn (g253)
+                    (assign foo (cdr g252))
+                    g253)
+                  (car g252)))
+               foo))
+      foo)
+|#
 
 
-(def ssexpand-full (x)
+(def expand-full (x)
   (if (cons? x)
-        (let c (ssexpand-full car.x)
-          (if (caris c compose)
-                (ssexpand-full (ac-decompose (cdr c) cdr.x))
-              (caris c complement)
-                (list no (ssexpand-full (cons cadr.c cdr.x)))
-              (cons c (map ssexpand-full cdr.x))))
+        (let x (macex x)
+          (let c (expand-full car.x)
+            (if (caris c compose)
+                  (expand-full (ac-decompose (cdr c) cdr.x))
+                (caris c complement)
+                  (list no (expand-full (cons cadr.c cdr.x)))
+                (cons c (map expand-full cdr.x)))))
       (ssyntax x)
         (ssexpand x)
       x))
 
-; Note: if place expands into any expression whose car doesn't
-; have a setter, expand= assumes it's a data structure in functional
-; position.  Such bugs will be seen only when the code is executed, when
-; sref complains it can't set a reference to a function.
-(def expand= (place val)
-             ;; TODO: why does Arc 3.1 call macex here?
-  (let place ssexpand-full.place
-    (if (cons? place)
-          (if (some cons? cdr.place)
+#|
+(if (some cons? cdr.place)
                 (let u (map [uniq] cdr.place)
                   #`(with ,(mappend list u cdr.place)
                       ,(let place (cons car.place u)
@@ -214,19 +218,112 @@
                            (apply f cadr.place val cddr.place)
                            ; assumed to be data structure in fn position
                            #`(sref ,car.place val ,@cdr.place)))))
-              (iflet f (setter car.place)
-                (apply f cadr.place val cddr.place)
-                ; assumed to be data structure in fn position
-                #`(sref ,car.place val ,@cdr.place)))
-        #`(assign place val))))
+|#
+
+#|(def place (place)
+  (let place expand-full.place
+    (if (cons? place)
+          (if (some cons? cdr.place)
+                (withs (vars  (map [uniq] cdr.place)
+                        u     (mappend list vars cdr.place)
+                        place (cons car.place vars))
+                  (list place u vars))
+              (list place nil nil))
+        (list place nil nil))))|#
+
+(def ac-sref-if (u args)
+  (if (no args)
+        nil
+      (with (x (car args)
+             y (cadr args)
+             z (cadr cdr.args))
+        (if (no y)
+              (ac-sref-if u (cddr cdr.args))
+            (no z)
+              #`(x (= y u) ,@(ac-sref-if u (cddr cdr.args)))
+            #`(x (= y u) (= z u) ,@(ac-sref-if u (cddr cdr.args)))))))
+
+(mac sref-mac (f val . rest)
+  (if (is f ac-if)
+        (w/uniq u
+          #`(let u val (f ,@(ac-sref-if u rest)))
+          #|#`(let u (+ 1 2)
+              (f ,@(ac-mappend (racket-lambda ((x y z))
+                                 (if z #`(x (= y u) (= z u))
+                                     y #`(x (= y u))))
+                               (tuples args 3))))
+          (ac-prn f val rest)|#
+          )
+      (list* sref f val rest)))
+
+; setforms returns (vars get set) for a place based on car of an expr
+;  vars is a list of gensyms alternating with expressions whose vals they
+;   should be bound to, suitable for use as first arg to with(s)
+;  get is an expression returning the current value in the place
+;  set is a function of one argument that when called returns a list that
+;   when evaluated
+;   assigns the value
+;
+; Note: if place expands into any expression whose car doesn't
+; have a setter, expand= assumes it's a data structure in functional
+; position.  Such bugs will be seen only when the code is executed, when
+; sref complains it can't set a reference to a function.
+(def setforms (place)
+  (let place expand-full.place
+    (if (cons? place)
+              ;; TODO: should this hardcode quote?
+          (if (some [and (cons? _)
+                         (no:caris _ ac-quote)]
+                    cdr.place)
+                (withs (vars  (map [uniq] cdr.place)
+                        bind  (mappend list vars cdr.place)
+                        place (cons car.place vars))
+                  ;; TODO: code duplication
+                  (list bind place (fn (x) #`(sref-mac ,car.place x ,@cdr.place))))
+              (list nil place (fn (x) #`(sref-mac ,car.place x ,@cdr.place))))
+        (list nil place (fn (x) #`(assign place x))))))
+
+#|(iflet f (setter car.place)
+            (if bind  (fn (x) (apply f car.vars x cdr.vars))
+                      (fn (x) (apply f cadr.place x cddr.place)))
+            ; assumed to be data structure in fn position
+            (fn (x) #`(sref ,car.place x ,@cdr.place)))|#
+
+(mac w/setforms (name . body)
+  (w/uniq bind
+    #`(let (bind 'get 'set) (setforms name)
+        (if bind #`(with bind ,,@body)
+                   (do         ,@body)))))
+
+(def expand= (place val)
+  ;(ac-prn place val)
+  (w/setforms place (set val))
+  #|(let (vars get set) setforms.x
+    (ac-prn
+    (if vars #`(with vars ,(set val))
+             (set val))))|#
+  )
+
+#|  (let (place bind vars) (setforms place)
+    (if (cons? place)
+          (if bind  #`(with bind
+                        ,(iflet f (setter car.place)
+                           (apply f car.vars val cdr.vars)
+                           ; assumed to be data structure in fn position
+                           #`(sref ,car.place val ,@cdr.place)))
+                    (iflet f (setter car.place)
+                      (apply f cadr.place val cddr.place)
+                      ; assumed to be data structure in fn position
+                      #`(sref ,car.place val ,@cdr.place)))
+      #`(assign place val))))|#
 
 #|(if (some cons? cdr.place)
       (w/uniq u
         `(let ,u ,@cdr.place
            (sref ,car.place ,val ,u)))|#
 
-
 (def expand=list (terms)
+  ;(ac-prn "assign" (map1 (fn (x) (apply expand= x)) (pair terms)))
   #`(do ,@(map [apply expand= _] (pair terms))))
 
 (remac = args
@@ -342,7 +439,7 @@
 ;  Mutation / Assignment
 ;=============================================================================
 
-(mac w/setonce (name form)
+#|(mac w/setonce (name form)
   #|(if (cons? name)
         (w/uniq u
         (map [uniq] name)
@@ -367,12 +464,12 @@
               #`(with ,(mappend list u (cdr name))
                   ,(let name (cons (car name) u)
                      form)))
-          form)))
+          form)))|#
 
 
 (mac push (x place)
-  (w/setonce place
-    #`(= place (cons x place))))
+  (w/setforms place
+    (set #`(cons x get))))
 
 (mac swap (place1 place2)
   (w/uniq (g1 g2)
@@ -394,9 +491,10 @@
 
 (mac pop (place)
   (w/uniq u
-    #`(let u place
-        (do1 (car u)
-             (= place (cdr u))))))
+    (w/setforms place
+      #`(let u get
+          (do1 (car u)
+               ,(set #`(cdr u)))))))
 
 (def adjoin (x xs (o test iso))
   (if (some [test x _] xs)
@@ -404,23 +502,41 @@
       (cons x xs)))
 
 (mac pushnew (x place . args)
-  #`(= place (adjoin x place ,@args)))
+  (w/setforms place
+    (set #`(adjoin x get ,@args))))
 
 (mac pull (test place)
-  #`(= place (rem test place)))
+  (w/setforms place
+    (set #`(rem test get))))
 
 (mac togglemem (x place . args)
+  (w/uniq (u v)
+    (w/setforms place
+      (set #`(with (u  x
+                    v  get)
+               (if (mem u v)
+                     (rem u v)
+                   (adjoin u v ,@args)))))))
+
+#|(mac togglemem (x place . args)
   (w/uniq (u v)
     #`(with (u  x
              v  place)
         (= place (if (mem u v)
                        (rem u v)
-                     (adjoin u v ,@args))))))
+                     (adjoin u v ,@args))))))|#
 
 
-(mac zap (f x . args)
-  (w/setonce x
-    #`(= x (f x ,@args)))
+;((fn (g243) (sref foo ((fn (g242) (if (mem g242 (foo g243)) (rem g242 (foo g243)) (adjoin g242 (foo g243)))) x) g243)) (bar qux))
+;((fn (g244) (sref foo ((fn (g242 g243) (if (mem g242 g243) (rem g242 g243) (adjoin g242 g243))) x (foo g244)) g244)) (bar qux))
+;((fn (g242 g243) ((fn (g244) (sref foo (if (mem g242 g243) (rem g242 g243) (adjoin g242 g243)) g244)) (bar qux))) x (foo (bar qux)))
+;((fn (g240 g241) ((fn (g242) (sref foo (if (mem g240 g241) (rem g240 g241) (adjoin g240 g241)) g242)) (bar qux))) x (foo (bar qux)))
+
+(mac zap (f place . args)
+  (w/setforms place
+    (set #`(f get ,@args)))
+  #|(w/setonce x
+    #`(= x (f x ,@args)))|#
   #|(if (cons? x)
         (let u (map [uniq] (cdr x))
           `(with ,(mappend list u (cdr x))
@@ -439,11 +555,10 @@
 (mac -- (place (o i 1))
   #`(zap - place i))
 
+;`(or ,place (= ,place ,expr))
 (mac or= (place expr)
-  ;`(or ,place (= ,place ,expr))
-  (w/setonce place
-    #`(unless place
-        (= place expr))))
+  (w/setforms place
+    #`(unless get ,(set expr))))
 
 
 ; Can't simply mod pr to print strings represented as lists of chars,

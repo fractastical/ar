@@ -307,6 +307,23 @@ error: function call on inappropriate object () 15
 > list
 #<fn:list>
 
+> sref
+#<fn:sref>
+
+
+;=============================================================================
+;  Macros
+;=============================================================================
+
+> (mac foo (x) (+ 1 2) (+ 1 2))
+#<mac:foo>
+
+> (foo)
+error: #<procedure>: expects 1 argument, given 0
+
+> (foo 5)
+3
+
 
 ;=============================================================================
 ;  Assignment
@@ -322,9 +339,8 @@ error: function call on inappropriate object () 15
 ((fn (g1) (sref foo 5 g1)) (bar qux))
 
 
-;; TODO: not sure about this
 > (macex-all '(zap + (foo bar) 1))
-((fn (g1) (sref foo (+ (foo g1) 1) g1)) bar)
+(sref foo (+ (foo bar) 1) bar)
 
 > (macex-all '(zap + (foo 'bar) 1))
 (sref foo (+ (foo (quote bar)) 1) (quote bar))
@@ -348,13 +364,30 @@ error: function call on inappropriate object () 15
 > (macex-all '(push 5 (foo (bar qux))))
 ((fn (g1) (sref foo (cons 5 (foo g1)) g1)) (bar qux))
 
+> (macex-all '(pushnew 5 (foo (bar qux))))
+((fn (g1) (sref foo (adjoin 5 (foo g1)) g1)) (bar qux))
+
 
 > (macex-all '(swap (foo (bar qux)) (foo (bar qux))))
 u
 
+> (macex-all '(togglemem x (foo (bar qux))))
+((fn (g3) (sref foo ((fn (g1 g2) (if (mem g1 g2) (rem g1 g2) (adjoin g1 g2))) x (foo g3)) g3)) (bar qux))
+
 
 > (macex-all '(rotate (foo (bar qux)) (foo (bar qux)) (foo (bar qux))))
 u
+
+
+> (macex-all '(push 1 (pop x)))
+(sref push (cons 1 ((ac-fn (g1) ((ac-fn (g2) (ac-assign x (cdr g1)) g2) (car g1))) x)) x)
+
+> (macex-all '(= (if (foo a) b c d) 5))
+((fn (g1 g2) (ac-if g2 (ac-assign a g1) (ac-assign b g1))) 5 (foo a))
+
+> (macex-all '(= (if (foo a) b c (bar d) e f) 5))
+((fn (g1 g2 g3) (ac-if g2 (ac-assign a g1) (ac-assign b g1) g3 (ac-assign e g1) (ac-assign f g1))) 5 (foo a) (bar d))
+
 
 ;=============================================================================
 ;  quasiquote
@@ -526,17 +559,27 @@ error: ,@ cannot be used immediately after #`
 
 
 > (expand= 'foo.bar 10)
-(#<fn:sref> foo 10 bar)
+(#<mac:sref-mac> foo 10 bar)
 
 > (expand= '(foo bar) 10)
-(#<fn:sref> foo 10 bar)
+(#<mac:sref-mac> foo 10 bar)
 
 > (expand= 'foo!bar 10)
-(#<fn:sref> foo 10 (quote bar))
+(#<mac:sref-mac> foo 10 (quote bar))
 
 
 > (expand= '(car foo) 10)
-(#<fn:scar> foo 10)
+(#<mac:sref-mac> car 10 foo)
+
+> (expand= '(car (foo bar)) 10)
+(#<mac:with> (g1 (foo bar)) (#<mac:sref-mac> car 10 g1))
+
+> (expand= '(car (foo bar) (qux)) 10)
+error: #<procedure>: expects 2 arguments, given 3: 'g241 10 'g242
+
+
+> (expand= '(assoc (foo 'bar) 'qux) 5)
+(#<mac:with> (g1 (foo (quote bar)) g2 (quote qux)) (#<fn:scar> (#<fn:assoc-ref> g1 g2) 5))
 
 
 > (expand= '(assoc foo 'bar) 10)
@@ -547,10 +590,10 @@ error: ,@ cannot be used immediately after #`
 
 
 > (expand= '(foo (car (car foo))) 10)
-(#<mac:with> (g1 (car (car foo))) (#<fn:sref> foo 10 g1))
+(#<mac:with> (g1 (car (car foo))) (#<mac:sref-mac> foo 10 g1))
 
 > (expand= '(foo:car:car foo) 10)
-(#<mac:with> (g1 (car (car foo))) (#<fn:sref> foo 10 g1))
+(#<mac:with> (g1 (car (car foo))) (#<mac:sref-mac> foo 10 g1))
 
 
 > (expand= '(car (car (car foo))) 10)
@@ -561,7 +604,7 @@ error: ,@ cannot be used immediately after #`
 
 
 > (expand= '(~foo:bar:qux (~~bar bar:qux 5)) 10)
-(#<mac:with> (g1 (foo (bar (qux (no (no (bar (#<mac:compose> bar qux) 5))))))) (#<fn:sref> no 10 g1))
+(#<mac:with> (g1 (foo (bar (qux (no (no (bar (#<mac:compose> bar qux) 5))))))) (#<mac:sref-mac> no 10 g1))
 
 
 ;=============================================================================
@@ -578,14 +621,14 @@ error: ,@ cannot be used immediately after #`
 ((g1 (car (car 5))) (car g1) (fn (g2) (#<fn:scar> g1 g2)))
 
 > (setforms '(foo 5))
-((g1 foo g3 5) (g1 g3) (fn (g2) (#<fn:sref> g1 g2 g3)))
+((g1 foo g3 5) (g1 g3) (fn (g2) (#<mac:sref-mac> g1 g2 g3)))
 
 
 ;=============================================================================
 ;  ssyntax
 ;=============================================================================
 
-> (ssexpand-full '(~foo:bar:qux (~~bar bar:qux 5)))
+> (expand-full '(~foo:bar:qux (~~bar bar:qux 5)))
 (no (foo (bar (qux (no (no (bar (#<mac:compose> bar qux) 5)))))))
 
 
