@@ -353,14 +353,6 @@
             (cons (car a) (apply join (cdr a) (cdr args)))))))
 
 
-(def scar (x val)
-  ;; TODO: racket-set-mcar!
-  (sref x val 0))
-
-(def scdr (x val)
-  (racket-set-mcdr! x val)
-  val)
-
 (def caris (x val)
   (and (cons? x) (is (car x) val)))
 

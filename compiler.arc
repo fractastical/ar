@@ -385,6 +385,15 @@
   (cadr (assoc al key)))
 
 
+(racket-define (scar x val)
+  (racket-set-mcar! x val)
+  val)
+
+(racket-define (scdr x val)
+  (racket-set-mcdr! x val)
+  val)
+
+
 ;=============================================================================
 ;  apply
 ;=============================================================================
@@ -821,7 +830,6 @@
 (racket-define (ac-fn-normal-args x)
   ;; TODO: hacky
   (racket-when (racket-mpair? x)
-    ;; TODO: define scar in compiler.arc
     (scar x (ssexpand (car x))))
 
   (racket-cond
@@ -1150,44 +1158,33 @@
           (racket-string-set! f key val))
         ((racket-mpair? f)
           (racket-if (racket-number? key)
-                       ;; TODO: define scar in compiler.arc
                        (scar (racket-mlist-tail f key) val)
                      (racket-if (ac-no val)
                                   ;; TODO: should assoc-ref be defined in compiler.arc?
                                   (racket-let ((x (assoc-ref f key)))
                                     (racket-when (ac-true x)
-                                      ;; TODO: define scar in compiler.arc
                                       (scar x (cadr x))
-                                      ;; TODO: define scdr in compiler.arc
                                       (scdr x (cddr x))))
                                 ;; TODO: should assoc be defined in compiler.arc?
                                 (racket-let ((x (assoc f key)))
                                   (racket-cond
                                     ((ac-true x)
-                                      ;; TODO: define scar in compiler.arc
                                       (scar (cdr x) val))
                                     (racket-else
                                       ;; This is needed to prevent cyclic lists
                                       ;; TODO: should idfn be defined in compiler.arc?
                                       (racket-let ((x (racket-mmap (racket-lambda (x) x) f)))
-                                        ;; TODO: define scar in compiler.arc
                                         (scar f (list key val))
-                                        ;; TODO: define scdr in compiler.arc
                                         (scdr f x))))))))
         ((racket-eq? f car)
-          ;; TODO: define scar in compiler.arc
           (scar key val))
         ((racket-eq? f cdr)
-          ;; TODO: define scdr in compiler.arc
           (scdr key val))
         ((racket-eq? f caar)
-          ;; TODO: define scar in compiler.arc
           (scar (car key) val))
         ((racket-eq? f cadr)
-          ;; TODO: define scar in compiler.arc
           (scar (cdr key) val))
         ((racket-eq? f cddr)
-          ;; TODO: define scdr in compiler.arc
           (scdr (cdr key) val))
         (racket-else
           (err "can't set reference" f key val)))
@@ -1195,10 +1192,8 @@
     [(f val key ind)
       (racket-cond
         ((racket-eq? f assoc)
-          ;; TODO: define scar in compiler.arc
           (scar (assoc-ref key ind) val))
         ((racket-eq? f alref)
-          ;; TODO: define scar in compiler.arc
           (scar (cdr (assoc key ind)) val))
         (racket-else
           (err "can't set reference" f key val ind)))
