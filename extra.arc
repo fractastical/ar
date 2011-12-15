@@ -28,13 +28,20 @@
 
 
 (mac catcherr (expr)
-  #`(on-err (fn ('c) (details 'c))
-            (fn ()   expr nil)))
+  (w/uniq c
+    #`(on-err (fn (c) (details c))
+              (fn ()  expr nil))))
 
 (def xml-encode (s)
   (multisubst '(("&" "&amp;")
                 ("<" "&lt;")) s))
 
+
+(def readlines args
+  (drain:apply readline args))
+
+(def pipe-lines (y)
+  (w/pipe-from x y readlines.x))
 
 (def dispfile (val file)
   ;; TODO: should probably use a temporary file

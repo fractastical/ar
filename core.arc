@@ -608,11 +608,23 @@
 (mac after (x . ys)
   #`(protect (fn () x) (fn () ,@ys)))
 
-(let expander
-     (fn (f var name body)
-       #`(let var (f name)
-                              ;; TODO: figure out how to unquote close
-           (after (do ,@body) ('close var))))
+
+(def close-port (port)
+  (case (type port)
+    input  (racket-close-input-port port)
+    output (racket-close-output-port port)
+           (err "can't close " port)))
+
+(def close ports
+  ;; TODO: eachfn
+  (map1 close-port ports)
+  nil)
+
+
+;; TODO: better system than this
+(let expander (fn (f var name body)
+                #`(let var (f name)
+                    (after (do ,@body) (close var))))
 
   (mac w/infile (var name . body)
     (expander 'infile var name body))
@@ -625,6 +637,9 @@
 
   (mac w/socket (var port . body)
     (expander 'open-socket var port body))
+
+  (mac w/pipe-from (var port . body)
+    (expander 'pipe-from var port body))
   )
 
 
@@ -673,35 +688,26 @@
           out
           (client-ip out))))
 
-#|
-;; TODO: implement destructuring in fns
+
 ;; TODO: should pipe call (cont 'wait)?
 (def pipe (cmd)
-  (let (in out id err cont) (racket-process/ports #f #f (stderr) cmd)
+  (let (in out id err cont)
+       (racket-list->mlist (racket-process/ports #f #f (stderr) cmd))
     (list in out)))
 
 (def pipe-from (cmd)
   (let (in out) (pipe cmd)
-    ; Racket docs say I need to close all 3 ports explicitly,
-    ; but the err port doesn't need to be closed, because it's
-    ; redirected to stderr
-    (close (cadr out))
-    (car in)))|#
+    ;; Racket docs say I need to close all 3 ports explicitly,
+    ;; but the err port doesn't need to be closed, because it's
+    ;; redirected to stderr
+    (close out)
+    in))
+
 
 (def flushout ()
   (racket-flush-output)
   t)
 
-(def close-port (port)
-  (case (type port)
-    input  (racket-close-input-port port)
-    output (racket-close-output-port port)
-           (err "can't close " port)))
-
-(def close ports
-  ;; TODO: eachfn
-  (map1 close-port ports)
-  nil)
 
 (ac-notimpl force-close)
 

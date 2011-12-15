@@ -845,11 +845,13 @@
   (in c #\. #\, #\; #\: #\! #\?))
 
 (def readline ((o str stdin))
-  (tostring:whiler c (readc str)
-                     [or (and (is _ #\return)
-                              (is peekc.str #\newline))
-                         (in _ nil #\newline)]
-    (writec c)))
+  ;; TODO: a little hacky
+  (let x (tostring:whiler c (readc str)
+                            [or (and (is _ #\return)
+                                     (is peekc.str #\newline))
+                                (in _ nil #\newline)]
+           (writec c))
+    (and (isnt x "") x)))
 
 ; Don't currently use this but suspect some code could.
 
@@ -1152,8 +1154,9 @@
                          (fn () ,@body))))
 
 (mac errsafe (expr)
-  #`(on-err (fn ('c) nil)
-            (fn ()   expr)))
+  (w/uniq c
+    #`(on-err (fn (c) nil)
+              (fn ()  expr))))
 
 (def saferead (arg) (errsafe:read arg))
 
