@@ -9,7 +9,7 @@
 (1 2 3)
 
 > (ac-compile ''foo)
-(#<fn:quoted>)
+#<quoted>
 
 
 > (racket-parameterize ((racket-current-namespace (racket-current-namespace)))
@@ -309,6 +309,96 @@ error: function call on inappropriate object () 15
 
 > sref
 #<fn:sref>
+
+> ac-tnil
+#<fn:ac-tnil>
+
+
+;=============================================================================
+;  sig
+;=============================================================================
+
+> (sig 'namespace-get)
+(runtime varname (o default))
+
+> (type (sig 'namespace-get))
+cons
+
+> (cddr (type (sig 'namespace-get)))
+u
+
+
+> (sig 'uniq)
+((o name 'g) (o num))
+
+> (type (sig 'uniq))
+cons
+
+> (car (type (sig 'uniq)))
+(o name 'g)
+
+
+> (sig 'bound)
+(name)u
+
+> (type (sig 'bound))
+consu
+
+
+> (sig 'ac-apply-non-fn)
+(x (o k) (o d))
+
+> (type (sig 'ac-apply-non-fn))
+cons
+
+> (cadr (sig 'ac-apply-non-fn))
+(o k)u
+
+
+> (sig 'ac-apply)
+(f . racket-arg-list)u
+
+> (type (sig 'ac-apply))
+cons
+
+
+> (sig 'ac-global-assign-raw)
+(a b)u
+
+> (type (sig 'ac-global-assign-raw))
+consu
+
+
+> (sig 'ac-tnil)
+(x)
+
+> (type (sig 'ac-tnil))
+cons
+
+> (sig 'assign)
+args
+
+> (type (sig 'assign))
+sym
+
+> (sig 'fn)
+u
+
+> (sig 'ac-compile)
+u
+
+
+> (sig 'do)
+args
+
+> (type (sig 'do))
+sym
+
+> (sig 'isa)
+(x y)
+
+> (type (sig 'isa))
+cons
 
 
 ;=============================================================================
