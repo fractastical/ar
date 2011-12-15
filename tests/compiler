@@ -209,6 +209,9 @@ error: racket-lambda: default-value expression missing at: c in: (racket-lambda 
 ;=============================================================================
 
 > (ac-compile '(%nocompile 5 10 (foo 10) (bar (qux (%compile (corge)))) (%compile (foo 10)) (%compile 5)))
+(racket-begin 5 10 (foo 10) (bar (qux (%compile (corge)))) (%compile (foo 10)) (%compile 5))
+
+> (ac-compile `(%nocompile 5 10 (foo 10) (bar (qux ,(ac-compile '(corge)))) ,(ac-compile '(foo 10)) ,(ac-compile '5)))
 (racket-begin 5 10 (foo 10) (bar (qux (#<fn:ac-funcall0> (#<fn:ac-lookup-global> corge)))) (#<fn:ac-funcall1> (#<fn:ac-lookup-global> foo) 10) 5)
 
 > (%nocompile (racket-parameterize ((racket-current-namespace (racket-current-namespace))) (racket-current-namespace)))
@@ -216,6 +219,10 @@ error: racket-lambda: default-value expression missing at: c in: (racket-lambda 
 
 > (%nocompile (racket-parameterize ((racket-current-namespace (racket-current-namespace)))
     (%compile (+ 10 5) (+ 15 20))))
+error: reference to undefined identifier: %compile
+
+> (eval `(%nocompile (racket-parameterize ((racket-current-namespace (racket-current-namespace)))
+           ,@(ac-args '((+ 10 5) (+ 15 20))))))
 35
 
 > (let ac-compile nil
@@ -318,31 +325,69 @@ error: function call on inappropriate object () 15
 ;  sig
 ;=============================================================================
 
+> (sig 'ac-deep-toarc)
+(x)
+
+> (type (sig 'ac-deep-toarc))
+cons
+
+
 > (sig 'namespace-get)
 (runtime varname (o default))
 
 > (type (sig 'namespace-get))
 cons
 
-> (cddr (type (sig 'namespace-get)))
-u
+> (type (car (cddr (sig 'namespace-get))))
+cons
 
 
 > (sig 'uniq)
-((o name 'g) (o num))
+((o name (quote g)) (o num))
 
 > (type (sig 'uniq))
 cons
 
-> (car (type (sig 'uniq)))
-(o name 'g)
+> (type (car (sig 'uniq)))
+cons
+
+
+> (sig 'ac-var)
+(x (o def))
+
+> (type (sig 'ac-var))
+cons
+
+> (type (cadr (sig 'ac-var)))
+cons
 
 
 > (sig 'bound)
-(name)u
+(name)
 
 > (type (sig 'bound))
-consu
+cons
+
+
+> (sig 'err)
+(x . rest)
+
+> (type (sig 'err))
+cons
+
+
+> (sig 'cons)
+(x y)
+
+> (type (sig 'cons))
+cons
+
+
+> (sig 'list)
+args
+
+> (type (sig 'list))
+sym
 
 
 > (sig 'ac-apply-non-fn)
@@ -351,22 +396,59 @@ consu
 > (type (sig 'ac-apply-non-fn))
 cons
 
-> (cadr (sig 'ac-apply-non-fn))
-(o k)u
+> (type (cadr (sig 'ac-apply-non-fn)))
+cons
 
 
 > (sig 'ac-apply)
-(f . racket-arg-list)u
+(f . racket-arg-list)
 
 > (type (sig 'ac-apply))
 cons
 
 
+> (sig 'apply)
+(f . args)
+
+> (type (sig 'apply))
+cons
+
+
 > (sig 'ac-global-assign-raw)
-(a b)u
+(a b)
 
 > (type (sig 'ac-global-assign-raw))
-consu
+cons
+
+
+> (sig 'sref)
+(f val key (o ind))
+
+> (type (sig 'sref))
+cons
+
+> (type (cadr (cddr (sig 'sref))))
+cons
+
+
+> (sig 'is)
+args
+
+> (type (sig 'is))
+sym
+
+
+> (sig 'eval)
+(x (o runtime))
+
+> (type (sig 'eval))
+cons
+
+> (type (cadr (sig 'eval)))
+cons
+
+
+;=============================================================================
 
 
 > (sig 'ac-tnil)
@@ -375,17 +457,26 @@ consu
 > (type (sig 'ac-tnil))
 cons
 
+
 > (sig 'assign)
 args
 
 > (type (sig 'assign))
 sym
 
+
 > (sig 'fn)
-u
+(parms . body)
+
+> (type (sig 'fn))
+cons
+
 
 > (sig 'ac-compile)
-u
+(x)
+
+> (type (sig 'ac-compile))
+cons
 
 
 > (sig 'do)
@@ -393,6 +484,7 @@ args
 
 > (type (sig 'do))
 sym
+
 
 > (sig 'isa)
 (x y)
@@ -405,13 +497,13 @@ cons
 ;  Macros
 ;=============================================================================
 
-> (mac foo (x) (+ 1 2) (+ 1 2))
-#<mac:foo>
+> (mac macfoo (x) (+ 1 2) (+ 1 2))
+#<mac:macfoo>
 
-> (foo)
+> (macfoo)
 error: #<procedure>: expects 1 argument, given 0
 
-> (foo 5)
+> (macfoo 5)
 3
 
 

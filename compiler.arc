@@ -47,24 +47,62 @@
 (racket-define ac-names  (racket-make-hash))
 
 
+;=============================================================================
+;  Convenience utilities
+;=============================================================================
+
+;; TODO: kinda icky that this is defined up here
+(racket-define (ac-deep-toarc x)
+  (racket-cond
+    ((racket-pair? x)
+      ;; TODO: cons
+      (racket-mcons (ac-deep-toarc (racket-car x))
+                    (ac-deep-toarc (racket-cdr x))))
+    ((racket-string? x)
+      (racket-string-copy x))
+    ((racket-mpair? x)
+      (err "Racket mpair passed to ac-deep-toarc" x))
+    (racket-else x)))
+
+;; TODO: ew
+(racket-hash-set! sig (racket-quote ac-deep-toarc)
+                      (ac-deep-toarc (racket-quote (x))))
+
+
+
 (racket-define-syntax-rule (ac-sref-parms hash name parms)
   (racket-hash-set! hash
                     (racket-quote name)
                     ;; TODO: eww
-                    (racket-let ((x (racket-quote parms)))
+                    (ac-deep-toarc (racket-quote parms))
+                    #|(racket-let ((x (racket-quote parms)))
                       (racket-if (racket-pair? x)
                                    x ;(racket-list->mlist x)
-                                 x))))
+                                 x))|#
+                    ))
 
-(racket-define-syntax-rule (ac-def name parms . body)
+(racket-define-syntax-rule (ac-assign-sig name parms x)
   (racket-begin (ac-sref-parms sig name parms)
-                (racket-define name (racket-lambda parms . body))))
+                (racket-define name x)
+                (racket-hash-set! ac-names name (racket-quote name))))
+
+#|(racket-define-syntax-rule (ac-def name parms #:sig [sig2 #f] . body)
+  (racket-begin (ac-sref-parms sig name (racket-or sig2 parms))
+                (racket-define name (racket-lambda parms . body))))|#
+
+;; TODO: ew code duplication
+(racket-define-syntax ac-def
+  (racket-syntax-rules ()
+    [(_ name parms #:sig sig2 . body)
+      (racket-begin (ac-sref-parms sig name sig2)
+                    (racket-define name (racket-lambda parms . body)))]
+    [(_ name parms . body)
+      (racket-begin (ac-sref-parms sig name parms)
+                    (racket-define name (racket-lambda parms . body)))]))
 
 (racket-define-syntax-rule (ac-mac name parms . body)
-  (racket-begin (ac-sref-parms sig name parms)
-                (racket-define name (annotate (racket-quote mac)
-                                              (racket-lambda parms . body)))
-                (racket-hash-set! ac-names name (racket-quote name))))
+  (ac-assign-sig name parms (annotate (racket-quote mac)
+                                      (racket-lambda parms . body))))
 
 
 
@@ -81,8 +119,8 @@
 ;  Namespaces
 ;=============================================================================
 
-;; TODO: custom sig
 (ac-def namespace-get (runtime varname (default nil))
+                #:sig (runtime varname (o default))
   (racket-let ((default (racket-if (racket-procedure? default)
                                    #|(racket-or (racket-not default)
                                               )|#
@@ -172,8 +210,8 @@
 
 (racket-define ac-uniq-counter* (racket-make-parameter 1))
 
-;; TODO: custom sig
 (ac-def uniq ((name (racket-quote g)) (num nil))
+       #:sig ((o name 'g) (o num))
   (racket-let ((num (racket-if (ac-true num)
                                  num
                                (racket-let ((num (ac-uniq-counter*)))
@@ -183,13 +221,11 @@
       (racket-string-append (string1 name)
                             (string1 num)))))
 
-;; TODO: custom sig
 (ac-def ac-var (x (def nil))
+         #:sig (x (o def))
   (ac-apply-non-fn (ac-namespace) x def))
 
-;; TODO: replace with ac-def somehow...?
-;; TODO: custom sig
-(racket-define bound
+(ac-assign-sig bound (name)
   (racket-let ((undef (uniq)))
     (racket-lambda (name)
       (ac-tnil
@@ -246,17 +282,6 @@
                (ac-tagged-rep x)
              x))
 
-(ac-def ac-deep-toarc (x)
-  (racket-cond
-    ((racket-pair? x)
-      (cons (ac-deep-toarc (racket-car x))
-            (ac-deep-toarc (racket-cdr x))))
-    ((racket-string? x)
-      (racket-string-copy x))
-    ((racket-mpair? x)
-      (err "Racket mpair passed to ac-deep-toarc" x))
-    (racket-else x)))
-
 (ac-def ac-deep-fromarc (x)
   (racket-cond
     ((racket-mpair? x)
@@ -271,8 +296,7 @@
 ;  Exceptions/Errors
 ;=============================================================================
 
-;; TODO: custom sig
-(racket-define err  racket-error)
+(ac-assign-sig err (x . rest) racket-error)
 
 (ac-def on-err (errf f)
   (racket-with-handlers ((racket-exn:fail? errf))
@@ -358,13 +382,8 @@
 ;  Lists
 ;=============================================================================
 
-;; TODO: custom sig
-(racket-define cons  racket-mcons)
-;; TODO: custom sig
-(racket-define list  racket-mlist)
-
-(racket-hash-set! ac-names cons (racket-quote cons))
-(racket-hash-set! ac-names list (racket-quote list))
+(ac-assign-sig cons (x y) racket-mcons)
+(ac-assign-sig list args  racket-mlist)
 
 
 (ac-def car (x)
@@ -442,12 +461,38 @@
 ;=============================================================================
 
 (ac-def ac-arg-list* (args)
+  ;(ac-prn args)
+  ;(ac-prn (racket-apply list* args))
+  ;(ac-prn (racket-apply racket-list* args))
+  ;(ac-prn
+  #|((racket-null? args)
+        args)|#
+  ;(racket-let next ((args args)) )
+  (racket-if (racket-null? (racket-cdr args))
+               ;(ac-prn (racket-car args))
+               (racket-mlist->list (racket-car args))
+             (racket-cons (racket-car args)
+                          (ac-arg-list* (racket-cdr args))))
+
   ;; TODO: figure out how to avoid the mlist->list call
-  (racket-mlist->list (racket-apply list* args))
+  ;;       maybe use racket-list*?
+  ;(racket-mlist->list (racket-apply list* args))
+  ;(racket-mlist->list (racket-apply racket-list* args))
+
+  ;)
+  ;(ac-prn "----------")
+
+  ;(a b c d)
+  ;(a b c d)
+
+  ;({a b c d})
+  ;(a b c d)
+
+  ;({a b c d} {e f g})
+  ;({a b c d} e f g)
   )
 
-;; TODO: custom sig
-(racket-define ac-apply-non-fn
+(ac-assign-sig ac-apply-non-fn (x (o k) (o d))
   (racket-case-lambda
     [(x)     (racket-if (ac-isa x (racket-quote parameter))
                           ((rep x))
@@ -477,8 +522,7 @@
                (racket-else
                  (err "function call on inappropriate object" x k d)))]))
 
-;; TODO: custom sig
-(racket-define ac-apply
+(ac-assign-sig ac-apply (f . racket-arg-list)
   ;; TODO: ew
   (racket-make-keyword-procedure
     (racket-lambda (kw kw-val f . racket-arg-list)
@@ -487,20 +531,24 @@
           (racket-keyword-apply f kw kw-val racket-arg-list))
         (racket-else
           (racket-keyword-apply ac-apply-non-fn kw kw-val f racket-arg-list)))))
-    )
+  )
 
-(racket-hash-set! ac-names ac-apply (racket-quote ac-apply))
-
+#|(ac-def ac-apply (f . racket-arg-list)
+  (racket-cond
+    ((racket-procedure? f)
+      (racket-apply f racket-arg-list))
+    (racket-else
+      (racket-apply ac-apply-non-fn f racket-arg-list))))|#
 
 ;; TODO: why is apply very slow compared to ar and Arc 3.1? fix it
-;; TODO: custom sig
-(racket-define apply
+(ac-assign-sig apply (f . args)
   (racket-make-keyword-procedure
     (racket-lambda (kw kw-val f . args)
-      (racket-keyword-apply ac-apply kw kw-val f (ac-arg-list* args))
-      )))
+      (racket-keyword-apply ac-apply kw kw-val f (ac-arg-list* args)))))
 
-(racket-hash-set! ac-names apply (racket-quote apply))
+
+#|(ac-def apply (f . args)
+  (racket-apply ac-apply f (ac-arg-list* args)))|#
 
 
 ;=============================================================================
@@ -709,8 +757,7 @@
 (ac-def ac-global-assign-defined (x a b)
   (ac-global-assigner x a b))
 
-;; TODO: custom sig
-(racket-define ac-global-assign-raw
+(ac-assign-sig ac-global-assign-raw (a b)
   (racket-let ((u (uniq)))
     (racket-lambda (a b)
                       ;; TODO: should this be ac-var or ac-lookup-global?
@@ -1172,8 +1219,7 @@
 ;  assignment
 ;=============================================================================
 
-;; TODO: custom sig
-(racket-define sref
+(ac-assign-sig sref (f val key (o ind))
   (racket-case-lambda
     [(f val key)
       (racket-cond
@@ -1313,11 +1359,8 @@
                                   (racket-string? b)
                                   (racket-string=? a b)))))
 
-;; TODO: custom sig
-;; TODO: ew
-(racket-define is (ac-binary is2 ac-pairwise))
-
-(racket-hash-set! ac-names is (racket-quote is))
+;; TODO: make a macro for generating these
+(ac-assign-sig is args (ac-binary is2 ac-pairwise))
 
 
 ;=============================================================================
@@ -1364,8 +1407,8 @@
                             (ac-global-var x))))
     (racket-else x)))
 
-;; TODO: custom sig
 (ac-def eval (x (runtime nil))
+       #:sig (x (o runtime))
   ;(ac-prn (racket-eq? (ac-namespace) arc3-namespace))
   (racket-eval (ac-deep-fromarc (ac-compile x))
                (racket-if (ac-no runtime)

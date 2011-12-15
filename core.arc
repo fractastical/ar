@@ -529,7 +529,7 @@
 
 (nomac parameterize (x . body)
   `(racket-parameterize ,(map1 (fn ((x y))
-                                 ;; TODO: should probably use %compile for x
+                                 ;; TODO: should probably use ac-compile for x
                                  #`((rep x) ,(ac-compile y)))
                                (pair x))
      ,@(or (ac-args body) nil)))
@@ -838,13 +838,14 @@
         ;(cons 'quote (cdr x))
       (let y (macex1 x)
         (if (is x y)
-              (if (cons? x)
-                    (map macex-all x)
+              (if (cons? y)
+                    (map macex-all y)
                   (and macex-rename*
-                       (or (fn? x)
-                           (mac? x)))
-                    (or (name x) x)
-                  x)
+                       (isnt y ac-quote)
+                       (or (fn? y)
+                           (mac? y)))
+                    (or (name y) y)
+                  y)
             (macex-all y)))))
 
 

@@ -1,0 +1,59 @@
+#! /usr/bin/env racket
+#lang racket/base
+
+(require racket/cmdline)
+(require racket/path)
+
+(define iter (make-parameter 1))
+
+(define arguments
+  (command-line
+    #:program "Nu Arc (timeit)"
+    #:once-each
+    [("-i" "--iterations") i "Number of iterations"
+                             (iter (string->number i))]
+    #:args args
+    args))
+
+
+(define exec-dir
+  (path->string (path-only (normalize-path (find-system-path 'run-file)))))
+
+(define (ac-require-base)
+  (namespace-require/expansion-time '(only racket/private/pre-base
+                                       #%app #%top #%datum #%top-interaction))
+  (namespace-require/copy '(prefix racket- racket/base)))
+
+
+(parameterize ((current-namespace (make-base-empty-namespace)))
+  (ac-require-base)
+
+  (namespace-set-variable-value! 'exec-dir*       exec-dir        #f)
+  (namespace-set-variable-value! 'ac-require-base ac-require-base #f)
+
+  (load/use-compiled (build-path exec-dir "compiler.arc"))
+
+  (let ((ac-load (namespace-variable-value 'ac-load #f)))
+    (ac-load "core.arc")
+    (ac-load "ssyntax.arc")
+    (ac-load "compat.arc")
+    (ac-load "arc.arc")
+    (ac-load "extra.arc")
+    (ac-load "import.arc")
+    (ac-load "lib/time.arc"))
+
+  (let ((read (namespace-variable-value 'read #f))
+        (eval (namespace-variable-value 'eval #f)))
+    (for-each (lambda (x)
+                (display "> ")
+                (displayln x)
+                (let ((expr (read (string-append "(timeit " x ")"))))
+                  (let loop ((x (iter)))
+                    (when (> x 0)
+                      (eval expr)
+                      (loop (- x 1)))))
+                (newline))
+              arguments))
+
+  ;; This is to prevent () from being printed when the REPL exits
+  (void))

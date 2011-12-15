@@ -1,6 +1,24 @@
 Timing notes
 ============
 
+  * `apply` vs function application:
+
+        > (timeit (apply idfn (list 'x)))
+        iter: 2,117,009  gc: 88  mem: -4760624 (ac-arg-list*)
+        iter: 2,092,668  gc: 120  mem: 1844448 (ac-arg-list*)
+        iter: 1,987,647  gc: 80  mem: -5397256 (racket-apply list*)
+
+        > (timeit (idfn 'x))
+        iter: 3,614,741  gc: 0  mem: 1454864
+
+
+        > (timeit (apply list 1 2 3 4 (list 5)))
+        iter: 1,292,642  gc: 300  mem: -3410104 (ac-arg-list*)
+        iter: 1,088,763  gc: 248  mem: -7513680 (racket-apply list*)
+
+        > (timeit (list 1 2 3 4 5))
+        iter: 2,585,728  gc: 232  mem: -2848912
+
   * How is calling `(list)` faster than just using `nil`?!
 
         > (timeit (list))
@@ -8,6 +26,17 @@ Timing notes
 
         > (timeit nil)
         iter: 3,878,884  gc: 0  mem: 2755496
+
+
+        > (list)
+        iter: 3,494,930  gc: 0  mem: 1624
+        iter: 3,595,272  gc: 0  mem: 664
+        iter: 3,455,980  gc: 0  mem: 984
+
+        > nil
+        iter: 3,270,729  gc: 0  mem: 824
+        iter: 3,410,667  gc: 0  mem: 824
+        iter: 3,434,929  gc: 0  mem: 984
 
   * Using `maplast` is a bit slower than using `(eval #\`(do ...))` but has
     less garbage collection:
@@ -199,6 +228,7 @@ Timing notes
         > (timeit (%nocompile (racket-namespace-variable-value (racket-quote foo) #f)))
         iter: 7,542,512  gc: 0  mem: 1171400
 
+        ;; TODO: alternative to %compile
         > (timeit (%nocompile (racket-namespace-variable-value (racket-quote foo) #f (%compile (fn () nil)))))
         iter: 7,115,895  gc: 0  mem: 1137640
 

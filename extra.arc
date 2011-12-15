@@ -71,7 +71,7 @@
 ;  %nocompile / %splice / %eval
 ;=============================================================================
 
-(def ac-nocompile (x)
+#|(def ac-nocompile (x)
   (let x (let self ((x x))
            (mappend (fn (x)
                           ;; TODO: don't hardcode the symbol %compile
@@ -83,7 +83,7 @@
                      x))
     (if (no (cdr x))
           (car x)
-        (cons 'racket-begin x))))
+        (cons 'racket-begin x))))|#
 
 (nomac %nocompile args
   (if (cdr args)

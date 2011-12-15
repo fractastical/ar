@@ -11,3 +11,9 @@ t
 
 > (timeit-range 'foo 5000)
 t
+
+> (timeit-range (apply idfn (list 'x)) 0)
+t
+
+> (timeit-range (idfn 'x) 0)
+t

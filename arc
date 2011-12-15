@@ -71,8 +71,8 @@
                      (repl #t)]
     [("-a" "--all")  "Execute every file rather than only the first"
                      (all #t)]
-    #:args filenames
-    filenames))
+    #:args args
+    args))
 
 (if (all)
       (current-command-line-arguments (make-vector 0))
