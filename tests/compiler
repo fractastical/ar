@@ -694,11 +694,109 @@ error: #<procedure>: expects 1 argument, given 0
 ;  quasiquote
 ;=============================================================================
 
+> (macex1 '`(foo 'bar qux))
+(#<fn:cons> (#<mac:quote> foo) (#<fn:cons> (#<fn:cons> (#<mac:quote> quote) (#<fn:cons> (#<mac:quote> bar) nil)) (#<fn:cons> (#<mac:quote> qux) nil)))
+
+
+> (macex1 '`(foo ,bar qux))
+(#<fn:cons> (#<mac:quote> foo) (#<fn:cons> bar (#<fn:cons> (#<mac:quote> qux) nil)))
+
+> (macex1 '`(foo ',bar qux))
+(#<fn:cons> (#<mac:quote> foo) (#<fn:cons> (#<fn:cons> (#<mac:quote> quote) (#<fn:cons> bar nil)) (#<fn:cons> (#<mac:quote> qux) nil)))
+
+> (macex1 '`(foo '',bar qux))
+(#<fn:cons> (#<mac:quote> foo) (#<fn:cons> (#<fn:cons> (#<mac:quote> quote) (#<fn:cons> (#<fn:cons> (#<mac:quote> quote) (#<fn:cons> bar nil)) nil)) (#<fn:cons> (#<mac:quote> qux) nil)))
+
+
+> (macex1 '`(foo qux . bar))
+(#<fn:cons> (#<mac:quote> foo) (#<fn:cons> (#<mac:quote> qux) (#<mac:quote> bar)))
+
+> (macex1 '`(foo qux . ,bar))
+(#<fn:cons> (#<mac:quote> foo) (#<fn:cons> (#<mac:quote> qux) bar))
+
+;; TODO: not sure about this
+> (macex1 '`(foo qux unquote bar))
+(#<fn:cons> (#<mac:quote> foo) (#<fn:cons> (#<mac:quote> qux) bar))
+
+> (macex1 '`(foo unquote qux bar))
+(#<fn:cons> (#<mac:quote> foo) (#<fn:cons> (#<mac:quote> unquote) (#<fn:cons> (#<mac:quote> qux) (#<fn:cons> (#<mac:quote> bar) nil))))
+
+
+> (macex1 '`(foo qux . ,@bar))
+error: cannot use ,@ after .
+
+> (macex1 '`(foo qux unquote-splicing bar))
+error: cannot use ,@ after .
+
+> (macex1 '`(foo unquote-splicing qux bar))
+(#<fn:cons> (#<mac:quote> foo) (#<fn:cons> (#<mac:quote> unquote-splicing) (#<fn:cons> (#<mac:quote> qux) (#<fn:cons> (#<mac:quote> bar) nil))))
+
+
 > (macex1 '`(foo qux ,@bar))
-(#<fn:cons> (#<mac:quote> foo) (#<fn:cons> (#<mac:quote> qux) (#<fn:mappend> bar nil)))
+(#<fn:cons> (#<mac:quote> foo) (#<fn:cons> (#<mac:quote> qux) bar))
 
 > (macex1 '`(foo ,@bar qux))
 (#<fn:cons> (#<mac:quote> foo) (#<fn:mappend> bar (#<fn:cons> (#<mac:quote> qux) nil)))
+
+> (macex1 '`(foo ,@bar ,@qux))
+(#<fn:cons> (#<mac:quote> foo) (#<fn:mappend> bar qux))
+
+> (macex1 '`(foo ,@bar ,@qux ,@corge))
+(#<fn:cons> (#<mac:quote> foo) (#<fn:mappend> bar (#<fn:mappend> qux corge)))
+
+> (macex1 '`(foo ',@bar qux))
+(#<fn:cons> (#<mac:quote> foo) (#<fn:cons> (#<fn:cons> (#<mac:quote> quote) bar) (#<fn:cons> (#<mac:quote> qux) nil)))
+
+> (macex1 '`(foo '',@bar qux))
+(#<fn:cons> (#<mac:quote> foo) (#<fn:cons> (#<fn:cons> (#<mac:quote> quote) (#<fn:cons> (#<fn:cons> (#<mac:quote> quote) bar) nil)) (#<fn:cons> (#<mac:quote> qux) nil)))
+
+
+> (let bar (uniq)
+    `(foo qux . ,bar))
+(foo qux . g1)
+
+> (let bar (list 1 2 3)
+    `(foo qux . ,@bar))
+error: cannot use ,@ after .
+
+
+> (with (foo  1
+         bar  2
+         qux  3)
+    `(foo ',bar qux))
+(foo (quote 2) qux)
+
+> (with (foo  1
+         bar  2
+         qux  3)
+    `(foo '',bar qux))
+(foo (quote (quote 2)) qux)
+
+> (with (foo  1
+         bar  2
+         qux  3)
+    `(foo ''',bar qux))
+(foo (quote (quote (quote 2))) qux)
+
+
+> (with (foo  1
+         bar  '(2 3 4)
+         qux  5)
+    `(foo ',@bar qux))
+(foo (quote 2 3 4) qux)
+
+> (with (foo  1
+         bar  '(2 3 4)
+         qux  5)
+    `(foo '',@bar qux))
+(foo (quote (quote 2 3 4)) qux)
+
+> (with (foo  1
+         bar  '(2 3 4)
+         qux  5)
+    `(foo ''',@bar qux))
+(foo (quote (quote (quote 2 3 4))) qux)
+
 
 
 > (let name 'foo
@@ -763,11 +861,106 @@ error: ,@ cannot be used immediately after `
 ;  quasisyntax
 ;=============================================================================
 
+> (macex1 '#`(foo 'bar qux))
+(#<fn:cons> foo (#<fn:cons> (#<mac:quote> bar) (#<fn:cons> qux nil)))
+
+> (macex1 '#`(foo ''bar qux))
+(#<fn:cons> foo (#<fn:cons> (#<fn:list> (#<mac:quote> #<mac:quote>) (#<mac:quote> bar)) (#<fn:cons> qux nil)))
+
+
+> (macex1 '#`(foo ,bar qux))
+(#<fn:cons> foo (#<fn:cons> bar (#<fn:cons> qux nil)))
+
+> (macex1 '#`(foo ',bar qux))
+(#<fn:cons> foo (#<fn:cons> (#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:list> bar)) (#<fn:cons> qux nil)))
+
+> (macex1 '#`(foo '',bar qux))
+(#<fn:cons> foo (#<fn:cons> (#<fn:list> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:list> bar))) (#<fn:cons> qux nil)))
+
+> (macex1 '#`(foo ''',bar qux))
+(#<fn:cons> foo (#<fn:cons> (#<fn:list> (#<mac:quote> #<mac:quote>) (#<fn:list> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:list> bar)))) (#<fn:cons> qux nil)))
+
+
+> (macex1 '#`(foo qux . bar))
+(#<fn:cons> foo (#<fn:cons> qux bar))
+
+> (macex1 '#`(foo qux . ,bar))
+(#<fn:cons> foo (#<fn:cons> qux bar))
+
+;; TODO: not sure about this
+> (macex1 '#`(foo qux unquote bar))
+(#<fn:cons> foo (#<fn:cons> qux bar))
+
+> (macex1 '#`(foo unquote qux bar))
+(#<fn:cons> foo (#<fn:cons> unquote (#<fn:cons> qux (#<fn:cons> bar nil))))
+
+
+> (macex1 '#`(foo qux . ,@bar))
+error: cannot use ,@ after .
+
+> (macex1 '#`(foo qux unquote-splicing bar))
+error: cannot use ,@ after .
+
+> (macex1 '#`(foo unquote-splicing qux bar))
+(#<fn:cons> foo (#<fn:cons> unquote-splicing (#<fn:cons> qux (#<fn:cons> bar nil))))
+
+
 > (macex1 '#`(foo qux ,@bar))
-(#<fn:cons> foo (#<fn:cons> qux (#<fn:mappend> bar nil)))
+(#<fn:cons> foo (#<fn:cons> qux bar))
 
 > (macex1 '#`(foo ,@bar qux))
 (#<fn:cons> foo (#<fn:mappend> bar (#<fn:cons> qux nil)))
+
+> (macex1 '#`(foo ,@bar ,@qux))
+(#<fn:cons> foo (#<fn:mappend> bar qux))
+
+> (macex1 '#`(foo ,@bar ,@qux ,@corge))
+(#<fn:cons> foo (#<fn:mappend> bar (#<fn:mappend> qux corge)))
+
+> (macex1 '#`(foo ',@bar qux))
+(#<fn:cons> foo (#<fn:cons> (#<fn:cons> (#<mac:quote> #<mac:quote>) bar) (#<fn:cons> qux nil)))
+
+> (macex1 '#`(foo '',@bar qux))
+(#<fn:cons> foo (#<fn:cons> (#<fn:list> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> #<mac:quote>) bar)) (#<fn:cons> qux nil)))
+
+
+> (with (foo  1
+         bar  2
+         qux  3)
+    #`(foo ',bar qux))
+(1 (#<mac:quote> 2) 3)
+
+> (with (foo  1
+         bar  2
+         qux  3)
+    #`(foo '',bar qux))
+(1 (#<mac:quote> (#<mac:quote> 2)) 3)
+
+> (with (foo  1
+         bar  2
+         qux  3)
+    #`(foo ''',bar qux))
+(1 (#<mac:quote> (#<mac:quote> (#<mac:quote> 2))) 3)
+
+
+> (with (foo  1
+         bar  '(2 3 4)
+         qux  5)
+    #`(foo ',@bar qux))
+(1 (#<mac:quote> 2 3 4) 5)
+
+> (with (foo  1
+         bar  '(2 3 4)
+         qux  5)
+    #`(foo '',@bar qux))
+(1 (#<mac:quote> (#<mac:quote> 2 3 4)) 5)
+
+> (with (foo  1
+         bar  '(2 3 4)
+         qux  5)
+    #`(foo ''',@bar qux))
+(1 (#<mac:quote> (#<mac:quote> (#<mac:quote> 2 3 4))) 5)
+
 
 
 > (let name 'foo

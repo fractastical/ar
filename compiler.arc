@@ -1114,15 +1114,25 @@
       (racket-let ((c (car x)))
         (racket-cond
           ;; TODO: don't hardcode the symbol unquote
+          ((racket-and (racket-eq? c (racket-quote unquote))
+                       (ac-no (cddr x)))
+            (cadr x))
+          ;; TODO: don't hardcode the symbol unquote-splicing
+          ((racket-and (racket-eq? c (racket-quote unquote-splicing))
+                       (ac-no (cddr x)))
+            (err "cannot use ,@ after ."))
+          ;; TODO: don't hardcode the symbol unquote
           ((ac-caris c (racket-quote unquote))
             (list cons
                   (cadr c)
                   (qq-expand-pair (cdr x))))
           ;; TODO: don't hardcode the symbol unquote-splicing
           ((ac-caris c (racket-quote unquote-splicing))
-            (list racket-mappend
-                  (cadr c)
-                  (qq-expand-pair (cdr x))))
+            (racket-if (ac-no (cdr x))
+              (cadr c)
+              (list racket-mappend
+                    (cadr c)
+                    (qq-expand-pair (cdr x)))))
           ;; TODO: don't hardcode the symbol quasiquote
           ((ac-caris c (racket-quote quasiquote))
             (list cons
@@ -1176,6 +1186,11 @@
 (ac-def qs-expand-quote (x)
   (racket-let ((c (car x)))
     (racket-cond
+      ;; TODO: don't hardcode the symbol quote
+      ((ac-caris c (racket-quote quote))
+        (list list
+              (list quote quote)
+              (qs-expand-quote (cdr c))))
       ;; TODO: don't hardcode the symbol unquote
       ((ac-caris c (racket-quote unquote))
         ;(ac-compile )
@@ -1185,9 +1200,11 @@
       ;; TODO: don't hardcode the symbol unquote-splicing
       ((ac-caris c (racket-quote unquote-splicing))
         ;(ac-compile )
-        (list cons
-              (list quote quote)
-              (cons racket-mappend (cdr c))))
+        (list* cons
+               (list quote quote)
+               (cdr c))
+              ;(cons racket-mappend (cdr c))
+              )
       (racket-else
         ;(ac-compile (cons quote x))
         (cons quote x)
@@ -1197,6 +1214,14 @@
   (racket-if (racket-mpair? x)
     (racket-let ((c (car x)))
       (racket-cond
+        ;; TODO: don't hardcode the symbol unquote
+        ((racket-and (racket-eq? c (racket-quote unquote))
+                     (ac-no (cddr x)))
+          (cadr x))
+        ;; TODO: don't hardcode the symbol unquote-splicing
+        ((racket-and (racket-eq? c (racket-quote unquote-splicing))
+                     (ac-no (cddr x)))
+          (err "cannot use ,@ after ."))
         ;; TODO: don't hardcode the symbol quote
         ((ac-caris c (racket-quote quote))
           (list cons
@@ -1210,10 +1235,12 @@
                 (qs-expand-pair (cdr x))))
         ;; TODO: don't hardcode the symbol unquote-splicing
         ((ac-caris c (racket-quote unquote-splicing))
-          (list racket-mappend
-                ;(ac-compile (cadr c))
-                (cadr c)
-                (qs-expand-pair (cdr x))))
+          (racket-if (ac-no (cdr x))
+            (cadr c)
+            (list racket-mappend
+                  ;(ac-compile (cadr c))
+                  (cadr c)
+                  (qs-expand-pair (cdr x)))))
         ;; TODO: don't hardcode the symbol quasisyntax
         ((ac-caris c (racket-quote quasisyntax))
           (list cons
