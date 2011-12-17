@@ -785,7 +785,7 @@
         a
         (ac-compile b)))
 
-(ac-def ac-global-assigner (x a b)
+(ac-def ac-assign-global (x a b)
   (racket-when (racket-or (ac-tagged? b)
                           (racket-procedure? b))
     (racket-hash-set! ac-names b a))
@@ -802,23 +802,24 @@
       (sref (ac-namespace) b a)))
   b)
 
-(ac-def ac-global-assign-undefined (x a b)
-  (ac-global-assigner x a b))
+(ac-def ac-assign-global-undefined (x a b)
+  (ac-assign-global x a b))
 
-(ac-def ac-global-assign-defined (x a b)
-  (ac-global-assigner x a b))
+(ac-def ac-assign-global-defined (x a b)
+  (ac-assign-global x a b))
 
-(ac-assign-sig ac-global-assign-raw (a b)
+(ac-assign-sig ac-assign-global-raw (space a b)
   (racket-let ((u (uniq)))
-    (racket-lambda (a b)
+    (racket-lambda (space a b)
                       ;; TODO: should this be ac-var or ac-lookup-global?
       (racket-let ((x (ac-var a u)))
         (racket-if (racket-eq? x u)
-                     (ac-global-assign-undefined x a b)
-                   (ac-global-assign-defined x a b))))))
+                     (ac-assign-global-undefined x a b)
+                   (ac-assign-global-defined x a b))))))
 
 (ac-def ac-global-assign (a b)
-  (list ac-global-assign-raw
+  (list ac-assign-global-raw
+        (ac-namespace)
         (list (racket-quote racket-quote) a)
         (ac-compile b)))
 

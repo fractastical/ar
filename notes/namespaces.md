@@ -1,4 +1,4 @@
-The need for namespaces
+The case for namespaces
 =======================
 
 To some, namespaces are merely a luxury, something that is nice but not
@@ -222,3 +222,120 @@ This allows you to make as many changes as you want, while still maintaining
 backwards compatibility. Because namespaces allow you to so easily change
 things that you otherwise could not change (without breaking things), I
 consider namespaces to be essential to Arc's goal of hackability.
+
+
+Okay, but how do you implement it?
+==================================
+
+One of the great things about _Nu_ is that it has good namespace support.
+Unfortunately, _Arc 3.1_ doesn't have namespaces, and _ar_'s namespaces are
+essentially unusable. What will it take to add in namespace support to
+_Arc 3.1_, _ar_, and the other Arc implementations? Not much! Here's what I
+have found to be the minimum necessary to implement namespaces in the
+compiler:
+
+ 1. A Racket parameter called `ac-namespace` that is initialized to Arc's
+    namespace. In other words:
+
+        (define ac-namespace (make-parameter (current-namespace)))
+
+ 2. Wrap global variables in `(ac-lookup-global ...)`. In other words, this
+    expression...
+
+        (+ foo bar)
+
+    ...would be compiled into this:
+
+        (ac-funcall2 (ac-lookup-global +)
+                     (ac-lookup-global foo)
+                     (ac-lookup-global bar))
+
+    And then `ac-lookup-global` is defined like so:
+
+        (define (ac-lookup-global x) x)
+
+    In other words, it returns its argument unchanged.
+
+ 3. When assigning to global variables, it should call `ac-assign-global-raw`
+    rather than `set!`. In other words, this expression...
+
+        (= foo "bar")
+
+    ...would be compiled into this:
+
+        (ac-assign-global-raw #<namespace:0> 'foo "bar")
+
+    Notice that the variable name is quoted. The implementation may look
+    something like this:
+
+        (define (ac-set1 a b env)
+          (if (lex? a env)
+                `(set! ,a ,b)
+              `(ac-assign-global-raw ,(ac-namespace) ',a ,b)))
+
+    And then `ac-assign-global-raw` can be defined as follows:
+
+      (define (ac-assign-global-raw space a b)
+        (namespace-set-variable-value! a b #f space))
+
+ 4. If the value of `ac-namespace` is different from the value of
+    `current-namespace`, global variables should be wrapped in
+    `ac-lookup-global-raw` **in addition** to `ac-lookup-global`. In other
+    words, this...
+
+        (+ foo bar)
+
+    ...would be compiled into this:
+
+        (ac-funcall2 (ac-lookup-global (ac-lookup-global-raw #<namespace:0> '+))
+                     (ac-lookup-global (ac-lookup-global-raw #<namespace:0> 'foo))
+                     (ac-lookup-global (ac-lookup-global-raw #<namespace:0> 'bar)))
+
+    Notice that the variable name is now quoted. The implementation may look
+    something like this:
+
+      (define (ac-global-name x)
+        (if (eq? (ac-namespace)
+                 (current-namespace))
+          `(ac-lookup-global ,x)
+          `(ac-lookup-global (ac-lookup-global-raw ,(ac-namespace) ',x))))
+
+    `ac-lookup-global-raw` is expected to take two arguments: the namespace
+    that the variable was compiled in, and a symbol. It's expected to return a
+    value. That value will then be passed to `ac-lookup-global`.
+
+    And because it only does this when `ac-namespace` differs from the
+    `current-namespace`, you don't even need to define `ac-lookup-global-raw`:
+    it can be defined later on in Arc, or in a library written in Arc.
+
+Also, make sure that Arc code has a way of accessing `ac-namespace`,
+`ac-lookup-global`, `ac-assign-global-raw`, and `ac-lookup-global-raw`. In
+_Nu_ and _ar_ this happens automatically. In _Arc 3.1_ you could use `xdef`.
+
+That's it! You can now implement any namespace system you want in Arc,
+including namespace inheritance as described above. Really. And as you can
+see, implementing these changes requires very little code to be added to the
+compiler.
+
+
+Explanation
+===========
+
+Okay, so how does this all work? Well, let's look at the above example of
+`(+ foo bar)`. If I change the value of `ac-namespace`, the global variables
+will be wrapped in `(ac-lookup-global-raw ...)`. I can then define
+`ac-lookup-global-raw` to use my own custom namespace system to look up the
+value of the symbol at runtime. And likewise for `ac-assign-global-raw`.
+Voila, namespaces!
+
+And what's `ac-lookup-global` for? I found when implementing things like
+implicit parameters and aliases that it works out a *lot better* to dispatch
+based on the *value* rather than the *symbol*. In other words, an alias might
+be defined like so:
+
+    (annotate 'alias (list get set))
+
+And then you can change `ac-lookup-global` so when it sees something that's
+annotated with type `'alias` it can do something special, like calling the
+`get` function. This allows things like parameters, aliases, etc. to work
+properly across namespaces.

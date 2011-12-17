@@ -79,10 +79,10 @@ error: mcar: expects argument of type <mutable-pair>; given 'nil
 ;=============================================================================
 
 > (ac-compile '(assign foo 10))
-(#<fn:ac-global-assign-raw> (racket-quote foo) 10)
+(#<fn:ac-assign-global-raw> (racket-quote foo) 10)
 
 > (ac-compile '(assign foo 10 bar 20 qux 30))
-(racket-begin (#<fn:ac-global-assign-raw> (racket-quote foo) 10) (#<fn:ac-global-assign-raw> (racket-quote bar) 20) (#<fn:ac-global-assign-raw> (racket-quote qux) 30))
+(racket-begin (#<fn:ac-assign-global-raw> (racket-quote foo) 10) (#<fn:ac-assign-global-raw> (racket-quote bar) 20) (#<fn:ac-assign-global-raw> (racket-quote qux) 30))
 
 
 > (ac-compile '(let foo 10 (assign foo 20)))
@@ -110,14 +110,14 @@ error: mcar: expects argument of type <mutable-pair>; given 'nil
                       bar  20
                       qux  30)
                  (assign nou 20 bar 30 qux 40)))
-((racket-lambda (foo bar qux) (racket-begin (#<fn:ac-global-assign-raw> (racket-quote nou) 20) (racket-set! bar 30) (racket-set! qux 40) qux)) 10 20 30)
+((racket-lambda (foo bar qux) (racket-begin (#<fn:ac-assign-global-raw> (racket-quote nou) 20) (racket-set! bar 30) (racket-set! qux 40) qux)) 10 20 30)
 
 
 > (ac-compile '(with (foo  10
                       bar  20
                       qux  30)
                  (assign nou 20 bar 30 cooorge 40)))
-((racket-lambda (foo bar qux) (racket-begin (#<fn:ac-global-assign-raw> (racket-quote nou) 20) (racket-set! bar 30) (#<fn:ac-global-assign-raw> (racket-quote cooorge) 40))) 10 20 30)
+((racket-lambda (foo bar qux) (racket-begin (#<fn:ac-assign-global-raw> (racket-quote nou) 20) (racket-set! bar 30) (#<fn:ac-assign-global-raw> (racket-quote cooorge) 40))) 10 20 30)
 
 
 ;=============================================================================
@@ -390,8 +390,8 @@ error: function call on inappropriate object () 15
 > ac-apply-non-fn
 #<fn:ac-apply-non-fn>
 
-> ac-global-assign-raw
-#<fn:ac-global-assign-raw>
+> ac-assign-global-raw
+#<fn:ac-assign-global-raw>
 
 > bound
 #<fn:bound>
@@ -502,10 +502,10 @@ cons
 cons
 
 
-> (sig 'ac-global-assign-raw)
+> (sig 'ac-assign-global-raw)
 (a b)
 
-> (type (sig 'ac-global-assign-raw))
+> (type (sig 'ac-assign-global-raw))
 cons
 
 
@@ -639,7 +639,7 @@ error: #<procedure>: expects 1 argument, given 0
 
 
 > (ac-compile '(swap foo bar))
-((racket-lambda (g1) (#<fn:ac-global-assign-raw> (racket-quote foo) (#<fn:ac-lookup-global-arg> bar)) (#<fn:ac-global-assign-raw> (racket-quote bar) g1)) (#<fn:ac-lookup-global-arg> foo))
+((racket-lambda (g1) (#<fn:ac-assign-global-raw> (racket-quote foo) (#<fn:ac-lookup-global-arg> bar)) (#<fn:ac-assign-global-raw> (racket-quote bar) g1)) (#<fn:ac-lookup-global-arg> foo))
 
 > (macex-all '(swap foo bar))
 ((fn (g1) (assign foo bar) (assign bar g1)) foo)
@@ -662,7 +662,7 @@ error: #<procedure>: expects 1 argument, given 0
 
 
 > (ac-compile '(rotate a b c d))
-((racket-lambda (g1) (#<fn:ac-global-assign-raw> (racket-quote a) (#<fn:ac-lookup-global-arg> b)) (#<fn:ac-global-assign-raw> (racket-quote b) (#<fn:ac-lookup-global-arg> c)) (#<fn:ac-global-assign-raw> (racket-quote c) (#<fn:ac-lookup-global-arg> d)) (#<fn:ac-global-assign-raw> (racket-quote d) g1)) (#<fn:ac-lookup-global-arg> a))
+((racket-lambda (g1) (#<fn:ac-assign-global-raw> (racket-quote a) (#<fn:ac-lookup-global-arg> b)) (#<fn:ac-assign-global-raw> (racket-quote b) (#<fn:ac-lookup-global-arg> c)) (#<fn:ac-assign-global-raw> (racket-quote c) (#<fn:ac-lookup-global-arg> d)) (#<fn:ac-assign-global-raw> (racket-quote d) g1)) (#<fn:ac-lookup-global-arg> a))
 
 > (macex-all '(rotate a b c d))
 ((fn (g1) (assign a b) (assign b c) (assign c d) (assign d g1)) a)

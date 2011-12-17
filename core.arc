@@ -841,10 +841,10 @@
           ;(caris x 'quote)
           )
         (cons 'quote (cdr x))|#
-      (caris x ac-global-assign-raw)
+      (caris x ac-assign-global-raw)
         (list* 'assign
-               (cadr (cadr x))
-               (map macex-all (cddr x)))
+               (cadr (caddr x))
+               (map macex-all (cdr (cddr x))))
       (caris x ac-lookup-global-arg)
         (cadr x)
       (caris x ac-quote)
