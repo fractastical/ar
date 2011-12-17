@@ -4,7 +4,7 @@
 (require racket/cmdline)
 (require racket/path)
 
-(define iter (make-parameter 1))
+(define iter (make-parameter 3))
 
 (define arguments
   (command-line
@@ -42,12 +42,14 @@
     (ac-load "import.arc")
     (ac-load "lib/time.arc"))
 
-  (let ((read (namespace-variable-value 'read #f))
-        (eval (namespace-variable-value 'eval #f)))
+  (let ((read     (namespace-variable-value 'read #f))
+        (compile  (namespace-variable-value 'ac-compile #f))
+        (toracket (namespace-variable-value 'ac-deep-fromarc #f)))
     (for-each (lambda (x)
                 (display "> ")
                 (displayln x)
-                (let ((expr (read (string-append "(timeit " x ")"))))
+                ;; TODO: clunky
+                (let ((expr (toracket (compile (read (string-append "(timeit " x ")"))))))
                   (let loop ((x (iter)))
                     (when (> x 0)
                       (eval expr)

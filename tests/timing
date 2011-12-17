@@ -9,11 +9,17 @@ t
 > (timeit-range (+ 1 2) 62000 #|638625|#)
 t
 
-> (timeit-range 'foo 5000)
+
+> (timeit-range 'foo 370000)
 t
 
-> (timeit-range (apply idfn (list 'x)) 0)
+
+> (timeit-range (apply idfn (list 'x)) 19000)
 t
 
-> (timeit-range (idfn 'x) 0)
+> (timeit-range (idfn 'x) 51500)
+t
+
+
+> (timeit-range (do 1 2 3) 370000)
 t

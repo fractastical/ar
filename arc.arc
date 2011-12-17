@@ -26,10 +26,10 @@
 (def idfn (x) x)
 
 (mac withs (parms . body)
-  (if (no parms)
-        #`(do . body)
-      #`(let ,(car parms) ,(cadr parms)
-          (withs ,(cddr parms) . body))))
+  (if parms
+        #`(let ,(car parms) ,(cadr parms)
+            (withs ,(cddr parms) . body))
+      #`(do . body)))
 
 (def isnt (x y) (no (is x y)))
 
@@ -273,16 +273,32 @@
 (def setforms (place)
   (let place expand-full.place
     (if (cons? place)
-              ;; TODO: should this hardcode quote?
-          (if (some [and (cons? _)
-                         (no:caris _ ac-quote)]
+          (withs (bind  nil
+                  vars  (map (fn (x)
+                               (if (cons? x)
+                                     (w/uniq u
+                                       (= bind (list* x u bind))
+                                       u)
+                                   x))
+                             cdr.place))
+            ;(ac-prn (rev bind) (cons car.place vars))
+            (list (rev bind)
+                  (cons car.place vars)
+                  (fn (x) #`(sref-mac ,car.place x . vars))))
+
+          #|(foo (bar qux) nou)
+          (with (g1 (bar qux))
+            (foo g1 nou))|#
+          #|(if (some #|[and (cons? _)
+                         (no:caris _ ac-quote)]|#
+                    cons?
                     cdr.place)
                 (withs (vars  (map [uniq] cdr.place)
                         bind  (mappend list vars cdr.place)
                         place (cons car.place vars))
                   ;; TODO: code duplication
                   (list bind place (fn (x) #`(sref-mac ,car.place x ,@cdr.place))))
-              (list nil place (fn (x) #`(sref-mac ,car.place x ,@cdr.place))))
+              (list nil place (fn (x) #`(sref-mac ,car.place x ,@cdr.place))))|#
         (list nil place (fn (x) #`(assign place x))))))
 
 #|(iflet f (setter car.place)
@@ -294,8 +310,7 @@
 (mac w/setforms (name . body)
   (w/uniq bind
     #`(let (bind 'get 'set) (setforms name)
-        (if bind #`(with bind ,,@body)
-                   (do         ,@body)))))
+        #`(with bind ,,@body))))
 
 (def expand= (place val)
   ;(ac-prn place val)
@@ -473,23 +488,51 @@
   (w/setforms place
     (set #`(cons x get))))
 
+;; TODO: can be implemented in terms of rotate
 (mac swap (place1 place2)
-  (w/uniq (g1 g2)
+  (with ((bind1 get1 set1) (setforms place1)
+         (bind2 get2 set2) (setforms place2))
+    (w/uniq u
+      #`(with ,(join bind1 bind2)
+          (let u get1
+            ,(set1 get2)
+            ,(set2 u)))))
+  #|(w/uniq (g1 g2)
     (if (cons? place1)
-          #|(let u (map [uniq] (cdr place1))
-            )|#
-    ;(w/setonce (place1 place2))
-    ;(w/setonce place2)
       #`(with (g1 place1
                g2 place2)
           (= place1 g2)
-          (= place2 g1)))))
+          (= place2 g1))))|#
+  #|(let u (map [uniq] (cdr place1))
+              )|#
+  )
 
 (mac rotate places
-  (w/uniq u
+  #|(with (vars (map [uniq] places)
+         forms (map setforms places))
+    `(atwiths ,(mappend (fn (g (binds val setter))
+                          (+ binds (list g val)))
+                        vars
+                        forms)
+       ,@(map (fn (g (binds val setter))
+                (list setter g))
+              (+ (cdr vars) (list (car vars)))
+              forms)))|#
+
+  (let forms (map setforms places)
+    (w/uniq u
+      #`(with ,(mappend car forms)
+          (let u ,(cadr (car forms))
+            ,@(map (fn ((_ get1 set1) (_ get2))
+                     (set1 get2))
+                   forms
+                   (join (cdr forms) (list (list nil u))))))))
+
+  #|(w/uniq u
     (let shift (join (cdr places) (list u))
       #`(let u ,(car places)
-          (= ,@(mappend list places shift))))))
+          (= ,@(mappend list places shift)))))|#
+  )
 
 (mac pop (place)
   (w/uniq u
@@ -498,6 +541,7 @@
           (do1 (car u)
                ,(set #`(cdr u)))))))
 
+;; TODO: move elsewhere
 (def adjoin (x xs (o test iso))
   (if (some [test x _] xs)
         xs

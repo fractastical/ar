@@ -64,8 +64,9 @@
 
 
 (mac with (parms . body)
-  #`((fn ,(map1 car (pair parms)) . body)
-     ,@(map1 cadr (pair parms))))
+  (if parms #`((fn ,(map1 car (pair parms)) . body)
+               ,@(map1 cadr (pair parms)))
+            #`(do . body)))
 
 (mac let (var val . body)
   #`(with (var val) . body))
@@ -824,7 +825,7 @@
 (parameter macex-rename* t)
 
 (def macex-all (x)
-  (if (caris x ac-fn)
+  (if (caris x fn)
         (list* 'fn ;(macex-all (car x))
                (cadr x)
                (map macex-all (cddr x)))
@@ -833,12 +834,23 @@
           )
         (cons (macex-all (car x))
               (map macex-all (cdr x)))|#
-      (caris x ac-if)
+      (caris x if)
         (cons 'if (map macex-all (cdr x)))
-      #|
-      ;; TODO: ew hardcoding symbols
-      (caris x quote)
-        x|#
+      #|(or (caris x quote)
+          ;; TODO: ew hardcoding symbols
+          ;(caris x 'quote)
+          )
+        (cons 'quote (cdr x))|#
+      (caris x ac-global-assign-raw)
+        (list* 'assign
+               (cadr (cadr x))
+               (map macex-all (cddr x)))
+      (caris x ac-lookup-global-arg)
+        (cadr x)
+      (caris x ac-quote)
+        (list 'quote (macex-all ((car (cadr x)))))
+      (caris x ac-nocompile)
+        (macex-all (cdr x))
       #|(caris x ac-quote)
         "#<quoted>"|#
         ;(cons 'quote (cdr x))
@@ -874,5 +886,5 @@
 (mac require (x)
     ;; TODO: use dont
     ;; TODO: figure out a way to use quote rather than racket-quote
-  #`(%nocompile ('racket-begin (racket-namespace-require/copy ('racket-quote ('prefix 'racket- x)))
-                               nil)))
+  #`(do (racket-namespace-require/copy (%nocompile ('racket-quote ('prefix 'racket- x))))
+        nil))

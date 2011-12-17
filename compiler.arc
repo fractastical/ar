@@ -594,10 +594,11 @@
 (ac-def ac-macro? (f)
   (racket-cond
     ((racket-symbol? f)
-      (racket-let ((v (ac-var f)))
+      (ac-macro? (ac-var f)))
+      #|(racket-let ((v (ac-var f)))
         (racket-if (ac-isa v (racket-quote mac))
                      v
-                   #f)))
+                   #f))|#
     ((ac-isa f (racket-quote mac))
       f)
     (racket-else #f)))
@@ -715,11 +716,23 @@
 
 ;; TODO: maybe define this in core.arc?
 (ac-mac %nocompile args
+  (cons ac-nocompile
+        (racket-if (ac-no (racket-cdr args))
+                     (racket-car args)
+                   (cons (racket-quote racket-begin)
+                         (racket-list->mlist args)))))
+
+#|(ac-mac %nocompile args
   (racket-let ((args (racket-list->mlist args)))
-    (cons ac-nocompile
-          (racket-if (ac-no (cdr args))
-                       (car args)
-                     (cons (racket-quote racket-begin) args)))))
+    (racket-if (ac-no (cdr args))
+                 (car args)
+               (cons (racket-quote racket-begin) args))))|#
+#|
+;; TODO: custom sig
+(ac-mac %nocompile (args)
+  (racket-if (ac-no (cdr args))
+               (car args)
+             (cons (racket-quote racket-begin) args)))|#
 
 
 ;=============================================================================
@@ -835,7 +848,6 @@
                (cons (racket-quote racket-begin) x))))
 
 (ac-mac assign args
-  ;; TODO: use %nocompile or ac-nocompile?
   (cons ac-nocompile (ac-assign (racket-list->mlist args))))
 
 
@@ -1038,7 +1050,6 @@
                 (ac-fn-body)))))
 
 (ac-mac fn (parms . body)
-  ;; TODO: use %nocompile or ac-nocompile?
   (cons ac-nocompile (ac-fn parms (racket-list->mlist body))))
 
 
@@ -1057,7 +1068,6 @@
             (ac-if (cddr args))))))
 
 (ac-mac if args
-  ;; TODO: use %nocompile or ac-nocompile?
   (cons ac-nocompile (ac-if (racket-list->mlist args))))
 
 
@@ -1072,18 +1082,16 @@
   ;; TODO: not sure about the %nocompile part: is it
   ;;       fast enough?
   ;(list %nocompile (list (racket-lambda () x)))
-  ;(list %nocompile )
-  ;; TODO: use %nocompile or ac-nocompile?
-  ;; TODO: do I need to use ac-nocompile here?
-  (cons ac-nocompile
-        (list ac-quote
-              (racket-if (racket-eq? x (racket-quote nil))
-                           nil ;x
-                         (list (racket-lambda () x)
-                               #|(racket-procedure-rename
 
-                                 (racket-quote quoted))|#
-                               )))))
+  ;; TODO: can I make due without ac-quote...?
+  (list ac-quote
+        (racket-if (racket-eq? x (racket-quote nil))
+                     nil ;x
+                   (list (racket-lambda () x)
+                         #|(racket-procedure-rename
+
+                           (racket-quote quoted))|#
+                         ))))
 
 
 ;=============================================================================

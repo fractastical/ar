@@ -1,6 +1,30 @@
 Timing notes
 ============
 
+  * `direct-calls` only has a tiny (negligible) speed boost in Racket v5.1.3:
+
+        > (+ 1 2)
+        iter: 2,510,765  gc: 0  mem: 504
+        iter: 2,647,141  gc: 0  mem: 504
+        iter: 2,510,846  gc: 0  mem: 824
+
+        > (%nocompile (+ 1 2))
+        iter: 2,795,937  gc: 0  mem: 984
+        iter: 2,673,457  gc: 0  mem: 824
+        iter: 2,821,147  gc: 0  mem: 1048
+
+  * `do` vs `racket-begin`:
+
+        > (do 1 2 3)
+        iter: 3,914,909  gc: 0  mem: 824
+        iter: 3,860,042  gc: 0  mem: 824
+        iter: 3,820,783  gc: 0  mem: 824
+
+        > (%nocompile (racket-begin 1 2 3))
+        iter: 3,863,665  gc: 0  mem: 984
+        iter: 3,804,157  gc: 0  mem: 824
+        iter: 3,875,776  gc: 0  mem: 824
+
   * `apply` vs function application:
 
         > (timeit (apply idfn (list 'x)))
@@ -38,14 +62,18 @@ Timing notes
         iter: 3,410,667  gc: 0  mem: 824
         iter: 3,434,929  gc: 0  mem: 984
 
-  * Using `maplast` is a bit slower than using `(eval #\`(do ...))` but has
-    less garbage collection:
+  * Using `maplast` is slower than using `(eval #\`(do ...))` but has less
+    garbage collection:
 
-        > (timeit (maplast eval '((+ 1 2) (+ 2 3))))
-        iter: 52,745  gc: 176  mem: 10483304
+        > (maplast eval '((+ 1 2) (+ 2 3)))
+        iter: 52,314  gc: 148  mem: 3510312
+        iter: 52,357  gc: 172  mem: 4446592
+        iter: 52,553  gc: 160  mem: -5869064
 
-        > (timeit (eval #`(do (+ 1 2) (+ 2 3))))
-        iter: 56,063  gc: 856  mem: -7997816
+        > (eval #`(do (+ 1 2) (+ 2 3)))
+        iter: 59,257  gc: 688  mem: 21830208
+        iter: 57,898  gc: 913  mem: -15126832
+        iter: 58,214  gc: 860  mem: 2917064
 
   * Unquoting macros and functions inside a macro has a small speed boost:
 

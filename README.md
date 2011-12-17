@@ -79,7 +79,7 @@ The current differences are as follows:
 
 *   Ssyntax is expanded in function arguments. So you can do things like this: `(fn (a.b) ...)` which is the same as `(fn ((a b)) ...)`
 
-*   The `do` macro is smarter: `(do 1)` compiles into `1` rather than `((racket-lambda nil 1))`
+*   The `do` and `with` macros are smarter: `(do 1)` and `(with () 1)` compile into `1` rather than `((racket-lambda nil 1))`
 
 *   `num` has been renamed to `comma`
 
