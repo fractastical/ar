@@ -1,3 +1,43 @@
+Implicit variables
+==================
+
+_ar_ contains a very useful feature: Racket parameters do not need to be
+called to extract their values. In other words, rather than saying `(stdout)`
+you can instead just say `stdout`. Very convenient! Unfortunately, Arc code
+doesn't expect this, thus _ar_ is unable to make use of any Arc libraries that
+use `stdin`, `stdout`, or `stderr`.
+
+There are a couple ways to work around this:
+
+  1. _ar_ could choose to make *most* parameters implicit, but not the `std*`
+     ports
+
+  2. _ar_ could use a compatibility library that would temporarily disable
+     implicit variables (at least for the `std*` ports) when loading _Arc 3.1_
+     code
+
+I chose a different option for _Nu_, however... here's how it works. When the
+_Nu_ compiler sees a symbol, it will generate different code depending on
+whether the variable is global or local. In addition, _Nu_ knows whether the
+symbol is in functional position or not. Thus, with the Arc code
+`(foo bar qux)`, _Nu_ can output different code for `foo` and `bar qux`. So
+the rule is: a global variable that is *not in* functional position is looked
+up at runtime.
+
+Thus, the above example would compile into:
+
+    `(foo (ac-lookup-global-arg bar) (ac-lookup-global-arg qux))`
+
+What does `ac-lookup-global-arg` do? Why, it checks if its argument is a
+parameter, and if so, it calls it. Because it only does this for function
+*arguments* and not for the first element in the list, that means you can use
+either `stdout` or `(stdout)` and they'll both evaluate to the exact same
+value.
+
+Thus, _Nu_ has implicit variables, while maintaining backwards compatibility
+with _Arc 3.1_.
+
+
 Dynamic variables
 =================
 

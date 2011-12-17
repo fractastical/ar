@@ -20,7 +20,7 @@
 (mac buildeach (name f)
   (w/uniq (args expr body)
     #`(remac name (args expr . body)
-        #`(f (fn (args) ,@body) expr))))
+        #`(f (fn (args) . body) expr))))
 
 ;; TODO: w/let
 ;; TODO: probably don't need this let
