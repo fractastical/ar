@@ -172,8 +172,8 @@
                  (+ i 1))))
         "")))
 
-(def comma (n (o digits 2) (o trail-zeros nil) (o init-zero nil))
-  (withs (comma
+(def commafy (n (o digits 2) (o trail-zeros nil) (o init-zero nil))
+  (withs (commafy
           (fn (i)
             (tostring
               (map [apply pr (rev _)]
@@ -183,9 +183,9 @@
           abrep
           (let a (abs n)
             (if (< digits 1)
-                 (comma (roundup a))
+                 (commafy (roundup a))
                 (exact a)
-                 (string (comma a)
+                 (string (commafy a)
                          (when (and trail-zeros (> digits 0))
                            (string "." (newstring digits #\0))))
                  (withs (d (expt 10 digits)
@@ -194,7 +194,7 @@
                          r (abs (trunc (- (* m d) (* i d)))))
                    (+ (if (is i 0)
                           (if (or init-zero (is r 0)) "0" "")
-                          (comma i))
+                          (commafy i))
                       (withs (rest   (string r)
                               padded (+ (newstring (- digits (len rest)) #\0)
                                         rest)

@@ -42,7 +42,7 @@
 (mac timeit (x (o limit 10000))
   (w/uniq (a b c)
     #`(let (a b c) (timeit1 x limit)
-        (prn "iter: "   (comma a)
+        (prn "iter: "   (commafy a)
              "  gc: "   b
              "  mem: "  c)
         nil)))

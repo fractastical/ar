@@ -256,29 +256,7 @@ compiler:
 
     In other words, it returns its argument unchanged.
 
- 3. When assigning to global variables, it should call `ac-assign-global-raw`
-    rather than `set!`. In other words, this expression...
-
-        (= foo "bar")
-
-    ...would be compiled into this:
-
-        (ac-assign-global-raw #<namespace:0> 'foo "bar")
-
-    Notice that the variable name is quoted. The implementation may look
-    something like this:
-
-        (define (ac-set1 a b env)
-          (if (lex? a env)
-                `(set! ,a ,b)
-              `(ac-assign-global-raw ,(ac-namespace) ',a ,b)))
-
-    And then `ac-assign-global-raw` can be defined as follows:
-
-        (define (ac-assign-global-raw space a b)
-          (namespace-set-variable-value! a b #f space))
-
- 4. If the value of `ac-namespace` is different from the value of
+ 3. If the value of `ac-namespace` is different from the value of
     `current-namespace`, global variables should be wrapped in
     `ac-lookup-global-raw` **in addition** to `ac-lookup-global`. In other
     words, this...
@@ -308,8 +286,30 @@ compiler:
     `current-namespace`, you don't even need to define `ac-lookup-global-raw`:
     it can be defined later on in Arc, or in a library written in Arc.
 
+ 4. When assigning to global variables, it should call `ac-assign-global-raw`
+    rather than `set!`. In other words, this expression...
+
+        (= foo "bar")
+
+    ...would be compiled into this:
+
+        (ac-assign-global-raw #<namespace:0> 'foo "bar")
+
+    Notice that the variable name is quoted. The implementation may look
+    something like this:
+
+        (define (ac-set1 a b env)
+          (if (lex? a env)
+                `(set! ,a ,b)
+              `(ac-assign-global-raw ,(ac-namespace) ',a ,b)))
+
+    And then `ac-assign-global-raw` can be defined as follows:
+
+        (define (ac-assign-global-raw space a b)
+          (namespace-set-variable-value! a b #f space))
+
 Also, make sure that Arc code has a way of accessing `ac-namespace`,
-`ac-lookup-global`, `ac-assign-global-raw`, and `ac-lookup-global-raw`. In
+`ac-lookup-global`, `ac-lookup-global-raw`, and `ac-assign-global-raw`. In
 _Nu_ and _ar_ this happens automatically. In _Arc 3.1_ you would use `xdef`.
 
 That's it! You can now implement any namespace system you want in Arc,

@@ -18,7 +18,7 @@ Details
 =======
 
 _Nu_ is an Arc compiler which is derived from _ar_, but differs significantly
-in certain ways. Large chunks of the compiler were copied from _ar_, but most
+in certain ways. Some parts of the compiler were copied from _ar_, but most
 of it was written by me.
 
   * [New features added in Nu (not found in Arc 3.1 or ar)][new]

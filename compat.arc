@@ -8,7 +8,7 @@
   (parameterize (racket-current-input-port port) (thunk)))
 
 ;; lib/strings.arc
-;(= num comma)
+;(= num commafy)
 
 
 ;; TODO: compat.arc should be in a separate namespace

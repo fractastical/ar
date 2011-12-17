@@ -73,7 +73,7 @@ bad for many reasons:
           (racket-let* ((b (car g1)))
             ...))
 
-Just like *Arc 3.1* and *ar*, this means the overhead from destructuring is
+Like *Arc 3.1* and *ar*, this means the overhead from destructuring is
 *very low*: it's just as fast as if you had done the destructuring yourself.
 
 
@@ -87,7 +87,8 @@ Other
       * _ssyntax.arc_ implements `ssyntax` and `ssexpand`
       * _compat.arc_ serves as a compatibility layer between _Nu_ and _Arc_
       * _arc.arc_ contains everything else
-      * _repl.arc_ contains a simple REPL
+      * _extra.arc_ contains new functions that I've found to be useful
+      * _repl.arc_ contains the REPL
 
   * Code is organized into different sections, making it easier to navigate the code base
 
@@ -108,7 +109,7 @@ Other
 
   * The `do` and `with` macros are smarter: `(do 1)` and `(with () 1)` compile into `1` rather than `((racket-lambda nil 1))`
 
-  * `num` (from _strings.arc_) has been renamed to `comma`
+  * `num` (from _strings.arc_) has been renamed to `commafy`
 
   * `assoc` now has the list first, and the key second:
 
@@ -126,4 +127,4 @@ Other
 
   * `=` no longer calls `atomic-invoke`. If you want to *guarantee* that assignment is thread-safe, wrap it yourself
 
-  * Nu no longer has `defset`: everything is done in `sref`. This idea is courtesy of rocketnia.
+  * Nu no longer has `defset`: everything is done in `sref`. This idea is courtesy of rocketnia
