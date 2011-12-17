@@ -3,6 +3,8 @@ Links
 
   * [Implicit variables](dynamic.md) are implemented better
 
+  * [Quasiquote](quasiquote.md) is implemented better
+
 
 Better REPL
 ===========

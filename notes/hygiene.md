@@ -100,8 +100,8 @@ And you can include `(quote ...)` by doubling the quotes:
             (,safeset ,name (,annotate 'mac (,fn ,parms ,@body)))))
 
 
-Converting quasiquote to quasisyntax
-====================================
+Converting quasiquote into quasisyntax
+======================================
 
 It is usually very easy and even mechanical to convert existing Arc macros to
 be hygienic. Let's transform this macro:

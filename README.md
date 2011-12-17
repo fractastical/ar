@@ -27,6 +27,9 @@ was written by me.
 
   * [Differences between ar and Nu][ar]
 
-  [new]: notes/new%20features.md
-  [arc]: notes/changes%20%28ar%29.md
-  [ar]:  notes/changes%20%28Arc%203.1%29.md
+  * [Timing information][time]
+
+  [new]:  ../blob/nu/notes/new%20features.md
+  [arc]:  ../blob/nu/notes/changes%20(ar).md
+  [ar]:   ../blob/nu/notes/changes%20(Arc%203.1).md
+  [time]: ../blob/nu/notes/timing.md
