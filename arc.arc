@@ -27,9 +27,9 @@
 
 (mac withs (parms . body)
   (if (no parms)
-        #`(do ,@body)
+        #`(do . body)
       #`(let ,(car parms) ,(cadr parms)
-          (withs ,(cddr parms) ,@body))))
+          (withs ,(cddr parms) . body))))
 
 (def isnt (x y) (no (is x y)))
 
@@ -43,7 +43,7 @@
            (iso (cdr x) (cdr y)))))
 
 (mac unless (test . body)
-  #`(if (no test) (do ,@body)))
+  #`(if (no test) (do . body)))
 
 (mac while (test . body)
   (w/uniq (gf gp)
@@ -1280,7 +1280,7 @@
 
 (def rreduce (f xs)
   (if (cddr xs)
-      (f (car xs) (rreduce f (cdr xs)))
+        (f (car xs) (rreduce f (cdr xs)))
       (apply f xs)))
 
 (let argsym (uniq)

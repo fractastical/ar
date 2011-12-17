@@ -21,13 +21,9 @@ The current differences are as follows:
 
 *   Compiler names uniformly start with `ac-` rather than `ac-` and `ar-`
 
-*   Does not provide `(ail-code ...)`. Instead, `(%nocompile ...)` causes the expression to not be compiled at all: it passes directly to Racket. Most of the time this isn't needed. If you want to write a macro that calls Racket macros, it's better to use `nomac`. If you want an expression within `%nocompile` to be compiled, you can splice it in with `ac-compile` like so:
+*   Does not provide `(ail-code ...)`. Instead, `(%nocompile ...)` causes the expression to not be compiled at all: it passes directly to Racket. This is mostly needed when dealing with Racket macros. If you want an expression within `%nocompile` to be compiled, you can splice it in with `ac-compile` or `ac-args` like so:
 
-        #`(%nocompile ('some-racket-macro ... ,(ac-compile ...)))
-
-*   Arc macros no longer compile their bodies by default. Instead, they need to explicitly call `ac-compile`. This isn't usually noticable because the `mac` form does this for you. The only time you'll notice any difference is when generating a macro manually, such as with `(annotate 'mac (fn ...))`
-
-    This makes the compiler much simpler (and also a bit faster too). It also makes it cleaner to write macros that call Racket macros. It also means that (at least theoretically) it's possible to write `fn`, `assign`, and `if` in Arc itself.
+        #`(%nocompile ('some-racket-macro ,(ac-compile ...) ,@(ac-args ...)))
 
 *   Also supports a `(%splice ...)` form which splices the items into the list at compile-time. Thus, `(+ (%splice 1 2 3))` is exactly the same as `(+ 1 2 3)`. This is useful within macro expansions.
 
@@ -119,6 +115,11 @@ The current differences are as follows:
 
         > foo
         ((b 2) (a 10) (c 3))
+
+*   [Courtesy of rocketnia](http://arclanguage.org/item?id=13450), `:` syntax can be used to do more complex composes. The following two are equivalent:
+
+        (+ 1 2 : + 3 4 : + 5 6)
+        (+ 1 2 (+ 3 4 (+ 5 6)))
 
 *   `assoc` now has the list first, and the key second:
 

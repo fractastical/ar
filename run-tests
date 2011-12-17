@@ -87,7 +87,7 @@
     ;(w/debug-statements nil
     (w/debug-mode* t
       (let result (w/load-automatic-namespaces* nil
-                    (w/uniq-counter* 1
+                    (w/uniq-counter 1
                       (tostring:w/stderr stdout
                         (errdet:eval run env))))
         (when expect

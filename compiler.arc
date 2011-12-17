@@ -66,6 +66,7 @@
 
 ;; TODO: ew
 (racket-hash-set! sig (racket-quote ac-deep-toarc)
+                      ;; TODO: ew
                       (ac-deep-toarc (racket-quote (x))))
 
 
@@ -208,14 +209,14 @@
 ;  Symbols
 ;=============================================================================
 
-(racket-define ac-uniq-counter* (racket-make-parameter 1))
+(racket-define ac-uniq-counter (racket-make-parameter 1))
 
 (ac-def uniq ((name (racket-quote g)) (num nil))
        #:sig ((o name 'g) (o num))
   (racket-let ((num (racket-if (ac-true num)
                                  num
-                               (racket-let ((num (ac-uniq-counter*)))
-                                 (ac-uniq-counter* (racket-+ (ac-uniq-counter*) 1))
+                               (racket-let ((num (ac-uniq-counter)))
+                                 (ac-uniq-counter (racket-+ (ac-uniq-counter) 1))
                                  num))))
     (racket-string->uninterned-symbol
       (racket-string-append (string1 name)
@@ -259,6 +260,7 @@
 (ac-def type (x)
   (racket-cond
     ((ac-tagged? x)           (ac-tagged-type x))
+    ;; TODO: better ordering of these, for speed
     ((racket-mpair? x)        (racket-quote cons))
     ((racket-null? x)         (racket-quote sym))
     ((racket-symbol? x)       (racket-quote sym))
@@ -606,17 +608,36 @@
                 (racket-or (racket-eq? m compose)
                            (racket-eq? m complement)))
       (cons m args)
-    (apply (rep m) args))) ;(ac-compile )
+    (ac-compile (apply (rep m) args))))
 
 (ac-def ac-args (args)
   (racket-parameterize ((ac-functional-position? #f))
-    (ac-mappend (racket-lambda (x)
+    (racket-let loop ((x args))
+      #|((ac-caris x (racket-quote :))
+          (list (ac-compile (cdr x))))|#
+      (racket-if (racket-mpair? x)
+                   (racket-let ((c (ac-compile (car x))))
+                     (racket-if (ac-caris c ac-splice)
+                                  ;; TODO: test this
+                                  (racket-mappend (cdr c) (loop (cdr x)))
+                                (cons c (loop (cdr x)))))
+                 x))
+    #|(ac-mappend (racket-lambda (x)
                   (racket-let ((c (ac-compile x)))
                     (racket-if (ac-caris c ac-splice)
                                  (cdr c)
                                (list c))))
-                args)
+                args)|#
     ))
+
+(ac-def ac-pipe-compose (args)
+  (racket-let loop ((x args))
+    (racket-cond
+      ((ac-caris x (racket-quote :))
+        (list (loop (cdr x))))
+      ((racket-mpair? x)
+        (cons (car x) (loop (cdr x))))
+      (racket-else x))))
 
 (ac-def ac-return-apply (x)
   (racket-let loop ((x x) (n 0))
@@ -649,8 +670,9 @@
       (list (car fns) (ac-decompose (cdr fns) args)))))
 
 (ac-def ac-call (f args)
-  (racket-let* ((g  (racket-not (ac-lex? f)))
-                (m  (racket-and g (ac-macro? f))))
+  (racket-let* ((g    (racket-not (ac-lex? f)))
+                (m    (racket-and g (ac-macro? f)))
+                (args (ac-pipe-compose args)))
     (racket-if m
       (ac-mac-call m args)
       (racket-let ((f  (racket-parameterize ((ac-functional-position? #t))
@@ -662,10 +684,11 @@
             (ac-compile (ac-decompose (cdr f) args)))
           ;; (~and 3 nil) => ((complement and) 3 nil) => (no (and 3 nil))
           ((ac-caris f complement)
+                              ;; TODO: can this be unquoted?
             (ac-compile (list (racket-quote no)
                               (cons (cadr f) args))))
           (racket-else
-            (racket-let ((args  (ac-args args)))
+            (racket-let ((args (ac-args args)))
               (racket-cond
                 ;; if we're about to call a literal fn such as ((fn (a b) ...) 1 2)
                 ;; then we know we can just call it in Racket and we don't
@@ -682,6 +705,21 @@
                   (cons (ac-return-apply args)
                         (cons f args)))
                 ))))))))
+
+
+;=============================================================================
+;  %nocompile
+;=============================================================================
+
+(racket-define ac-nocompile (uniq))
+
+;; TODO: maybe define this in core.arc?
+(ac-mac %nocompile args
+  (racket-let ((args (racket-list->mlist args)))
+    (cons ac-nocompile
+          (racket-if (ac-no (cdr args))
+                       (car args)
+                     (cons (racket-quote racket-begin) args)))))
 
 
 ;=============================================================================
@@ -797,7 +835,8 @@
                (cons (racket-quote racket-begin) x))))
 
 (ac-mac assign args
-  (ac-assign (racket-list->mlist args)))
+  ;; TODO: use %nocompile or ac-nocompile?
+  (cons ac-nocompile (ac-assign (racket-list->mlist args))))
 
 
 ;=============================================================================
@@ -852,6 +891,8 @@
             ;; TODO: hacky
             (racket-set! n (ssexpand n))
             (ac-fn-optional-args n d)
+            ;; TODO: ew
+            (ac-add-to ac-local-env u)
             (racket-if (racket-keyword? n)
                                      ;; TODO: code duplication
                          (cons (list (ac-keyword->symbol n)
@@ -997,7 +1038,8 @@
                 (ac-fn-body)))))
 
 (ac-mac fn (parms . body)
-  (ac-fn parms (racket-list->mlist body)))
+  ;; TODO: use %nocompile or ac-nocompile?
+  (cons ac-nocompile (ac-fn parms (racket-list->mlist body))))
 
 
 ;=============================================================================
@@ -1015,7 +1057,8 @@
             (ac-if (cddr args))))))
 
 (ac-mac if args
-  (ac-if (racket-list->mlist args)))
+  ;; TODO: use %nocompile or ac-nocompile?
+  (cons ac-nocompile (ac-if (racket-list->mlist args))))
 
 
 ;=============================================================================
@@ -1030,14 +1073,17 @@
   ;;       fast enough?
   ;(list %nocompile (list (racket-lambda () x)))
   ;(list %nocompile )
-  (list ac-quote
-        (racket-if (racket-eq? x (racket-quote nil))
-                     nil ;x
-                   (list (racket-lambda () x)
-                         #|(racket-procedure-rename
+  ;; TODO: use %nocompile or ac-nocompile?
+  ;; TODO: do I need to use ac-nocompile here?
+  (cons ac-nocompile
+        (list ac-quote
+              (racket-if (racket-eq? x (racket-quote nil))
+                           nil ;x
+                         (list (racket-lambda () x)
+                               #|(racket-procedure-rename
 
-                           (racket-quote quoted))|#
-                         ))))
+                                 (racket-quote quoted))|#
+                               )))))
 
 
 ;=============================================================================
@@ -1103,7 +1149,7 @@
       (list quote x))))
 
 (ac-mac quasiquote (x)
-  (ac-compile (qq-expand x)))
+  (qq-expand x))
 
 
 ;=============================================================================
@@ -1212,7 +1258,7 @@
       )))
 
 (ac-mac quasisyntax (x)
-  (ac-compile (qs-expand x)))
+  (qs-expand x))
 
 
 ;=============================================================================
@@ -1397,6 +1443,8 @@
       (ac-nocompile (cdr x)))|#
     #|((ac-caris x ac-splice)
       x)|#
+    ((ac-caris x ac-nocompile)
+      (cdr x))
     ((racket-mpair? x)
       (ac-call (car x) (cdr x)))
     ((racket-symbol? x)

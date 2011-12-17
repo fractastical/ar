@@ -46,6 +46,7 @@
 (def make-current-env (x)
   (let x (mappend (fn (x)
                     (unless uniq?.x
+                      ;; TODO: use quote rather than racket-quote...?
                       #`(('racket-quote x) x)))
                   (dedup x))
                     ;; TODO: conswhen? consif?
@@ -67,6 +68,7 @@
 
 
 ;; TODO: more granular extending
+;; TODO: use ac-def
 (%nocompile
 (racket-define (ac-fn-args x)
   (racket-cond

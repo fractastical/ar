@@ -256,10 +256,10 @@ error: function call on inappropriate object () 15
 ;=============================================================================
 
 > (w/pipe-from x "echo 'foo\nbar\nqux'" (readlines x))
-("foo" "bar" "qux")u
+("foo" "bar" "qux")
 
 > (pipe-lines "echo 'foo\nbar\nqux'")
-("foo" "bar" "qux")u
+("foo" "bar" "qux")
 
 
 ;=============================================================================
@@ -1246,26 +1246,97 @@ nil
 ;  uniq
 ;=============================================================================
 
-> (w/uniq-counter* 1 (uniq))
+> (w/uniq-counter 1 (uniq))
 g1
 
-> (w/uniq-counter* 1 (uniq "foo"))
+> (w/uniq-counter 1 (uniq "foo"))
 foo1
 
-> (w/uniq-counter* 1 (uniq) uniq-counter*)
+> (w/uniq-counter 1 (uniq) uniq-counter)
 2
 
-> (w/uniq-counter* 1 (uniq "foo") uniq-counter*)
+> (w/uniq-counter 1 (uniq "foo") uniq-counter)
 2
 
-> (w/uniq-counter* 1 (uniq "foo" 5))
+> (w/uniq-counter 1 (uniq "foo" 5))
 foo5
 
-> (w/uniq-counter* 1 (uniq "foo" 5) uniq-counter*)
+> (w/uniq-counter 1 (uniq "foo" 5) uniq-counter)
 1
 
-> (w/uniq-counter* 1 (uniq) (uniq))
+> (w/uniq-counter 1 (uniq) (uniq))
 g2
+
+
+;=============================================================================
+;  Pipe composition
+;=============================================================================
+
+> (quote : )
+u
+
+> (ac-compile '(fn : a b))
+u
+
+> (ac-compile '(fn : (a b)))
+u
+
+
+> '(+ 1 2 : + 3 4)
+(+ 1 2 : + 3 4)u
+
+> (ac-compile '(+ 1 2 : + 3 4))
+(#<fn:ac-funcall3> (#<fn:ac-lookup-global> +) 1 2 (#<fn:ac-funcall2> (#<fn:ac-lookup-global-arg> +) 3 4))u
+
+
+> (+ 1 2 : + 3 4)
+10u
+
+> (+ 1 2 (+ 3 4))
+10u
+
+
+> '(+ 1 2 : + 3 4 : + 5 6)
+(+ 1 2 : + 3 4 : + 5 6)u
+
+> (ac-compile '(+ 1 2 : + 3 4 : + 5 6))
+(#<fn:ac-funcall3> (#<fn:ac-lookup-global> +) 1 2 (#<fn:ac-funcall3> (#<fn:ac-lookup-global-arg> +) 3 4 (#<fn:ac-funcall2> (#<fn:ac-lookup-global-arg> +) 5 6)))u
+
+
+> (+ 1 2 : + 3 4 : + 5 6)
+21u
+
+> (+ 1 2 (+ 3 4 (+ 5 6)))
+21u
+
+
+> (ac-compile '(accum acc
+                 (each x args
+                   (acc (* 2 x)))))
+((racket-lambda (g259) ((racket-lambda (acc) ((racket-lambda nil (#<fn:eachfn> (racket-lambda (x) (#<fn:ac-funcall1> acc (#<fn:ac-funcall2> (#<fn:ac-lookup-global> *) 2 x))) (#<fn:ac-lookup-global-arg> args)) (#<fn:rev> g259)))) (racket-lambda ((_ nil)) (racket-begin (racket-set! g259 (#<fn:cons> _ g259)) g259)))) nil)u
+
+> (ac-compile '(accum acc :
+                 each x args :
+                   acc : * 2 x))
+((racket-lambda (g258) ((racket-lambda (acc) ((racket-lambda nil (#<fn:eachfn> (racket-lambda (x) (#<fn:ac-funcall1> acc (#<fn:ac-funcall3> (#<fn:ac-lookup-global> *) 2 x (#<fn:rev> g258)))) (#<fn:ac-lookup-global-arg> args))))) (racket-lambda ((_ nil)) (racket-begin (racket-set! g258 (#<fn:cons> _ g258)) g258)))) nil)u
+
+
+> (is (ac-compile '(accum acc  (each x args  (acc (* 2 x)))))
+      (ac-compile '(accum acc : each x args : acc : * 2 x)))
+tu
+
+
+> (let args '(1 2 3 4 5)
+    (accum acc
+      (each x args
+        (acc (* 2 x)))))
+(2 4 6 8 10)u
+
+> (let args '(1 2 3 4 5)
+    (accum acc :
+      each x args :
+        acc : * 2 x))
+(2 4 6 8 10)u
 
 
 ;=============================================================================

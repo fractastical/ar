@@ -92,13 +92,18 @@
           (car x)
         (cons 'racket-begin x))))|#
 
-(nomac %nocompile args
+#|(nomac %nocompile args
   (if (cdr args)
         `(racket-begin ,@args)
-      (car args)))
+      (car args)))|#
 
-(nomac %splice args
-  (cons ac-splice args))
+(mac %splice args
+  #`(%nocompile (ac-splice . args)))
 
 (mac %eval body
   (maplast eval body))
+
+
+;; TODO: use buildeach
+(mac maplet (var x . body)
+  #`(map (fn var ,@body) x))

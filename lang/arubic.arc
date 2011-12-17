@@ -23,6 +23,7 @@
         #`(f (fn (args) ,@body) expr))))
 
 ;; TODO: w/let
+;; TODO: probably don't need this let
 (let mappend mappend
   (mac fnify args
     #`(do ,@(mappend (fn (x)
@@ -43,7 +44,10 @@
   #`(eval-w/ arubic-namespace ,@body))
 
 
-(fnify map mappend some all keep rem)
+(fnify mappend some all keep rem)
+
+(= mapfn  map)
+(= map    maplet)
 
 
 (remac square-bracket args
