@@ -11,7 +11,7 @@ If you would like to load *all* the files rather than only the first, use the
 `-a` or `--all` flags: `./arc -a foo bar qux`
 
 If you would like to run all the unit tests in the `tests/` subdirectory, just
-call `./arc run-tests | less`
+call `./arc apps/run-tests | less`
 
 
 Details
