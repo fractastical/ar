@@ -275,8 +275,8 @@ compiler:
 
     And then `ac-assign-global-raw` can be defined as follows:
 
-      (define (ac-assign-global-raw space a b)
-        (namespace-set-variable-value! a b #f space))
+        (define (ac-assign-global-raw space a b)
+          (namespace-set-variable-value! a b #f space))
 
  4. If the value of `ac-namespace` is different from the value of
     `current-namespace`, global variables should be wrapped in
@@ -294,11 +294,11 @@ compiler:
     Notice that the variable name is now quoted. The implementation may look
     something like this:
 
-      (define (ac-global-name x)
-        (if (eq? (ac-namespace)
-                 (current-namespace))
-          `(ac-lookup-global ,x)
-          `(ac-lookup-global (ac-lookup-global-raw ,(ac-namespace) ',x))))
+        (define (ac-global-name x)
+          (if (eq? (ac-namespace)
+                   (current-namespace))
+            `(ac-lookup-global ,x)
+            `(ac-lookup-global (ac-lookup-global-raw ,(ac-namespace) ',x))))
 
     `ac-lookup-global-raw` is expected to take two arguments: the namespace
     that the variable was compiled in, and a symbol. It's expected to return a
@@ -310,7 +310,7 @@ compiler:
 
 Also, make sure that Arc code has a way of accessing `ac-namespace`,
 `ac-lookup-global`, `ac-assign-global-raw`, and `ac-lookup-global-raw`. In
-_Nu_ and _ar_ this happens automatically. In _Arc 3.1_ you could use `xdef`.
+_Nu_ and _ar_ this happens automatically. In _Arc 3.1_ you would use `xdef`.
 
 That's it! You can now implement any namespace system you want in Arc,
 including namespace inheritance as described above. Really. And as you can

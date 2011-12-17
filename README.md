@@ -2,7 +2,7 @@ How to run it
 =============
 
 Just call `./arc` and you'll get a REPL. You can also load the file "foo.arc"
-with `./arc foo`.
+with `./arc foo`
 
 If you would like to load a file *and* run the REPL, use the `-i` or `--repl`
 flags: `./arc -i foo`
@@ -18,8 +18,8 @@ Details
 =======
 
 _Nu_ is an Arc compiler which is derived from _ar_, but differs significantly
-in certain ways. Large chunks of the compiler were copied from _ar_, but a lot
-was written by me.
+in certain ways. Large chunks of the compiler were copied from _ar_, but most
+of it was written by me.
 
   * [New features added in Nu (not found in Arc 3.1 or ar)][new]
 
