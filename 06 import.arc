@@ -172,7 +172,7 @@
   (listtab:list (list (joinpath exec-dir* "01 compiler.arc") arc3-namespace)
                 (list (joinpath exec-dir* "02 core.arc")     arc3-namespace)
                 (list (joinpath exec-dir* "03 ssyntax.arc")  arc3-namespace)
-                (list (joinpath exec-dir* "compat.arc")   arc3-namespace)
+                ;(list (joinpath exec-dir* "compat.arc")      arc3-namespace)
                 (list (joinpath exec-dir* "04 arc.arc")      arc3-namespace)
                 (list (joinpath exec-dir* "05 extra.arc")    arc3-namespace)
                 (list (joinpath exec-dir* "06 import.arc")   arc3-namespace)))

@@ -21,7 +21,7 @@
 ;  not sure this is a mistake; strings may be subtly different from
 ;  lists of chars
 
-(def atom (x) (no (acons x)))
+(def atom (x) (no (cons? x)))
 
 (def idfn (x) x)
 
@@ -37,8 +37,8 @@
 
 (def iso (x y)
   (or (is x y)
-      (and (acons x)
-           (acons y)
+      (and (cons? x)
+           (cons? y)
            (iso (car x) (car y))
            (iso (cdr x) (cdr y)))))
 
@@ -55,8 +55,8 @@
 
 (def some (test seq)
   (let f (testify test)
-    (if (alist seq)
-        (reclist f:car seq)
+    (if (list? seq)
+          (reclist f:car seq)
         (recstring f:seq seq))))
 
 (def all (test seq)
@@ -64,8 +64,8 @@
 
 (def find (test seq)
   (let f (testify test)
-    (if (alist seq)
-        (reclist   [if (f:car _) (car _)] seq)
+    (if (list? seq)
+          (reclist   [if (f:car _) (car _)] seq)
         (recstring [if (f:seq _) (seq _)] seq))))
 
 ; Possible to write map without map1, but makes News 3x slower.
@@ -366,9 +366,9 @@
 
 
 (def eachfn (f x)
-  (if alist.x
+  (if list?.x
         ((afn (x)
-           (when acons.x
+           (when cons?.x
              (f car.x)
              (self cdr.x)))
          x)
@@ -406,12 +406,12 @@
 
 (def rem (test seq)
   (let f (testify test)
-    (if (alist seq)
-        ((afn (s)
-           (if (no s)       nil
-               (f (car s))  (self (cdr s))
-                            (cons (car s) (self (cdr s)))))
-          seq)
+    (if (list? seq)
+          ((afn (s)
+             (if (no s)       nil
+                 (f (car s))  (self (cdr s))
+                              (cons (car s) (self (cdr s)))))
+            seq)
         (coerce (rem test (coerce seq 'cons)) 'string))))
 
 ; Seems like keep doesn't need to testify-- would be better to
@@ -678,15 +678,15 @@
 
 (def pos (test seq (o start 0))
   (let f (testify test)
-    (if (alist seq)
-        ((afn (seq n)
-           (if (no seq)
-                nil
-               (f (car seq))
-                n
-               (self (cdr seq) (+ n 1))))
-         (nthcdr start seq)
-         start)
+    (if (list? seq)
+          ((afn (seq n)
+             (if (no seq)
+                  nil
+                 (f (car seq))
+                  n
+                 (self (cdr seq) (+ n 1))))
+           (nthcdr start seq)
+           start)
         (recstring [if (f (seq _)) _] seq start))))
 
 (def even (n) (is (mod n 2) 0))
@@ -968,7 +968,7 @@
 
 (def read-table ((o i (stdin)) (o eof))
   (let e (read i eof)
-    (if (alist e) (listtab e) e)))
+    (if (list? e) (listtab e) e)))
 
 (def load-tables (file)
   (w/infile i file
@@ -1030,8 +1030,8 @@
 ; benchmark: (let td (n-of 10000 (rand 100)) (time (sort < td)) 1)
 
 (def sort (test seq)
-  (if (alist seq)
-      (mergesort test (copy seq))
+  (if (list? seq)
+        (mergesort test (copy seq))
       (coerce (mergesort test (coerce seq 'cons)) (type seq))))
 
 ; Destructive stable merge-sort, adapted from slib and improved
@@ -1117,7 +1117,7 @@
 (= templates* (table))
 
 (mac deftem (tem . fields)
-  (withs (name (carif tem) includes (if (acons tem) (cdr tem)))
+  (withs (name (carif tem) includes (if (cons? tem) (cdr tem)))
     #`(= (templates* ',name)
          (+ (mappend templates* ',(rev includes))
             (list ,@(map (fn ((k v)) #`(list ',k (fn () v)))
@@ -1133,7 +1133,7 @@
 
 (def inst (tem . args)
   (let x (table)
-    (each (k v) (if (acons tem) tem (templates* tem))
+    (each (k v) (if (cons? tem) tem (templates* tem))
       (unless (no v) (= (x k) (v))))
     (each (k v) (pair args)
       (= (x k) v))
@@ -1144,12 +1144,13 @@
 (def temread (tem (o str (stdin)))
   (templatize tem (read str)))
 
-; Converts alist to inst; ugly; maybe should make this part of coerce.
+; Converts a list to inst; ugly; maybe should make this part of coerce.
 ; Note: discards fields not defined by the template.
 
 (def templatize (tem raw)
-  (with (x (inst tem) fields (if (acons tem) tem (templates* tem)))
+  (with (x (inst tem) fields (if (cons? tem) tem (templates* tem)))
     (each (k v) raw
+            ;; TODO: Nu specific functionality
       (when (assoc fields k)
         (= (x k) v)))
     x))
@@ -1162,7 +1163,9 @@
        (w/infile in file (readall in))))
 
 
+;; TODO: this is num? in core.arc
 (def number (n) (in (type n) 'int 'num))
+
 
 (def since (t1) (- (seconds) t1))
 
@@ -1291,7 +1294,7 @@
         (set (h x))))
     (nrev acc)))
 
-(def single (x) (and (acons x) (no (cdr x))))
+(def single (x) (and (cons? x) (no (cdr x))))
 
 (def intersperse (x ys)
   (and ys (cons (car ys)

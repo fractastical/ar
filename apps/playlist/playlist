@@ -123,7 +123,7 @@
    xs nil nil))
 
 (mac playlist args
-  (let (l r) (partition acons args)
+  (let (l r) (partition cons? args)
     ;; TODO: unquote this?
     `(playlist ,@(mappend (fn (x)
                             (if (caris x 'w/folder)

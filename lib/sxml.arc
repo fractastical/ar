@@ -11,7 +11,7 @@
 (def noop (s type depth))
 
 (def pretty (s type depth)
-  (when (or (is type 'start) (acons:car s))
+  (when (or (is type 'start) (cons?:car s))
     (pr "\n" (newstring (* depth 2) #\space))))
 
 
@@ -21,8 +21,8 @@
 
 (def attrs (xs)
   (if (no xs)         nil
-      (acons:car xs)  xs
-      (acons:cdr xs)  (do (pr " " (car xs) "=\"" (cadr xs) "\"")
+      (cons?:car xs)  xs
+      (cons?:cdr xs)  (do (pr " " (car xs) "=\"" (cadr xs) "\"")
                           (attrs (cddr xs)))
                       xs))
 
@@ -35,7 +35,7 @@
                         (let res (join (flat:cdar r) (cdr r))
                           (parse (cons l res) depth))
 
-                      (acons l)
+                      (cons? l)
                         (do (parse l depth)
                             (parse r depth))
 

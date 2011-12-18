@@ -158,7 +158,7 @@
           ;(ac-load "compiler.arc")
           (ac-load "02 core.arc")
           (ac-load "03 ssyntax.arc")
-          (ac-load "compat.arc")
+          ;(ac-load "compat.arc")
           (ac-load "04 arc.arc")
           (ac-load "05 extra.arc")
           ;(ac-load "lib/re.arc")

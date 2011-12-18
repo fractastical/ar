@@ -7,19 +7,23 @@
 (def call-w/stdin (port thunk)
   (parameterize (racket-current-input-port port) (thunk)))
 
-;; lib/strings.arc
-;(= num commafy)
+
+;(= assoc (reverse-args assoc))
+
+(redef assoc (x y)
+  (orig y x))
 
 
-;; TODO: compat.arc should be in a separate namespace
-#|(def readline ((o str (stdin)))
+(redef readline ((o str (stdin)))
   (awhen (readc str)
     (tostring
       (writec it)
       (whiler c (readc str) [in _ nil #\newline]
-        (writec c)))))|#
+        (writec c)))))
 
-;(= assoc (reverse-args assoc))
+
+;; lib/strings.arc
+(alias num commafy)
 
 #|(def setforms (place)
   (w/uniq (u v)
