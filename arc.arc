@@ -45,12 +45,6 @@
 (mac unless (test . body)
   #`(if (no test) (do . body)))
 
-(mac while (test . body)
-  (w/uniq (gf gp)
-    #`((rfn gf (gp)
-         (when gp ,@body (gf test)))
-       test)))
-
 (def empty (seq)
   (or (no seq)
       (is seq '||)
@@ -282,7 +276,7 @@
                                    x))
                              cdr.place))
             ;(ac-prn (rev bind) (cons car.place vars))
-            (list (rev bind)
+            (list (nrev bind)
                   (cons car.place vars)
                   (fn (x) #`(sref-mac ,car.place x . vars))))
 
@@ -400,13 +394,6 @@
             (= (s2 i) (seq (+ start i))))
           s2)
         (firstn (- end start) (nthcdr start seq)))))
-
-(mac whilet (var test . body)
-  (w/uniq (gf gp)
-    #`((rfn gf (gp)
-         (let var gp
-           (when var ,@body (gf test))))
-       test)))
 
 (def last (xs)
   (if (cons? xs)
@@ -644,7 +631,7 @@
   (w/uniq gacc
     #`(withs (gacc nil accfn [push '_ gacc])
         ,@body
-        (rev gacc))))
+        (nrev gacc))))
 
 ; Repeatedly evaluates its body till it returns nil, then returns vals.
 
@@ -656,7 +643,7 @@
             (if (is gres eof)
                   (= gdone t)
                 (push gres gacc))))
-        (rev gacc))))
+        (nrev gacc))))
 
 ; For the common C idiom while x = snarfdata != stopval.
 ; Rename this if use it often.
@@ -768,7 +755,7 @@
     ;; TODO: shouldn't this use accum/collect?
     #`(let ga nil
         (repeat n (push expr ga))
-        (rev ga))))
+        (nrev ga))))
 
 ; rejects bytes >= 248 lest digits be overrepresented
 
@@ -1213,7 +1200,7 @@
     (system (string "mkdir -p " path))))
 
 (def date ((o s (seconds)))
-  (rev (nthcdr 3 (timedate s))))
+  (nrev (nthcdr 3 (timedate s))))
 
 (def datestring ((o s (seconds)))
   (let (y m d) (date s)
@@ -1302,7 +1289,7 @@
       (unless (h x)
         (push x acc)
         (set (h x))))
-    (rev acc)))
+    (nrev acc)))
 
 (def single (x) (and (acons x) (no (cdr x))))
 
@@ -1335,16 +1322,16 @@
         (w/instring s str
           (whilet c (readc s)
             (case c
-              #\# (do (a (coerce (rev chars) 'string))
+              #\# (do (a (coerce (nrev chars) 'string))
                       (wipe chars)
                       (a (read s)))
-              #\~ (do (a (coerce (rev chars) 'string))
+              #\~ (do (a (coerce (nrev chars) 'string))
                       (wipe chars)
                       (readc s)
                       (a (list argsym (++ i))))
                   (push c chars))))
          (when chars
-           (a (coerce (rev chars) 'string))))))
+           (a (coerce (nrev chars) 'string))))))
 
   (mac prf (str . args)
     #`(let argsym (list ,@args)

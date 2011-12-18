@@ -17,7 +17,10 @@
 
 
 (define exec-dir
-  (path->string (path-only (normalize-path (find-system-path 'run-file)))))
+  ;; TODO: ew
+  (string-append
+    (path->string (path-only (normalize-path (find-system-path 'run-file))))
+    "../"))
 
 (define (ac-require-base)
   (namespace-require/expansion-time '(only racket/private/pre-base

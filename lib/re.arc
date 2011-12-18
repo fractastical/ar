@@ -37,7 +37,7 @@
            (regexp:string from)
            (if rest self.rest x)
            (if sym?.to string.to to)))
-   (rev args)))
+   (nrev args)))
 
 
 (def re-split (x y)

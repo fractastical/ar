@@ -17,7 +17,7 @@
     (aloop (x   args
             acc nil)
       (if (no x)
-            rev.acc
+            nrev.acc
           (let c (expandpath car.x)
             (if (is c.0 #\/)
                   (self cdr.x (cons c nil))
@@ -70,7 +70,7 @@
 (def namespace-copy args
   (let new (racket-make-base-empty-namespace)
     ;(prn (racket-namespace-mapped-symbols new))
-    (each x rev.args
+    (each x nrev.args
       (namespace-copy1 x new))
     (parameterize (racket-current-namespace new)
       (ac-require-base))

@@ -336,6 +336,20 @@
 
 
 ;=============================================================================
+;  Loops
+;=============================================================================
+
+(mac whilet (var test . body)
+  (w/uniq gf
+    #`((rfn gf (var)
+         (when var ,@body (gf test)))
+       test)))
+
+(mac while (test . body)
+  #`(whilet ,(uniq) test . body))
+
+
+;=============================================================================
 ;  Lists
 ;=============================================================================
 
@@ -363,9 +377,18 @@
 (def rev (xs)
   ((afn (xs acc)
      (if (no xs)
-         acc
+           acc
          (self (cdr xs) (cons (car xs) acc))))
    xs nil))
+
+(def nrev (xs)
+  (let u nil
+    (whilet head xs
+      (= xs (cdr xs))
+      (scdr head u) ; faster than (= cdr.head u) for various reasons
+      (= u head))
+    u))
+
 
 (def reclist (f xs)
   (and xs (or (f xs) (reclist f (cdr xs)))))

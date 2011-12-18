@@ -12,19 +12,22 @@
                (if (no cs)         (consif tok toks)
                    (test (car cs)) (self (cdr cs) (consif tok toks) nil)
                                    (self (cdr cs) toks (cons (car cs) tok))))
-      (rev (map [coerce _ 'string]
-                (map rev (rec (coerce s 'cons) nil nil)))))))
+      (nrev (map [coerce _ 'string]
+                 ;; TODO: nrev...?
+                 (map rev (rec (coerce s 'cons) nil nil)))))))
 
 ; names of cut, split, halve not optimal
 
 (def halve (s (o sep whitec))
   (let test (testify sep)
     (let rec (afn (cs tok)
+                                         ;; TODO: nrev...?
                (if (no cs)         (list (rev tok))
+                                            ;; TODO: nrev...?
                    (test (car cs)) (list cs (rev tok))
                                    (self (cdr cs) (cons (car cs) tok))))
-      (rev (map [coerce _ 'string]
-                (rec (coerce s 'cons) nil))))))
+      (nrev (map [coerce _ 'string]
+                 (rec (coerce s 'cons) nil))))))
 
 ; maybe promote to arc.arc, but if so include a list clause
 
@@ -87,7 +90,7 @@
                    (forlen i pat
                      (push #`(is ,(pat i) (gstring (+ gstart i)))
                            acc))
-                   (rev acc)))))))
+                   (nrev acc)))))))
 
 ; litmatch would be cleaner if map worked for string and integer args:
 
@@ -106,7 +109,7 @@
                      (push #`(is ,(pat (- (len pat) 1 i))
                                  (gstring (- glen 1 i)))
                            acc))
-                   (rev acc)))))))
+                   (nrev acc)))))))
 
 (def posmatch (pat seq (o start 0))
   (catch
@@ -176,10 +179,11 @@
   (withs (commafy
           (fn (i)
             (tostring
+                             ;; TODO: nrev...?
               (map [apply pr (rev _)]
-                   (rev (intersperse '(#\,)
-                                     (tuples (rev (coerce (string i) 'cons))
-                                             3))))))
+                   (nrev (intersperse '(#\,)
+                                      (tuples (nrev (coerce (string i) 'cons))
+                                              3))))))
           abrep
           (let a (abs n)
             (if (< digits 1)

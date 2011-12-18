@@ -44,7 +44,7 @@
                     (ac-chars->value (car toks)))))))
 
 (def ac-expand-sexpr (sym)
-  (ac-build-sexpr (rev (ac-tokens [in _ #\. #\!] (ac-symbol->chars sym) nil nil t))
+  (ac-build-sexpr (nrev (ac-tokens [in _ #\. #\!] (ac-symbol->chars sym) nil nil t))
                   sym))
 
 (def ac-expand-compose (sym)

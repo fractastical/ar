@@ -104,7 +104,7 @@
 
     (when errors
       (w/stdout stderr
-        (each x (rev errors)
+        (each x (nrev errors)
           (prn x))
         (prn "\n" "aborting due to errors")
         (quit 1)))

@@ -116,9 +116,10 @@
                     (prn expect)
                     (prn "\n- Got:")
                     (prn result)
+                    ;; TODO
                     #|(when debug-statements
                       (prn "\n- Debug:")
-                      (eachfn prn rev.debug-statements))|#
+                      (eachfn prn nrev.debug-statements))|#
                     (prn "\n" (newstring separator-width #\=))
                     nil)))))))
 

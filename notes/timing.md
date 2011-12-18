@@ -1,6 +1,18 @@
 Timing notes
 ============
 
+  * `nrev` should be used in place of `rev` whenever it is safe to do so:
+
+        > (rev (list 1 2 3 4 5))
+        iter: 688,955  gc: 52  mem: 2935376
+        iter: 687,092  gc: 92  mem: 1198184
+        iter: 675,826  gc: 64  mem: -1819048
+
+        > (nrev (list 1 2 3 4 5))
+        iter: 1,274,606  gc: 132  mem: -3642736
+        iter: 1,249,604  gc: 136  mem: 5482296
+        iter: 1,249,111  gc: 136  mem: -2255872
+
   * `direct-calls` only has a tiny (negligible) speed boost in Racket v5.1.3:
 
         > (+ 1 2)
@@ -187,7 +199,8 @@ Timing notes
         > (timeit (joinpath cwd "~/foobar"))
         iter: 20,340  gc: 296  mem: 14891960
 
-  * Assigning to a global variable is basically just as fast as assigning to the namespace:
+  * Assigning to a global variable is basically just as fast as assigning to
+    the namespace:
 
         > (timeit (= foo 'bar))
         iter: 129,091  gc: 172  mem: -5105664
@@ -341,9 +354,11 @@ Timing notes
         > (timeit (w/ foo 10 foo))
         iter: 4,293,050  gc: 212  mem: -2171880
 
-    As the above also demonstrates, parameters are *faster* than global variables, but significantly slower than lexical variables.
+    As the above also demonstrates, parameters are *faster* than global
+    variables, but significantly slower than lexical variables.
 
-  * As an expansion on the above, parameters have a high cost vs function arguments:
+  * As an expansion on the above, parameters have a high cost vs function
+    arguments:
 
         > (parameter foo)
 

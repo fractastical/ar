@@ -51,29 +51,41 @@ the REPL:
 Other
 =====
 
-  * Starts up significantly faster than _ar_, but significantly slower than _Arc 3.1_
+  * Starts up significantly faster than _ar_, but significantly slower than
+    _Arc 3.1_
 
   * No separation between ar and ac: the entire compiler is in _compiler.arc_
 
   * Compiler names uniformly start with `ac-` rather than `ac-` and `ar-`
 
-  * Does not provide `(ail-code ...)`. Instead, `(%nocompile ...)` causes the expression to not be compiled at all: it passes directly to Racket. This is mostly needed when dealing with Racket macros. If you want an expression within `%nocompile` to be compiled, you can splice it in with `ac-compile` or `ac-args` like so:
+  * Does not provide `(ail-code ...)`. Instead, `(%nocompile ...)` causes the
+    expression to not be compiled at all: it passes directly to Racket. This
+    is mostly needed when dealing with Racket macros. If you want an
+    expression within `%nocompile` to be compiled, you can splice it in with
+    `ac-compile` or `ac-args` like so:
 
         #`(%nocompile ('some-racket-macro ,(ac-compile ...) ,@(ac-args ...)))
 
-  * `nil` is a global variable that contains the Racket null value `'()` This is not noticable in Arc code, but makes the compiler implementation much simpler
+  * `nil` is a global variable that contains the Racket null value `'()` This
+     is not noticable in Arc code, but makes the compiler implementation much
+     simpler
 
-  * A lot of built-in functions are defined in Arc, rather than in _ar.arc_ and _ac.arc_. This results in much shorter and clearer code
+  * Some built-in functions are defined in Arc, rather than in _ar.arc_ and
+    _ac.arc_. This results in much shorter and clearer code
 
-  * Can include literal Racket values like `#t` and `#f` in code, without needing to wrap them in `ail-code` or `%nocompile`
+  * Can include literal Racket values like `#t` and `#f` in code, without
+    needing to wrap them in `ail-code` or `%nocompile`
 
-  * Global functions have names. In _ar_, all global functions are given a gensym as a name:
+  * Global functions have names. In _ar_, all global functions are given a
+    gensym as a name:
 
         > (def foo ())
         #<fn:g1>
 
-    But in _Nu_, the above function would have the name `foo`, as one would expect
+    But in _Nu_, the above function would have the name `foo`, as one would
+    expect
 
-  * `annotate` has been implemented with a Racket `struct` rather than `vector`
+  * `annotate` has been implemented with a Racket `struct` rather than
+    `vector`
 
   * `implicit` has been renamed to `parameter`

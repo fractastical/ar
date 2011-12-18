@@ -3,8 +3,8 @@ Complex fns
 
 Unlike _Arc 3.1_ and _ar_, _Nu_ does not use so-called "complex fn"s:
 everything is done with a plain `racket-lambda`. This is faster while also
-providing better error messages What is a complex fn? Basically, it means that
-this:
+providing better error messages. What is a complex fn? Basically, it means
+that this:
 
     (fn (a (o b 3)) ...)
 
@@ -83,18 +83,23 @@ Other
   * _arc.arc_ is now split into multiple files:
 
       * _compiler.arc_ contains the bare minimum needed to run _core.arc_
-      * _core.arc_ contains very basic things (like `def`, `mac`, and `let`) and implements the rest of _compiler.arc_
+      * _core.arc_ contains very basic things (like `def`, `mac`, and `let`)
+        and implements the rest of _compiler.arc_
       * _ssyntax.arc_ implements `ssyntax` and `ssexpand`
       * _compat.arc_ serves as a compatibility layer between _Nu_ and _Arc_
       * _arc.arc_ contains everything else
       * _extra.arc_ contains new functions that I've found to be useful
       * _repl.arc_ contains the REPL
 
-  * Code is organized into different sections, making it easier to navigate the code base
+  * Code is organized into different sections, making it easier to navigate
+    the code base
 
-  * The _Nu_ compiler does not hardcode any of the special forms: `assign`, `fn`, `if`, and `quote` are implemented as macros. This makes Arc much simpler and easier to reason about, without any cost in code maintenance.
+  * The _Nu_ compiler does not hardcode any of the special forms: `assign`,
+    `fn`, `if`, and `quote` are implemented as macros. This makes Arc much
+    simpler and easier to reason about, without any cost in code maintenance.
 
-  * All binary operators (`is`, `+`, `<`, etc.) are implemented in terms of `case-lambda` for increased speed, [as suggested by waterhouse](https://sites.google.com/site/arclanguagewiki/arc-3_1/optimizations)
+  * All binary operators (`is`, `+`, `<`, etc.) are implemented in terms of
+    `case-lambda` for increased speed, [as suggested by waterhouse](https://sites.google.com/site/arclanguagewiki/arc-3_1/optimizations)
 
   * `(coerce 2 'num)` returns `2.0` rather than `2`
 
@@ -105,9 +110,11 @@ Other
         > do
         #<mac:do>
 
-  * Ssyntax is expanded in function arguments. So you can do things like this: `(fn (a.b) ...)` which is the same as `(fn ((a b)) ...)`
+  * Ssyntax is expanded in function arguments. So you can do things like this:
+    `(fn (a.b) ...)` which is the same as `(fn ((a b)) ...)`
 
-  * The `do` and `with` macros are smarter: `(do 1)` and `(with () 1)` compile into `1` rather than `((racket-lambda nil 1))`
+  * The `do` and `with` macros are smarter: `(do 1)` and `(with () 1)` compile
+    into `1` rather than `((racket-lambda nil 1))`
 
   * `num` (from _strings.arc_) has been renamed to `commafy`
 
@@ -115,16 +122,26 @@ Other
 
         (assoc foo 'bar)
 
-  * `dir` accepts two optional arguments: a string path and a function to apply on every element in the list. In addition, directories have a trailing `/` at the end of their name
+  * `dir` accepts two optional arguments: a string path and a function to
+    apply on every element in the list. In addition, directories have a
+    trailing `/` at the end of their name
 
   * `last` accepts a string: `(last "foo")` returns `#\o`
 
-  * `empty` now works on the empty symbol `'||` as well as any sequence that has a `len` of `0`
+  * `empty` now works on the empty symbol `'||` as well as any sequence that
+    has a `len` of `0`
 
-  * `in` is faster when given only two arguments: `(in x 5)` expands into `(is x 5)`
+  * `in` is faster when given only two arguments: `(in x 5)` expands into
+    `(is x 5)`
 
-  * `setforms` has been implemented better. For instance, `(zap + x 1)` just expands into `(assign x (+ x 1))` and `(push x foo)` expands into `(assign foo (cons x foo))`
+  * `setforms` has been implemented better. For instance, `(zap + x 1)` just
+    expands into `(assign x (+ x 1))` and `(push x foo)` expands into
+    `(assign foo (cons x foo))`
 
-  * `=` no longer calls `atomic-invoke`. If you want to *guarantee* that assignment is thread-safe, wrap it yourself
+  * `=` no longer calls `atomic-invoke`. If you want to *guarantee* that
+    assignment is thread-safe, wrap it yourself
 
-  * Nu no longer has `defset`: everything is done in `sref`. This idea is courtesy of rocketnia
+  * Nu no longer has `defset`: everything is done in `sref`. This idea is
+    courtesy of rocketnia
+
+  * The `whilet` and `while` macros have been implemented better (see _core.arc_)
