@@ -15,13 +15,6 @@
 (zap cdr script-args)
 
 
-(def extension (x)
-  (let x (racket-filename-extension string.x)
-    (if (is x #f)
-          nil
-        (string x)))
-  )
-
 (def hidden-file (x)
   (is x.0 #\.))
 
@@ -38,6 +31,7 @@
      nil)))
 
 
+;; TODO: this is documentation for joinpath, not todir
 ;; Algorithm taken from Python's os.path.join (http://bugs.python.org/issue9921)
 ;; Ignore the previous parts if a part is absolute.
 ;; Insert a '/' unless the first part is empty or already ends in '/'.

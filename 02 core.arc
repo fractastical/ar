@@ -574,8 +574,8 @@
 
 (make-parameter namespace     ac-namespace)
 (make-parameter uniq-counter  ac-uniq-counter)
-(make-parameter load-paths*   ac-load-paths*)
-(make-parameter load-suffix*  ac-load-suffix*)
+;(make-parameter load-paths*   ac-load-paths*)
+;(make-parameter load-suffix*  ac-load-suffix*)
 
 #|(make-parameter namespace
   (racket-make-derived-parameter ac-namespace
@@ -753,6 +753,7 @@
   ;; TODO: all of this is ew
   (= name (expandpath name))
   (if (empty name) (= name "."))
+  ;; TODO: w/cwd...?
   (parameterize (racket-current-directory name)
     (let x (map1 (fn (x)
                    (if (dir-exists x)

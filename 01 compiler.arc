@@ -1521,45 +1521,6 @@
 ;  load
 ;=============================================================================
 
-(racket-define ac-load-paths*
-  (racket-make-parameter
-    (list (string1 (racket-current-directory))
-          exec-dir*
-          (string1 (racket-build-path exec-dir* "lib"))
-          (string1 (racket-build-path exec-dir* "lang")))))
-
-(racket-define ac-load-suffix* (racket-make-parameter ".arc"))
-
-
-(ac-def load-file-dir (x)
-  ;; this is just (find [file-exists:joinpath _ x] load-paths*)
-  (racket-let loop ((xs (ac-load-paths*)))
-    (racket-cond
-      ((racket-null? xs)
-        ;; TODO: should this be nil?
-        nil
-        )
-      ((racket-file-exists? (racket-build-path (car xs) x))
-        (car xs))
-      (racket-else
-        (loop (cdr xs))))))
-
-(ac-def load-normalize-path (x)
-  (racket-if (racket-filename-extension x)
-               x
-             (racket-string-append x (ac-load-suffix*))))
-
-(ac-def ac-with-find-file (x f)
-  (racket-parameterize ((racket-port-count-lines-enabled  #t))
-    (racket-let* ((y  (load-normalize-path x))
-                  (it (load-file-dir y)))
-      (racket-if (ac-true it)
-                   (racket-parameterize ((racket-current-directory it))
-                     (f y))
-                 (racket-parameterize ((racket-current-directory (load-file-dir x)))
-                   (f x))))))
-
-
 (ac-def ac-eval-all (in)
   (racket-let ((x (sread in)))
     (racket-if (ac-no x)
@@ -1568,8 +1529,4 @@
                              (ac-eval-all in)))))
 
 (ac-def ac-load (x)
-  (ac-with-find-file x
-    (racket-lambda (x)
-      (racket-call-with-input-file x
-        (racket-lambda (in)
-          (ac-eval-all in))))))
+  (racket-call-with-input-file x ac-eval-all))

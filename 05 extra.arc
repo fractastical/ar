@@ -106,4 +106,4 @@
 
 ;; TODO: use buildeach
 (mac maplet (var x . body)
-  #`(map (fn var ,@body) x))
+  #`(map (fn (var) ,@body) x))

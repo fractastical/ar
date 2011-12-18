@@ -1,3 +1,7 @@
+;=============================================================================
+;  from script.arc
+;=============================================================================
+
 (make-parameter cwd
   (racket-make-derived-parameter racket-current-directory
     (fn (v) (zap string v)
@@ -6,11 +10,20 @@
                 (racket-expand-user-path v)))
     (fn (v) (string v))))
 
+(def extension (x)
+  (let x (racket-filename-extension string.x)
+    (if (is x #f)
+          nil
+        (string x))))
+
 (def expandpath (x)
   (zap string x)
   (if empty.x
         x
       (string:racket-expand-user-path x)))
+
+(def abspath ((o x))
+  (string:racket-path->complete-path expandpath.x))
 
 (def joinpath args
   (string:apply racket-build-path
@@ -36,16 +49,9 @@
 (= basename (make-path->string racket-file-name-from-path:expandpath))
 
 
-(def abspath ((o x))
-  (string:racket-path->complete-path expandpath.x))
-
-
-;; TODO: ew
-;; TODO: throw an error when the file can't be found
-(redef load-file-dir (x)
-  ;; this is just (car:mem [file-exists (joinpath _ x)] load-paths*)
-  (find [file-exists:joinpath _ x] load-paths*))
-
+;=============================================================================
+;  namespaces
+;=============================================================================
 
 (parameter namespace-load-type* 'inherit)
 
@@ -167,6 +173,10 @@
   )
 
 
+;=============================================================================
+;  import
+;=============================================================================
+
 (parameter imported-paths*
   ;; TODO: ew
   (listtab:list (list (joinpath exec-dir* "01 compiler.arc") arc3-namespace)
@@ -177,10 +187,56 @@
                 (list (joinpath exec-dir* "05 extra.arc")    arc3-namespace)
                 (list (joinpath exec-dir* "06 import.arc")   arc3-namespace)))
 
+
+(parameter load-paths*
+  (list cwd ;(string:racket-current-directory)
+        exec-dir*
+        (joinpath exec-dir* "lib")
+        ;(joinpath exec-dir* "apps")
+        (joinpath exec-dir* "lang")
+        ;(string:racket-build-path exec-dir* "lib")
+        ;(string:racket-build-path exec-dir* "lang")
+        ))
+
+(parameter load-suffix* ".arc")
+
+
+;; TODO: ew
+;; TODO: throw an error when the file can't be found
+(def load-file-dir (x)
+  ;; this is just (car:mem [file-exists (joinpath _ x)] load-paths*)
+  (find [file-exists:joinpath _ x] load-paths*))
+
+#|(def load-file-dir (x)
+  ;; this is just (find [file-exists:joinpath _ x] load-paths*)
+  (aloop (xs load-paths*)
+    (if (no xs)
+          ;; TODO: should this be nil?
+          nil
+        (racket-file-exists? (racket-build-path (car xs) x))
+          (car xs)
+        (self (cdr xs)))))|#
+
+(def load-normalize-path (x)
+  (if (extension x) ;racket-filename-
+        x
+      (string x load-suffix*)))
+
+(def call-w/find-file (x f)
+  (parameterize (racket-port-count-lines-enabled #t)
+    (let y (load-normalize-path x)
+      (iflet it (load-file-dir y)
+        (w/cwd it (f y))
+        (iflet it (and (isnt x y)
+                       (load-file-dir x))
+          (w/cwd it (f x))
+          (err:string "file \"" x "\" was not found"))))))
+
+
 (def importfn1 (x)
   (if (basename x)
         (w/load-automatic-namespaces* t
-          (ac-with-find-file string.x
+          (call-w/find-file string.x
             (fn (x)
               (let path abspath.x
                     ;; TODO: fix this
