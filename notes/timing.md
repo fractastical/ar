@@ -4,14 +4,14 @@ Timing notes
   * `nrev` should be used in place of `rev` whenever it is safe to do so:
 
         > (rev (list 1 2 3 4 5))
-        iter: 688,955  gc: 52  mem: 2935376
-        iter: 687,092  gc: 92  mem: 1198184
-        iter: 675,826  gc: 64  mem: -1819048
+        iter: 679,497  gc: 56  mem: 2698712
+        iter: 678,302  gc: 60  mem: 1774504
+        iter: 675,079  gc: 60  mem: -649728
 
         > (nrev (list 1 2 3 4 5))
-        iter: 1,274,606  gc: 132  mem: -3642736
-        iter: 1,249,604  gc: 136  mem: 5482296
-        iter: 1,249,111  gc: 136  mem: -2255872
+        iter: 1,273,115  gc: 88  mem: -4054776
+        iter: 1,260,730  gc: 112  mem: 2590656
+        iter: 1,278,143  gc: 108  mem: -801360
 
   * `direct-calls` only has a tiny (negligible) speed boost in Racket v5.1.3:
 

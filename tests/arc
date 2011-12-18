@@ -549,6 +549,10 @@ t
 ;  readline
 ;=============================================================================
 
+> (fromstring "one\n\nthree\n" (drain (readline)))
+("one" "\nthree")u
+
+
 > (readline:instring "")
 nil
 

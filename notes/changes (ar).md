@@ -54,7 +54,7 @@ Other
   * Starts up significantly faster than _ar_, but significantly slower than
     _Arc 3.1_
 
-  * No separation between ar and ac: the entire compiler is in _compiler.arc_
+  * No separation between ar and ac: the entire compiler is in _01 compiler.arc_
 
   * Compiler names uniformly start with `ac-` rather than `ac-` and `ar-`
 

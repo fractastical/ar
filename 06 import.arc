@@ -169,13 +169,13 @@
 
 (parameter imported-paths*
   ;; TODO: ew
-  (listtab:list (list (joinpath exec-dir* "compiler.arc") arc3-namespace)
-                (list (joinpath exec-dir* "core.arc")     arc3-namespace)
-                (list (joinpath exec-dir* "ssyntax.arc")  arc3-namespace)
+  (listtab:list (list (joinpath exec-dir* "01 compiler.arc") arc3-namespace)
+                (list (joinpath exec-dir* "02 core.arc")     arc3-namespace)
+                (list (joinpath exec-dir* "03 ssyntax.arc")  arc3-namespace)
                 (list (joinpath exec-dir* "compat.arc")   arc3-namespace)
-                (list (joinpath exec-dir* "arc.arc")      arc3-namespace)
-                (list (joinpath exec-dir* "extra.arc")    arc3-namespace)
-                (list (joinpath exec-dir* "import.arc")   arc3-namespace)))
+                (list (joinpath exec-dir* "04 arc.arc")      arc3-namespace)
+                (list (joinpath exec-dir* "05 extra.arc")    arc3-namespace)
+                (list (joinpath exec-dir* "06 import.arc")   arc3-namespace)))
 
 (def importfn1 (x)
   (if (basename x)

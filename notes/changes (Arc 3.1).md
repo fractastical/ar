@@ -80,14 +80,16 @@ Other
 
   * _arc.arc_ is now split into multiple files:
 
-      * _compiler.arc_ contains the bare minimum needed to run _core.arc_
-      * _core.arc_ contains very basic things (like `def`, `mac`, and `let`)
-        and implements the rest of _compiler.arc_
-      * _ssyntax.arc_ implements `ssyntax` and `ssexpand`
-      * _compat.arc_ serves as a compatibility layer between _Nu_ and _Arc_
-      * _arc.arc_ contains everything else
-      * _extra.arc_ contains new functions that I've found to be useful
-      * _repl.arc_ contains the REPL
+      * _01 compiler.arc_ contains the bare minimum needed to run _02 core.arc_
+      * _02 core.arc_ contains very basic things (like `def`, `mac`, and `let`)
+        and implements the rest of _01 compiler.arc_
+      * _03 ssyntax.arc_ implements `ssyntax` and `ssexpand`
+      * _04 arc.arc_ contains everything else
+      * _05 extra.arc_ contains new functions that I've found to be useful
+      * _06 import.arc_ implements namespace inheritance
+
+      * _lib/repl.arc_ contains the REPL
+      * _lib/compat.arc_ serves as a compatibility layer between _Nu_ and _Arc 3.1_
 
   * Code is organized into different sections, making it easier to navigate
     the code base

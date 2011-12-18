@@ -145,7 +145,7 @@
   (namespace-set-variable-value! 'ac-require-base ac-require-base #f)
 
   (profile-thunk (lambda ()
-    (load/use-compiled (build-path exec-dir "compiler.arc"))
+    (load/use-compiled (build-path exec-dir "01 compiler.arc"))
     ;(load/use-compiled (string->path "compiler.arc"))
 
      ;(displayln (namespace-mapped-symbols))
@@ -156,14 +156,14 @@
           (ac-load  (namespace-variable-value 'ac-load #f)))
 
           ;(ac-load "compiler.arc")
-          (ac-load "core.arc")
-          (ac-load "ssyntax.arc")
+          (ac-load "02 core.arc")
+          (ac-load "03 ssyntax.arc")
           (ac-load "compat.arc")
-          (ac-load "arc.arc")
-          (ac-load "extra.arc")
+          (ac-load "04 arc.arc")
+          (ac-load "05 extra.arc")
           ;(ac-load "lib/re.arc")
           ;(ac-load "lib/script.arc")
-          (ac-load "import.arc")
+          (ac-load "06 import.arc")
 
           ;(ac-load "lib/strings.arc")
           ;(ac-load "lib/time.arc")
