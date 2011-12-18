@@ -322,10 +322,11 @@
       t))
 
 (mac or args
-  (and args
-       (w/uniq g
-         #`(let g ,(car args)
-             (if g g (or ,@(cdr args)))))))
+  (if (cdr args)
+        (w/uniq g
+          #`(let g ,(car args)
+              (if g g (or ,@(cdr args)))))
+      (car args)))
 
 (mac in (x . choices)
   (if (cdr choices)

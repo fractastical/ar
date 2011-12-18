@@ -1,7 +1,7 @@
 Links
 =====
 
-  * Nu has [hygienic macros](hygiene.md)
+  * Nu provides a convenient syntax for [hygienic macros](hygiene.md)
 
   * Nu has good [namespace support](namespaces.md)
 

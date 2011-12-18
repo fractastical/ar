@@ -18,7 +18,7 @@ error: racket-parameterize: bad syntax in: racket-parameterize
 
 
 ;=============================================================================
-;  do / with / withs optimizations
+;  do / with / withs / or optimizations
 ;=============================================================================
 
 > (ac-compile '(do 1))
@@ -38,10 +38,10 @@ error: racket-parameterize: bad syntax in: racket-parameterize
 
 ;; TODO: not sure about this
 > (ac-compile '(with nil 1))
-error: cdr: expects argument of type <mutable-pair>; given 'nil
+error: cdr: expects argument of type <pair>; given 'nil
 
 > (ac-compile '(with nil 1 2))
-error: cdr: expects argument of type <mutable-pair>; given 'nil
+error: cdr: expects argument of type <pair>; given 'nil
 
 
 > (ac-compile '(with (a 5) 1))
@@ -61,10 +61,10 @@ error: cdr: expects argument of type <mutable-pair>; given 'nil
 
 ;; TODO: not sure about this
 > (ac-compile '(withs nil 1))
-error: car: expects argument of type <mutable-pair>; given 'nil
+error: car: expects argument of type <pair>; given 'nil
 
 > (ac-compile '(withs nil 1 2))
-error: car: expects argument of type <mutable-pair>; given 'nil
+error: car: expects argument of type <pair>; given 'nil
 
 
 > (ac-compile '(withs (a 5) 1))
@@ -74,15 +74,32 @@ error: car: expects argument of type <mutable-pair>; given 'nil
 ((racket-lambda (a) ((racket-lambda nil 1 2))) 5)
 
 
+
+> (ac-compile '(or))
+nil
+
+> (ac-compile '(or a))
+(#<fn:ac-lookup-global-arg> a)
+
+> (ac-compile '(or a b))
+((racket-lambda (g1) (racket-if (#<fn:ac-true> g1) g1 (#<fn:ac-lookup-global-arg> b))) (#<fn:ac-lookup-global-arg> a))
+
+> (ac-compile '(or a b c))
+((racket-lambda (g1) (racket-if (#<fn:ac-true> g1) g1 ((racket-lambda (g2) (racket-if (#<fn:ac-true> g2) g2 (#<fn:ac-lookup-global-arg> c))) (#<fn:ac-lookup-global-arg> b)))) (#<fn:ac-lookup-global-arg> a))
+
+> (ac-compile '(or a b c d))
+((racket-lambda (g1) (racket-if (#<fn:ac-true> g1) g1 ((racket-lambda (g2) (racket-if (#<fn:ac-true> g2) g2 ((racket-lambda (g3) (racket-if (#<fn:ac-true> g3) g3 (#<fn:ac-lookup-global-arg> d))) (#<fn:ac-lookup-global-arg> c)))) (#<fn:ac-lookup-global-arg> b)))) (#<fn:ac-lookup-global-arg> a))
+
+
 ;=============================================================================
 ;  Assignment
 ;=============================================================================
 
 > (ac-compile '(assign foo 10))
-(#<fn:ac-assign-global-raw> (racket-quote foo) 10)
+(#<fn:ac-assign-global-raw> #<namespace:0> (racket-quote foo) 10)
 
 > (ac-compile '(assign foo 10 bar 20 qux 30))
-(racket-begin (#<fn:ac-assign-global-raw> (racket-quote foo) 10) (#<fn:ac-assign-global-raw> (racket-quote bar) 20) (#<fn:ac-assign-global-raw> (racket-quote qux) 30))
+(racket-begin (#<fn:ac-assign-global-raw> #<namespace:0> (racket-quote foo) 10) (#<fn:ac-assign-global-raw> #<namespace:0> (racket-quote bar) 20) (#<fn:ac-assign-global-raw> #<namespace:0> (racket-quote qux) 30))
 
 
 > (ac-compile '(let foo 10 (assign foo 20)))
@@ -110,14 +127,14 @@ error: car: expects argument of type <mutable-pair>; given 'nil
                       bar  20
                       qux  30)
                  (assign nou 20 bar 30 qux 40)))
-((racket-lambda (foo bar qux) (racket-begin (#<fn:ac-assign-global-raw> (racket-quote nou) 20) (racket-set! bar 30) (racket-set! qux 40) qux)) 10 20 30)
+((racket-lambda (foo bar qux) (racket-begin (#<fn:ac-assign-global-raw> #<namespace:0> (racket-quote nou) 20) (racket-set! bar 30) (racket-set! qux 40) qux)) 10 20 30)
 
 
 > (ac-compile '(with (foo  10
                       bar  20
                       qux  30)
                  (assign nou 20 bar 30 cooorge 40)))
-((racket-lambda (foo bar qux) (racket-begin (#<fn:ac-assign-global-raw> (racket-quote nou) 20) (racket-set! bar 30) (#<fn:ac-assign-global-raw> (racket-quote cooorge) 40))) 10 20 30)
+((racket-lambda (foo bar qux) (racket-begin (#<fn:ac-assign-global-raw> #<namespace:0> (racket-quote nou) 20) (racket-set! bar 30) (#<fn:ac-assign-global-raw> #<namespace:0> (racket-quote cooorge) 40))) 10 20 30)
 
 
 ;=============================================================================
@@ -145,7 +162,7 @@ error: car: expects argument of type <mutable-pair>; given 'nil
 ;=============================================================================
 
 > (ac-compile '(fn args args))
-(racket-lambda args (racket-let ((args (#<fn:list->mlist> args))) args))
+(racket-lambda args args)
 
 
 > (ac-compile '(fn (a b c) (list a b c)))
@@ -170,7 +187,7 @@ error: racket-lambda: default-value expression missing at: c in: (racket-lambda 
 
 
 > (ac-compile '(fn (a b . c) (list a b c)))
-(racket-lambda (a b . c) (racket-let* ((c (#<fn:list->mlist> c))) (#<fn:ac-funcall3> (#<fn:ac-lookup-global> list) a b c)))
+(racket-lambda (a b . c) (#<fn:ac-funcall3> (#<fn:ac-lookup-global> list) a b c))
 
 
 > (ac-compile '(fn (a b (c (d e f (g)))) (list a b c d e f g)))
@@ -218,23 +235,23 @@ error: racket-lambda: default-value expression missing at: c in: (racket-lambda 
 (racket-lambda (a g1 (c 5)) (racket-let* ((b (#<fn:car> g1)) (g1 (#<fn:cdr> g1)) (g2 (#<fn:car> g1)) (c (#<fn:car> g2)) (g2 (#<fn:cdr> g2)) (d (#<fn:car> g2))) (#<fn:ac-funcall4> (#<fn:ac-lookup-global> list) a b c d)))
 
 > (ac-compile '(fn (a (b (c d . e)) (o c 5) . f) (list a b c d e f)))
-(racket-lambda (a g1 (c 5) . f) (racket-let* ((f (#<fn:list->mlist> f)) (b (#<fn:car> g1)) (g1 (#<fn:cdr> g1)) (g2 (#<fn:car> g1)) (c (#<fn:car> g2)) (g2 (#<fn:cdr> g2)) (d (#<fn:car> g2)) (g2 (#<fn:cdr> g2)) (e g2)) (#<fn:ac-apply> (#<fn:ac-lookup-global> list) a b c d e f)))
+(racket-lambda (a g1 (c 5) . f) (racket-let* ((b (#<fn:car> g1)) (g1 (#<fn:cdr> g1)) (g2 (#<fn:car> g1)) (c (#<fn:car> g2)) (g2 (#<fn:cdr> g2)) (d (#<fn:car> g2)) (g2 (#<fn:cdr> g2)) (e g2)) (#<fn:ac-apply> (#<fn:ac-lookup-global> list) a b c d e f)))
 
 > (ac-compile '(fn (a (b (c (o d 10) . e)) (o c 5) . f) (list a b c d e f)))
-(racket-lambda (a g1 (c 5) . f) (racket-let* ((f (#<fn:list->mlist> f)) (b (#<fn:car> g1)) (g1 (#<fn:cdr> g1)) (g2 (#<fn:car> g1)) (c (#<fn:car> g2)) (g2 (#<fn:cdr> g2)) (d (racket-if (#<fn:ac-true> (#<fn:cdr> g2)) (#<fn:car> g2) 10)) (g2 (#<fn:cdr> g2)) (e g2)) (#<fn:ac-apply> (#<fn:ac-lookup-global> list) a b c d e f)))
+(racket-lambda (a g1 (c 5) . f) (racket-let* ((b (#<fn:car> g1)) (g1 (#<fn:cdr> g1)) (g2 (#<fn:car> g1)) (c (#<fn:car> g2)) (g2 (#<fn:cdr> g2)) (d (racket-if (#<fn:ac-true> (#<fn:cdr> g2)) (#<fn:car> g2) 10)) (g2 (#<fn:cdr> g2)) (e g2)) (#<fn:ac-apply> (#<fn:ac-lookup-global> list) a b c d e f)))
 
 > (ac-compile '(fn (a (b (c (o d 10) . e)) :foo (o c 5) . f) (list a b c d e f foo)))
-(racket-lambda (a g1 #:foo (foo nil) (c 5) . f) (racket-let* ((f (#<fn:list->mlist> f)) (b (#<fn:car> g1)) (g1 (#<fn:cdr> g1)) (g2 (#<fn:car> g1)) (c (#<fn:car> g2)) (g2 (#<fn:cdr> g2)) (d (racket-if (#<fn:ac-true> (#<fn:cdr> g2)) (#<fn:car> g2) 10)) (g2 (#<fn:cdr> g2)) (e g2)) (#<fn:ac-apply> (#<fn:ac-lookup-global> list) a b c d e f foo)))
+(racket-lambda (a g1 #:foo (foo nil) (c 5) . f) (racket-let* ((b (#<fn:car> g1)) (g1 (#<fn:cdr> g1)) (g2 (#<fn:car> g1)) (c (#<fn:car> g2)) (g2 (#<fn:cdr> g2)) (d (racket-if (#<fn:ac-true> (#<fn:cdr> g2)) (#<fn:car> g2) 10)) (g2 (#<fn:cdr> g2)) (e g2)) (#<fn:ac-apply> (#<fn:ac-lookup-global> list) a b c d e f foo)))
 
 > (ac-compile '(fn (a (b (c (o d 10) . e)) (o :foo 15) (o c 5) . f) (list a b c d e f foo)))
-(racket-lambda (a g1 #:foo (foo 15) (c 5) . f) (racket-let* ((f (#<fn:list->mlist> f)) (b (#<fn:car> g1)) (g1 (#<fn:cdr> g1)) (g2 (#<fn:car> g1)) (c (#<fn:car> g2)) (g2 (#<fn:cdr> g2)) (d (racket-if (#<fn:ac-true> (#<fn:cdr> g2)) (#<fn:car> g2) 10)) (g2 (#<fn:cdr> g2)) (e g2)) (#<fn:ac-apply> (#<fn:ac-lookup-global> list) a b c d e f foo)))
+(racket-lambda (a g1 #:foo (foo 15) (c 5) . f) (racket-let* ((b (#<fn:car> g1)) (g1 (#<fn:cdr> g1)) (g2 (#<fn:car> g1)) (c (#<fn:car> g2)) (g2 (#<fn:cdr> g2)) (d (racket-if (#<fn:ac-true> (#<fn:cdr> g2)) (#<fn:car> g2) 10)) (g2 (#<fn:cdr> g2)) (e g2)) (#<fn:ac-apply> (#<fn:ac-lookup-global> list) a b c d e f foo)))
 
 
 > (ac-compile '(fn (a) (fn (b) (list a b c))))
 (racket-lambda (a) (racket-lambda (b) (#<fn:ac-funcall3> (#<fn:ac-lookup-global> list) a b (#<fn:ac-lookup-global-arg> c))))
 
 > (ac-compile '(fn a a))
-(racket-lambda a (racket-let ((a (#<fn:list->mlist> a))) a))
+(racket-lambda a a)
 
 > (ac-compile '(fn (a) a))
 (racket-lambda (a) a)
@@ -249,7 +266,7 @@ error: racket-lambda: default-value expression missing at: c in: (racket-lambda 
 (racket-lambda (#:a (a 5)) a)
 
 > (ac-compile '(fn (a . b) (list a b)))
-(racket-lambda (a . b) (racket-let* ((b (#<fn:list->mlist> b))) (#<fn:ac-funcall2> (#<fn:ac-lookup-global> list) a b)))
+(racket-lambda (a . b) (#<fn:ac-funcall2> (#<fn:ac-lookup-global> list) a b))
 
 > (ac-compile '(fn ((a)) a))
 (racket-lambda (g1) (racket-let* ((a (#<fn:car> g1))) a))
@@ -413,13 +430,6 @@ error: function call on inappropriate object () 15
 ;  sig
 ;=============================================================================
 
-> (sig 'ac-deep-toarc)
-(x)
-
-> (type (sig 'ac-deep-toarc))
-cons
-
-
 > (sig 'namespace-get)
 (runtime varname (o default))
 
@@ -503,7 +513,7 @@ cons
 
 
 > (sig 'ac-assign-global-raw)
-(a b)
+(space a b)
 
 > (type (sig 'ac-assign-global-raw))
 cons
@@ -639,7 +649,7 @@ error: #<procedure>: expects 1 argument, given 0
 
 
 > (ac-compile '(swap foo bar))
-((racket-lambda (g1) (#<fn:ac-assign-global-raw> (racket-quote foo) (#<fn:ac-lookup-global-arg> bar)) (#<fn:ac-assign-global-raw> (racket-quote bar) g1)) (#<fn:ac-lookup-global-arg> foo))
+((racket-lambda (g1) (#<fn:ac-assign-global-raw> #<namespace:0> (racket-quote foo) (#<fn:ac-lookup-global-arg> bar)) (#<fn:ac-assign-global-raw> #<namespace:0> (racket-quote bar) g1)) (#<fn:ac-lookup-global-arg> foo))
 
 > (macex-all '(swap foo bar))
 ((fn (g1) (assign foo bar) (assign bar g1)) foo)
@@ -662,7 +672,7 @@ error: #<procedure>: expects 1 argument, given 0
 
 
 > (ac-compile '(rotate a b c d))
-((racket-lambda (g1) (#<fn:ac-assign-global-raw> (racket-quote a) (#<fn:ac-lookup-global-arg> b)) (#<fn:ac-assign-global-raw> (racket-quote b) (#<fn:ac-lookup-global-arg> c)) (#<fn:ac-assign-global-raw> (racket-quote c) (#<fn:ac-lookup-global-arg> d)) (#<fn:ac-assign-global-raw> (racket-quote d) g1)) (#<fn:ac-lookup-global-arg> a))
+((racket-lambda (g1) (#<fn:ac-assign-global-raw> #<namespace:0> (racket-quote a) (#<fn:ac-lookup-global-arg> b)) (#<fn:ac-assign-global-raw> #<namespace:0> (racket-quote b) (#<fn:ac-lookup-global-arg> c)) (#<fn:ac-assign-global-raw> #<namespace:0> (racket-quote c) (#<fn:ac-lookup-global-arg> d)) (#<fn:ac-assign-global-raw> #<namespace:0> (racket-quote d) g1)) (#<fn:ac-lookup-global-arg> a))
 
 > (macex-all '(rotate a b c d))
 ((fn (g1) (assign a b) (assign b c) (assign c d) (assign d g1)) a)
@@ -736,13 +746,13 @@ error: cannot use ,@ after .
 (#<fn:cons> (#<mac:quote> foo) (#<fn:cons> (#<mac:quote> qux) bar))
 
 > (macex1 '`(foo ,@bar qux))
-(#<fn:cons> (#<mac:quote> foo) (#<fn:mappend> bar (#<fn:cons> (#<mac:quote> qux) nil)))
+(#<fn:cons> (#<mac:quote> foo) (#<fn:append> bar (#<fn:cons> (#<mac:quote> qux) nil)))
 
 > (macex1 '`(foo ,@bar ,@qux))
-(#<fn:cons> (#<mac:quote> foo) (#<fn:mappend> bar qux))
+(#<fn:cons> (#<mac:quote> foo) (#<fn:append> bar qux))
 
 > (macex1 '`(foo ,@bar ,@qux ,@corge))
-(#<fn:cons> (#<mac:quote> foo) (#<fn:mappend> bar (#<fn:mappend> qux corge)))
+(#<fn:cons> (#<mac:quote> foo) (#<fn:append> bar (#<fn:append> qux corge)))
 
 > (macex1 '`(foo ',@bar qux))
 (#<fn:cons> (#<mac:quote> foo) (#<fn:cons> (#<fn:cons> (#<mac:quote> quote) bar) (#<fn:cons> (#<mac:quote> qux) nil)))
@@ -837,24 +847,24 @@ error: ,@ cannot be used immediately after `
 
 
 > (macex-all '`(foo bar ,@qux ,corge))
-(cons (quote foo) (cons (quote bar) (mappend qux (cons corge nil))))
+(cons (quote foo) (cons (quote bar) (append qux (cons corge nil))))
 
 > (qq-expand '`(foo bar ,@qux ,corge))
-(#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> foo) nil)) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> bar) nil)) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:mappend>) (#<fn:cons> (#<mac:quote> qux) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<mac:quote> corge) (#<fn:cons> (#<mac:quote> nil) nil))) nil))) nil))) nil)))
+(#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> foo) nil)) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> bar) nil)) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:append>) (#<fn:cons> (#<mac:quote> qux) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<mac:quote> corge) (#<fn:cons> (#<mac:quote> nil) nil))) nil))) nil))) nil)))
 
 
 > (macex-all '`(foo (bar nou) ,@qux ,corge))
-(cons (quote foo) (cons (cons (quote bar) (cons (quote nou) nil)) (mappend qux (cons corge nil))))
+(cons (quote foo) (cons (cons (quote bar) (cons (quote nou) nil)) (append qux (cons corge nil))))
 
 > (qq-expand '`(foo (bar nou) ,@qux ,corge))
-(#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> foo) nil)) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> bar) nil)) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> nou) nil)) (#<fn:cons> (#<mac:quote> nil) nil))) nil))) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:mappend>) (#<fn:cons> (#<mac:quote> qux) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<mac:quote> corge) (#<fn:cons> (#<mac:quote> nil) nil))) nil))) nil))) nil)))
+(#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> foo) nil)) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> bar) nil)) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> nou) nil)) (#<fn:cons> (#<mac:quote> nil) nil))) nil))) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:append>) (#<fn:cons> (#<mac:quote> qux) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<mac:quote> corge) (#<fn:cons> (#<mac:quote> nil) nil))) nil))) nil))) nil)))
 
 
 > (macex-all '`(foo `(bar nou) ,@qux ,corge))
-(cons (quote foo) (cons (cons (quote cons) (cons (cons (quote quote) (cons (quote bar) nil)) (cons (cons (quote cons) (cons (cons (quote quote) (cons (quote nou) nil)) (cons (quote nil) nil))) nil))) (mappend qux (cons corge nil))))
+(cons (quote foo) (cons (cons (quote cons) (cons (cons (quote quote) (cons (quote bar) nil)) (cons (cons (quote cons) (cons (cons (quote quote) (cons (quote nou) nil)) (cons (quote nil) nil))) nil))) (append qux (cons corge nil))))
 
 > (qq-expand '`(foo `(bar nou) ,@qux ,corge))
-(#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> foo) nil)) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> #<fn:cons>) nil)) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> #<mac:quote>) nil)) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> bar) nil)) (#<fn:cons> (#<mac:quote> nil) nil))) nil))) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> #<fn:cons>) nil)) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> #<mac:quote>) nil)) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> nou) nil)) (#<fn:cons> (#<mac:quote> nil) nil))) nil))) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> nil) nil)) (#<fn:cons> (#<mac:quote> nil) nil))) nil))) nil))) (#<fn:cons> (#<mac:quote> nil) nil))) nil))) nil))) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:mappend>) (#<fn:cons> (#<mac:quote> qux) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<mac:quote> corge) (#<fn:cons> (#<mac:quote> nil) nil))) nil))) nil))) nil)))
+(#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> foo) nil)) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> #<fn:cons>) nil)) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> #<mac:quote>) nil)) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> bar) nil)) (#<fn:cons> (#<mac:quote> nil) nil))) nil))) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> #<fn:cons>) nil)) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> #<mac:quote>) nil)) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> nou) nil)) (#<fn:cons> (#<mac:quote> nil) nil))) nil))) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> nil) nil)) (#<fn:cons> (#<mac:quote> nil) nil))) nil))) nil))) (#<fn:cons> (#<mac:quote> nil) nil))) nil))) nil))) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:append>) (#<fn:cons> (#<mac:quote> qux) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<mac:quote> corge) (#<fn:cons> (#<mac:quote> nil) nil))) nil))) nil))) nil)))
 
 
 ;=============================================================================
@@ -909,13 +919,13 @@ error: cannot use ,@ after .
 (#<fn:cons> foo (#<fn:cons> qux bar))
 
 > (macex1 '#`(foo ,@bar qux))
-(#<fn:cons> foo (#<fn:mappend> bar (#<fn:cons> qux nil)))
+(#<fn:cons> foo (#<fn:append> bar (#<fn:cons> qux nil)))
 
 > (macex1 '#`(foo ,@bar ,@qux))
-(#<fn:cons> foo (#<fn:mappend> bar qux))
+(#<fn:cons> foo (#<fn:append> bar qux))
 
 > (macex1 '#`(foo ,@bar ,@qux ,@corge))
-(#<fn:cons> foo (#<fn:mappend> bar (#<fn:mappend> qux corge)))
+(#<fn:cons> foo (#<fn:append> bar (#<fn:append> qux corge)))
 
 > (macex1 '#`(foo ',@bar qux))
 (#<fn:cons> foo (#<fn:cons> (#<fn:cons> (#<mac:quote> #<mac:quote>) bar) (#<fn:cons> qux nil)))
@@ -1024,24 +1034,24 @@ error: ,@ cannot be used immediately after #`
 
 
 > (macex-all '#`(foo bar ,@qux ,corge))
-(cons foo (cons bar (mappend qux (cons corge nil))))
+(cons foo (cons bar (append qux (cons corge nil))))
 
 > (qq-expand '#`(foo bar ,@qux ,corge))
-(#<fn:cons> (#<mac:quote> quasisyntax) (#<fn:cons> (#<fn:cons> (#<mac:quote> foo) (#<fn:cons> (#<mac:quote> bar) (#<fn:mappend> qux (#<fn:cons> corge nil)))) nil))
+(#<fn:cons> (#<mac:quote> quasisyntax) (#<fn:cons> (#<fn:cons> (#<mac:quote> foo) (#<fn:cons> (#<mac:quote> bar) (#<fn:append> qux (#<fn:cons> corge nil)))) nil))
 
 
 > (macex-all '#`(foo (bar nou) ,@qux ,corge))
-(cons foo (cons (cons bar (cons nou nil)) (mappend qux (cons corge nil))))
+(cons foo (cons (cons bar (cons nou nil)) (append qux (cons corge nil))))
 
 > (qq-expand '#`(foo (bar nou) ,@qux ,corge))
-(#<fn:cons> (#<mac:quote> quasisyntax) (#<fn:cons> (#<fn:cons> (#<mac:quote> foo) (#<fn:cons> (#<fn:cons> (#<mac:quote> bar) (#<fn:cons> (#<mac:quote> nou) nil)) (#<fn:mappend> qux (#<fn:cons> corge nil)))) nil))
+(#<fn:cons> (#<mac:quote> quasisyntax) (#<fn:cons> (#<fn:cons> (#<mac:quote> foo) (#<fn:cons> (#<fn:cons> (#<mac:quote> bar) (#<fn:cons> (#<mac:quote> nou) nil)) (#<fn:append> qux (#<fn:cons> corge nil)))) nil))
 
 
 > (macex-all '#`(foo #`(bar nou) ,@qux ,corge))
-(cons foo (cons (cons cons (cons bar (cons (cons cons (cons nou (cons nil nil))) nil))) (mappend qux (cons corge nil))))
+(cons foo (cons (cons cons (cons bar (cons (cons cons (cons nou (cons nil nil))) nil))) (append qux (cons corge nil))))
 
 > (qq-expand '#`(foo #`(bar nou) ,@qux ,corge))
-(#<fn:cons> (#<mac:quote> quasisyntax) (#<fn:cons> (#<fn:cons> (#<mac:quote> foo) (#<fn:cons> (#<fn:cons> (#<mac:quote> quasisyntax) (#<fn:cons> (#<fn:cons> (#<mac:quote> bar) (#<fn:cons> (#<mac:quote> nou) nil)) nil)) (#<fn:mappend> qux (#<fn:cons> corge nil)))) nil))
+(#<fn:cons> (#<mac:quote> quasisyntax) (#<fn:cons> (#<fn:cons> (#<mac:quote> foo) (#<fn:cons> (#<fn:cons> (#<mac:quote> quasisyntax) (#<fn:cons> (#<fn:cons> (#<mac:quote> bar) (#<fn:cons> (#<mac:quote> nou) nil)) nil)) (#<fn:append> qux (#<fn:cons> corge nil)))) nil))
 
 
 ;=============================================================================
@@ -1128,16 +1138,16 @@ u
 ;=============================================================================
 
 > (setforms 'foo)
-((g1 foo) g1 (fn (g2) (#<mac:assign> foo g2)))
+(nil foo #<fn>)
 
 > (setforms '(car 5))
-((g1 5) (car g1) (fn (g2) (#<fn:scar> g1 g2)))
+(nil (car 5) #<fn>)
 
 > (setforms '(car (car (car 5))))
-((g1 (car (car 5))) (car g1) (fn (g2) (#<fn:scar> g1 g2)))
+((g1 (car (car 5))) (car g1) #<fn>)
 
 > (setforms '(foo 5))
-((g1 foo g3 5) (g1 g3) (fn (g2) (#<mac:sref-mac> g1 g2 g3)))
+(nil (foo 5) #<fn>)
 
 
 ;=============================================================================
@@ -1191,7 +1201,7 @@ error: #<procedure>: expects 2 arguments plus an optional argument with keyword 
 error: #<procedure>: expects 1 argument plus an optional argument with keyword #:a, given 0
 
 > ((fn (:a (b c)) (list a b c)) 1)
-error: car: expects argument of type <mutable-pair>; given 1
+error: car: expects argument of type <pair>; given 1
 
 > ((fn (:a (b c)) (list a b c)) 1 2)
 error: #<procedure>: expects 1 argument plus an optional argument with keyword #:a, given 2: 1 2
@@ -1640,12 +1650,12 @@ nil
 > (ac-compile '(accum acc
                  (each x args
                    (acc (* 2 x)))))
-((racket-lambda (g1) ((racket-lambda (acc) ((racket-lambda nil (#<fn:eachfn> (racket-lambda (x) (#<fn:ac-funcall1> acc (#<fn:ac-funcall2> (#<fn:ac-lookup-global> *) 2 x))) (#<fn:ac-lookup-global-arg> args)) (#<fn:rev> g1)))) (racket-lambda ((_ nil)) (racket-begin (racket-set! g1 (#<fn:cons> _ g1)) g1)))) nil)
+((racket-lambda (g1) ((racket-lambda (acc) ((racket-lambda nil (#<fn:eachfn> (racket-lambda (x) (#<fn:ac-funcall1> acc (#<fn:ac-funcall2> (#<fn:ac-lookup-global> *) 2 x))) (#<fn:ac-lookup-global-arg> args)) (#<fn:nrev> g1)))) (racket-lambda ((_ nil)) (racket-begin (racket-set! g1 (#<fn:cons> _ g1)) g1)))) nil)
 
 > (ac-compile '(accum acc :
                  each x args :
                    acc : * 2 x))
-((racket-lambda (g1) ((racket-lambda (acc) ((racket-lambda nil (#<fn:eachfn> (racket-lambda (x) (#<fn:ac-funcall1> acc (#<fn:ac-funcall3> (#<fn:ac-lookup-global> *) 2 x (#<fn:rev> g1)))) (#<fn:ac-lookup-global-arg> args))))) (racket-lambda ((_ nil)) (racket-begin (racket-set! g1 (#<fn:cons> _ g1)) g1)))) nil)
+((racket-lambda (g1) ((racket-lambda (acc) ((racket-lambda nil (#<fn:eachfn> (racket-lambda (x) (#<fn:ac-funcall1> acc (#<fn:ac-funcall3> (#<fn:ac-lookup-global> *) 2 x (#<fn:nrev> g1)))) (#<fn:ac-lookup-global-arg> args))))) (racket-lambda ((_ nil)) (racket-begin (racket-set! g1 (#<fn:cons> _ g1)) g1)))) nil)
 
 
 > (iso (ac-compile '(accum acc  (each x args  (acc (* 2 x)))))

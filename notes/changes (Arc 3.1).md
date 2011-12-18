@@ -80,16 +80,16 @@ Other
 
   * _arc.arc_ is now split into multiple files:
 
-      * _01 compiler.arc_ contains the bare minimum needed to run _02 core.arc_
-      * _02 core.arc_ contains very basic things (like `def`, `mac`, and `let`)
-        and implements the rest of _01 compiler.arc_
-      * _03 ssyntax.arc_ implements `ssyntax` and `ssexpand`
-      * _04 arc.arc_ contains everything else
-      * _05 extra.arc_ contains new functions that I've found to be useful
-      * _06 import.arc_ implements namespace inheritance
+      * _"01 compiler.arc"_ contains the bare minimum needed to run _"02 core.arc"_
+      * _"02 core.arc"_ contains very basic things (like `def`, `mac`, and `let`)
+        and implements the rest of _"01 compiler.arc"_
+      * _"03 ssyntax.arc"_ implements `ssyntax` and `ssexpand`
+      * _"04 arc.arc"_ contains everything else
+      * _"05 extra.arc"_ contains new functions that I've found to be useful
+      * _"06 import.arc"_ implements namespace inheritance and file loading
 
-      * _lib/repl.arc_ contains the REPL
-      * _lib/compat.arc_ serves as a compatibility layer between _Nu_ and _Arc 3.1_
+      * _"lib/repl.arc"_ contains the REPL
+      * _"lib/compat.arc"_ serves as a compatibility layer between _Nu_ and _Arc 3.1_
 
   * Code is organized into different sections, making it easier to navigate
     the code base
@@ -113,10 +113,10 @@ Other
   * Ssyntax is expanded in function arguments. So you can do things like this:
     `(fn (a.b) ...)` which is the same as `(fn ((a b)) ...)`
 
-  * The `do` and `with` macros are smarter: `(do 1)` and `(with () 1)` compile
-    into `1` rather than `((racket-lambda nil 1))`
+  * The `do` and `with` macros are smarter: `(do 5)` and `(with () 5)` compile
+    into `5` rather than `((racket-lambda nil 5))`
 
-  * `num` (from _strings.arc_) has been renamed to `commafy`
+  * `num` (from _"strings.arc"_) has been renamed to `commafy`
 
   * `assoc` now has the list first, and the key second:
 
@@ -144,4 +144,4 @@ Other
   * Nu no longer has `defset`: everything is done in `sref`. This idea is
     courtesy of rocketnia
 
-  * The `whilet` and `while` macros have been implemented better (see _core.arc_)
+  * The `whilet` and `while` macros have been implemented better (see _"core.arc"_)

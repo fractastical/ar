@@ -113,11 +113,11 @@ be hygienic. Let's transform this macro:
                      `(,(car body) (aif ,@(cdr body)))
                    body))))
 
-First, replace all instances of `\`` with `#\``. Now, look at every symbol.
-If the symbol is unquoted, remove the unquote. If the symbol is anaphoric,
-add a quote. If the symbol is already quoted, add another quote. Otherwise,
-leave the symbol exactly as-is. That's it! Let's look at what the above macro
-looks like when following these rules:
+First, replace all instances of \` with #\`. Now, look at every symbol. If the
+symbol is unquoted, remove the unquote. If the symbol is anaphoric, add a
+quote. If the symbol is already quoted, add another quote. Otherwise, leave
+the symbol exactly as-is. That's it! Let's look at what the above macro looks
+like when following these rules:
 
     (mac aif (expr . body)
       #`(let 'it expr

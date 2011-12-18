@@ -1125,41 +1125,41 @@
 
 (ac-def qq-expand-pair (x)
   (racket-if (racket-pair? x)
-      (racket-let ((c (car x)))
-        (racket-cond
-          ;; TODO: don't hardcode the symbol unquote
-          ((racket-and (racket-eq? c (racket-quote unquote))
-                       (ac-no (cddr x)))
-            (cadr x))
-          ;; TODO: don't hardcode the symbol unquote-splicing
-          ((racket-and (racket-eq? c (racket-quote unquote-splicing))
-                       (ac-no (cddr x)))
-            (err "cannot use ,@ after ."))
-          ;; TODO: don't hardcode the symbol unquote
-          ((ac-caris c (racket-quote unquote))
-            (list cons
+    (racket-let ((c (car x)))
+      (racket-cond
+        ;; TODO: don't hardcode the symbol unquote
+        ((racket-and (racket-eq? c (racket-quote unquote))
+                     (ac-no (cddr x)))
+          (cadr x))
+        ;; TODO: don't hardcode the symbol unquote-splicing
+        ((racket-and (racket-eq? c (racket-quote unquote-splicing))
+                     (ac-no (cddr x)))
+          (err "cannot use ,@ after ."))
+        ;; TODO: don't hardcode the symbol unquote
+        ((ac-caris c (racket-quote unquote))
+          (list cons
+                (cadr c)
+                (qq-expand-pair (cdr x))))
+        ;; TODO: don't hardcode the symbol unquote-splicing
+        ((ac-caris c (racket-quote unquote-splicing))
+          (racket-if (ac-no (cdr x))
+            (cadr c)
+            (list racket-append
                   (cadr c)
-                  (qq-expand-pair (cdr x))))
-          ;; TODO: don't hardcode the symbol unquote-splicing
-          ((ac-caris c (racket-quote unquote-splicing))
-            (racket-if (ac-no (cdr x))
-              (cadr c)
-              (list racket-append
-                    (cadr c)
-                    (qq-expand-pair (cdr x)))))
-          ;; TODO: don't hardcode the symbol quasiquote
-          ((ac-caris c (racket-quote quasiquote))
-            (list cons
-                  (qq-expand-pair (qq-expand (cadr c)))
-                  (qq-expand-pair (cdr x))))
-          ((racket-pair? c)
-            (list cons
-                  (qq-expand-pair c)
-                  (qq-expand-pair (cdr x))))
-          (racket-else
-            (list cons
-                  (list quote c)
-                  (qq-expand-pair (cdr x))))))
+                  (qq-expand-pair (cdr x)))))
+        ;; TODO: don't hardcode the symbol quasiquote
+        ((ac-caris c (racket-quote quasiquote))
+          (list cons
+                (qq-expand-pair (qq-expand (cadr c)))
+                (qq-expand-pair (cdr x))))
+        ((racket-pair? c)
+          (list cons
+                (qq-expand-pair c)
+                (qq-expand-pair (cdr x))))
+        (racket-else
+          (list cons
+                (list quote c)
+                (qq-expand-pair (cdr x))))))
     (racket-if (ac-no x)
                  x
                (list quote x))))
@@ -1450,6 +1450,7 @@
 
 (ac-def is2 (a b)
   (ac-tnil (racket-or (racket-eqv? a b) ;; TODO: should this use racket-eq?
+                      ;; TODO: can I get rid of this...?
                       (racket-and (racket-string? a)
                                   (racket-string? b)
                                   (racket-string=? a b)))))
@@ -1474,7 +1475,7 @@
 
 
 ;=============================================================================
-;  compiler / eval
+;  compile / eval
 ;=============================================================================
 
 (ac-def ac-compile (x)
