@@ -274,7 +274,7 @@
       (is totype 'string)   (string x)
       (is totype 'sym)      (sym x)
       (is totype 'cons)     (if (string? x)
-                                  (racket-list->mlist (racket-string->list x))
+                                  (racket-string->list x) ;(racket-list->mlist )
                                 (no x)
                                   nil)
                             (err "can't coerce" x type)))
@@ -714,7 +714,7 @@
 ;; TODO: should pipe call (cont 'wait)?
 (def pipe (cmd)
   (let (in out id err cont)
-       (racket-list->mlist (racket-process/ports #f #f (stderr) cmd))
+       (racket-process/ports #f #f (stderr) cmd) ;(racket-list->mlist )
     (list in out)))
 
 (def pipe-from (cmd)
@@ -758,7 +758,8 @@
                    (if (dir-exists x)
                          (string x "/")
                        (string x)))
-                 (racket-list->mlist (racket-directory-list)))
+                 (racket-directory-list) ;(racket-list->mlist )
+                 )
       (if f (keep f x)
             x))))
 

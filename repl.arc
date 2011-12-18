@@ -14,7 +14,7 @@
                           ((racket-current-prompt-read))
                           (if (is expr racket-eof)
                         (prn)
-                      (let expr (ac-deep-toarc (racket-syntax->datum expr))
+                      (let expr (racket-syntax->datum expr) ;(ac-deep-toarc )
                         (let val (eval expr)
                           (write val)
                           (prn)

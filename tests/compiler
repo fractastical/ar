@@ -38,10 +38,10 @@ error: racket-parameterize: bad syntax in: racket-parameterize
 
 ;; TODO: not sure about this
 > (ac-compile '(with nil 1))
-error: mcdr: expects argument of type <mutable-pair>; given 'nil
+error: cdr: expects argument of type <mutable-pair>; given 'nil
 
 > (ac-compile '(with nil 1 2))
-error: mcdr: expects argument of type <mutable-pair>; given 'nil
+error: cdr: expects argument of type <mutable-pair>; given 'nil
 
 
 > (ac-compile '(with (a 5) 1))
@@ -61,10 +61,10 @@ error: mcdr: expects argument of type <mutable-pair>; given 'nil
 
 ;; TODO: not sure about this
 > (ac-compile '(withs nil 1))
-error: mcar: expects argument of type <mutable-pair>; given 'nil
+error: car: expects argument of type <mutable-pair>; given 'nil
 
 > (ac-compile '(withs nil 1 2))
-error: mcar: expects argument of type <mutable-pair>; given 'nil
+error: car: expects argument of type <mutable-pair>; given 'nil
 
 
 > (ac-compile '(withs (a 5) 1))
@@ -1191,7 +1191,7 @@ error: #<procedure>: expects 2 arguments plus an optional argument with keyword 
 error: #<procedure>: expects 1 argument plus an optional argument with keyword #:a, given 0
 
 > ((fn (:a (b c)) (list a b c)) 1)
-error: mcar: expects argument of type <mutable-pair>; given 1
+error: car: expects argument of type <mutable-pair>; given 1
 
 > ((fn (:a (b c)) (list a b c)) 1 2)
 error: #<procedure>: expects 1 argument plus an optional argument with keyword #:a, given 2: 1 2

@@ -66,9 +66,18 @@ Other
 
         #`(%nocompile ('some-racket-macro ,(ac-compile ...) ,@(ac-args ...)))
 
-  * `nil` is a global variable that contains the Racket null value `'()` This
-     is not noticable in Arc code, but makes the compiler implementation much
-     simpler
+  * `nil` is a global variable that contains the Racket null value `'()`
+    rather than the symbol `'nil`.
+
+    Likewise, lists in _Nu_ are terminated with Racket's null value, which
+    means a Racket list is identical to a _Nu_ list in every way.
+
+    This is not noticable in Arc code, but makes the compiler implementation
+    **much** simpler
+
+  * _Nu_ uses immutable pairs like _Arc 3.1_ rather than mutable pairs like in
+    _ar_. It's still possible to use `scar` and `scdr` though: [they use
+    `racket-unsafe-set-mcar!` and `racket-unsafe-set-mcdr!`](http://arclanguage.org/item?id=13616)
 
   * Some built-in functions are defined in Arc, rather than in _ar.arc_ and
     _ac.arc_. This results in much shorter and clearer code

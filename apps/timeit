@@ -46,13 +46,12 @@
     (ac-load "lib/time.arc"))
 
   (let ((read     (namespace-variable-value 'read #f))
-        (compile  (namespace-variable-value 'ac-compile #f))
-        (toracket (namespace-variable-value 'ac-deep-fromarc #f)))
+        (compile  (namespace-variable-value 'ac-compile #f)))
     (for-each (lambda (x)
                 (display "> ")
                 (displayln x)
                 ;; TODO: clunky
-                (let ((expr (toracket (compile (read (string-append "(timeit " x ")"))))))
+                (let ((expr (compile (read (string-append "(timeit " x ")")))))
                   (let loop ((x (iter)))
                     (when (> x 0)
                       (eval expr)

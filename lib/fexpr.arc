@@ -51,7 +51,7 @@
                   (dedup x))
                     ;; TODO: conswhen? consif?
     #`(current-env ,(when x (cons list x)))))
-#|        (list racket-mappend
+#|        (list racket-append
 
               env)|#
 

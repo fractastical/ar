@@ -63,7 +63,7 @@
 
 #|(def namespace-copy1 ((o x   (racket-current-namespace))
                       (o new (racket-make-empty-namespace)))
-  (each n (racket-list->mlist:racket-namespace-mapped-symbols x)
+  (each n (racket-namespace-mapped-symbols x) ;(racket-list->mlist )
     (namespace-set new n (namespace-get x n)))
   new)
 

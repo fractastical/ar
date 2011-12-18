@@ -14,7 +14,7 @@
         (map [if (ac-tnil (racket-bytes? _))
                    (string _)
                  _]
-             (racket-list->mlist result)))))
+             result)))) ;(racket-list->mlist )
 
 ; This isn't anchored at the beginning of the input unless you use
 ; "^" yourself.
@@ -41,4 +41,4 @@
 
 
 (def re-split (x y)
-  (racket-list->mlist:racket-regexp-split (regexp x) y))
+  (racket-regexp-split (regexp x) y)) ;(racket-list->mlist )

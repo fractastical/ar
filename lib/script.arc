@@ -1,11 +1,13 @@
-(def racket-vector->mlist (x)
+#|(def racket-vector->mlist (x)
   (racket-list->mlist:racket-vector->list x))
-  (def racket-mlist->vector (x)
-  (racket-list->vector:racket-mlist->list x))
-  (make-parameter script-args
+
+(def racket-mlist->vector (x)
+  (racket-list->vector:racket-mlist->list x))|#
+
+(make-parameter script-args
   (racket-make-derived-parameter racket-current-command-line-arguments
-    racket-mlist->vector
-    racket-vector->mlist
+    racket-list->vector ;racket-mlist->vector
+    racket-vector->list ;racket-vector->mlist
     ))
 
 ;; TODO: ew

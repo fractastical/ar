@@ -24,7 +24,7 @@ error: #<procedure>: expects 3 arguments, given 1: 1
 error: #<procedure>: expects 3 arguments, given 2: 1 2
 
 > ((fn (a (b) c) (list a b c)) 1 2 3)
-error: mcar: expects argument of type <mutable-pair>; given 2
+error: car: expects argument of type <mutable-pair>; given 2
 
 > ((fn (a (b) c) (list a b c)) 1 '(2) 3)
 (1 2 3)
@@ -40,7 +40,7 @@ error: #<case-lambda-procedure>: no clause matching 0 arguments
 error: #<case-lambda-procedure>: no clause matching 1 argument: 1
 
 > ((fn (a (b) (o c 5) (o d) . rest) (list a b c d rest)) 1 2)
-error: mcar: expects argument of type <mutable-pair>; given 2
+error: car: expects argument of type <mutable-pair>; given 2
 
 > ((fn (a (b) (o c 5) (o d) . rest) (list a b c d rest)) 1 '(2))
 (1 2 5 nil nil)
@@ -77,13 +77,13 @@ error: mcar: expects argument of type <mutable-pair>; given 2
 
 
 > ((fn (a (b (c d (e)))) (list a b c d e)) 1 2)
-error: mcar: expects argument of type <mutable-pair>; given 2
+error: car: expects argument of type <mutable-pair>; given 2
 
 > ((fn (a (b (c d (e)))) (list a b c d e)) 1 '(2))
 (1 2 nil nil nil)
 
 > ((fn (a (b (c d (e)))) (list a b c d e)) 1 '(2 3))
-error: mcar: expects argument of type <mutable-pair>; given 3
+error: car: expects argument of type <mutable-pair>; given 3
 
 > ((fn (a (b (c d (e)))) (list a b c d e)) 1 '(2 (3)))
 (1 2 3 nil nil)
@@ -92,20 +92,20 @@ error: mcar: expects argument of type <mutable-pair>; given 3
 (1 2 3 4 nil)
 
 > ((fn (a (b (c d (e)))) (list a b c d e)) 1 '(2 (3 4 5)))
-error: mcar: expects argument of type <mutable-pair>; given 5
+error: car: expects argument of type <mutable-pair>; given 5
 
 > ((fn (a (b (c d (e)))) (list a b c d e)) 1 '(2 (3 4 (5))))
 (1 2 3 4 5)
 
 
 > ((fn (a (b (c d (e) f)) . g) (list a b c d e f g)) 1 2)
-error: mcar: expects argument of type <mutable-pair>; given 2
+error: car: expects argument of type <mutable-pair>; given 2
 
 > ((fn (a (b (c d (e) f)) . g) (list a b c d e f g)) 1 '(2 (3 4)))
 (1 2 3 4 nil nil nil)
 
 > ((fn (a (b (c d (e) f)) . g) (list a b c d e f g)) 1 '(2 (3 4 5)))
-error: mcar: expects argument of type <mutable-pair>; given 5
+error: car: expects argument of type <mutable-pair>; given 5
 
 > ((fn (a (b (c d (e) f)) . g) (list a b c d e f g)) 1 '(2 (3 4 (5))))
 (1 2 3 4 5 nil nil)
@@ -127,13 +127,13 @@ error: #<procedure>: expects 3 arguments, given 1: 1
 error: #<procedure>: expects 3 arguments, given 2: 1 2
 
 > ((fn (a (b (c d)) e) (list a b c d e)) 1 2 3)
-error: mcar: expects argument of type <mutable-pair>; given 2
+error: car: expects argument of type <mutable-pair>; given 2
 
 > ((fn (a (b (c d)) e) (list a b c d e)) 1 '(2) 3)
 (1 2 nil nil 3)
 
 > ((fn (a (b (c d)) e) (list a b c d e)) 1 '(2 3) 3)
-error: mcar: expects argument of type <mutable-pair>; given 3
+error: car: expects argument of type <mutable-pair>; given 3
 
 > ((fn (a (b (c d)) e) (list a b c d e)) 1 '(2 (3)) 3)
 (1 2 3 nil 3)
@@ -158,7 +158,7 @@ error: #<procedure>: expects 3 arguments, given 1: 1
 error: #<procedure>: expects 3 arguments, given 2: 1 2
 
 > ((fn (a (b c d) c) (fn (a b c) (list a b c))) 1 2 3)
-error: mcar: expects argument of type <mutable-pair>; given 2
+error: car: expects argument of type <mutable-pair>; given 2
 
 > ((fn (a (b c d) c) (fn (a b c) (list a b c))) 1 '(2))
 error: #<procedure>: expects 3 arguments, given 2: 1 {2}
@@ -177,7 +177,7 @@ error: #<procedure>: expects 3 arguments, given 2: 1 {2}
 error: #<procedure>: expects 3 arguments, given 2: 1 2
 
 > ((fn ((a) (b) (c)) (list a b c)) 1 2 3)
-error: mcar: expects argument of type <mutable-pair>; given 3
+error: car: expects argument of type <mutable-pair>; given 3
 
 > ((fn ((a) (b) (c)) (list a b c)) '(1) '(2) '(3))
 (1 2 3)
@@ -499,7 +499,7 @@ nil
 
 
 > ('(1 2 3) -1)
-error: mcdr: expects argument of type <mutable-pair>; given '()
+error: cdr: expects argument of type <mutable-pair>; given '()
 
 > ('(1 2 3) 0)
 1
@@ -511,7 +511,14 @@ error: mcdr: expects argument of type <mutable-pair>; given '()
 3
 
 > ('(1 2 3) 3)
-error: mcar: expects argument of type <mutable-pair>; given 3
+error: car: expects argument of type <mutable-pair>; given 3
+
+
+> (scar (table) 5)
+u
+
+> (scdr (table) 10)
+u
 
 
 ;=============================================================================

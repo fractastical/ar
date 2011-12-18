@@ -57,9 +57,7 @@ bad for many reasons:
 
     Is compiled into this:
 
-        (racket-lambda (a (b 3) . c)
-          (racket-let* ((c (racket-list->mlist c)))
-            ...))
+        (racket-lambda (a (b 3) . c) ...)
 
     The only issue then is destructuring args, which Racket doesn't support.
     In that case, I still use a normal lambda, but do the destructuring in the
