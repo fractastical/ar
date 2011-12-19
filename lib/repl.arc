@@ -12,7 +12,7 @@
               (fn ()
                 (let expr ;; This is to make GNU readline work
                           ((racket-current-prompt-read))
-                          (if (is expr racket-eof)
+                  (if (is expr racket-eof)
                         (prn)
                       (let expr (racket-syntax->datum expr) ;(ac-deep-toarc )
                         (let val (eval expr)

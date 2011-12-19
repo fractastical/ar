@@ -5,8 +5,8 @@
 ;  Compiler specific things
 ;=============================================================================
 
-> (car (cadr (ac-compile ''(1 2 3))))
-(1 2 3)
+> ((car (cadr (ac-compile ''(1 2 3)))))
+(1 2 3)u
 
 > (ac-compile ''foo)
 #<quoted>

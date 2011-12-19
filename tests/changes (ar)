@@ -1,0 +1,223 @@
+;=============================================================================
+;  quasiquote
+;=============================================================================
+
+> (macex1 '`(foo 'bar qux))
+(#<fn:cons> (#<mac:quote> foo) (#<fn:cons> (#<fn:cons> (#<mac:quote> quote) (#<fn:cons> (#<mac:quote> bar) nil)) (#<fn:cons> (#<mac:quote> qux) nil)))
+
+
+> (macex1 '`(foo ,bar qux))
+(#<fn:cons> (#<mac:quote> foo) (#<fn:cons> bar (#<fn:cons> (#<mac:quote> qux) nil)))
+
+> (macex1 '`(foo ',bar qux))
+(#<fn:cons> (#<mac:quote> foo) (#<fn:cons> (#<fn:cons> (#<mac:quote> quote) (#<fn:cons> bar nil)) (#<fn:cons> (#<mac:quote> qux) nil)))
+
+> (macex1 '`(foo '',bar qux))
+(#<fn:cons> (#<mac:quote> foo) (#<fn:cons> (#<fn:cons> (#<mac:quote> quote) (#<fn:cons> (#<fn:cons> (#<mac:quote> quote) (#<fn:cons> bar nil)) nil)) (#<fn:cons> (#<mac:quote> qux) nil)))
+
+
+> (macex1 '`(foo qux . bar))
+(#<fn:cons> (#<mac:quote> foo) (#<fn:cons> (#<mac:quote> qux) (#<mac:quote> bar)))
+
+> (macex1 '`(foo qux . ,bar))
+(#<fn:cons> (#<mac:quote> foo) (#<fn:cons> (#<mac:quote> qux) bar))
+
+;; TODO: not sure about this
+> (macex1 '`(foo qux unquote bar))
+(#<fn:cons> (#<mac:quote> foo) (#<fn:cons> (#<mac:quote> qux) bar))
+
+> (macex1 '`(foo unquote qux bar))
+(#<fn:cons> (#<mac:quote> foo) (#<fn:cons> (#<mac:quote> unquote) (#<fn:cons> (#<mac:quote> qux) (#<fn:cons> (#<mac:quote> bar) nil))))
+
+
+> (macex1 '`(foo qux . ,@bar))
+error: cannot use ,@ after .
+
+> (macex1 '`(foo qux unquote-splicing bar))
+error: cannot use ,@ after .
+
+> (macex1 '`(foo unquote-splicing qux bar))
+(#<fn:cons> (#<mac:quote> foo) (#<fn:cons> (#<mac:quote> unquote-splicing) (#<fn:cons> (#<mac:quote> qux) (#<fn:cons> (#<mac:quote> bar) nil))))
+
+
+> (macex1 '`(foo qux ,@bar))
+(#<fn:cons> (#<mac:quote> foo) (#<fn:cons> (#<mac:quote> qux) bar))
+
+> (macex1 '`(foo ,@bar qux))
+(#<fn:cons> (#<mac:quote> foo) (#<fn:join> bar (#<fn:cons> (#<mac:quote> qux) nil)))
+
+> (macex1 '`(foo ,@bar ,@qux))
+(#<fn:cons> (#<mac:quote> foo) (#<fn:join> bar qux))
+
+> (macex1 '`(foo ,@bar ,@qux ,@corge))
+(#<fn:cons> (#<mac:quote> foo) (#<fn:join> bar (#<fn:join> qux corge)))
+
+> (macex1 '`(foo ',@bar qux))
+(#<fn:cons> (#<mac:quote> foo) (#<fn:cons> (#<fn:cons> (#<mac:quote> quote) bar) (#<fn:cons> (#<mac:quote> qux) nil)))
+
+> (macex1 '`(foo '',@bar qux))
+(#<fn:cons> (#<mac:quote> foo) (#<fn:cons> (#<fn:cons> (#<mac:quote> quote) (#<fn:cons> (#<fn:cons> (#<mac:quote> quote) bar) nil)) (#<fn:cons> (#<mac:quote> qux) nil)))
+
+
+> (let bar (uniq)
+    `(foo qux . ,bar))
+(foo qux . g1)
+
+> (let bar (list 1 2 3)
+    `(foo qux . ,@bar))
+error: cannot use ,@ after .
+
+
+> (with (foo  1
+         bar  2
+         qux  3)
+    `(foo ',bar qux))
+(foo (quote 2) qux)
+
+> (with (foo  1
+         bar  2
+         qux  3)
+    `(foo '',bar qux))
+(foo (quote (quote 2)) qux)
+
+> (with (foo  1
+         bar  2
+         qux  3)
+    `(foo ''',bar qux))
+(foo (quote (quote (quote 2))) qux)
+
+
+> (with (foo  1
+         bar  '(2 3 4)
+         qux  5)
+    `(foo ',@bar qux))
+(foo (quote 2 3 4) qux)
+
+> (with (foo  1
+         bar  '(2 3 4)
+         qux  5)
+    `(foo '',@bar qux))
+(foo (quote (quote 2 3 4)) qux)
+
+> (with (foo  1
+         bar  '(2 3 4)
+         qux  5)
+    `(foo ''',@bar qux))
+(foo (quote (quote (quote 2 3 4))) qux)
+
+
+
+> (let name 'foo
+    (qq-expand `',name))
+(#<fn:cons> (#<mac:quote> quote) (#<fn:cons> (#<mac:quote> foo) nil))
+
+> (let name '(foo bar qux)
+    (qq-expand `',@name))
+(#<fn:cons> (#<mac:quote> quote) (#<fn:cons> (#<mac:quote> foo) (#<fn:cons> (#<mac:quote> bar) (#<fn:cons> (#<mac:quote> qux) nil))))
+
+
+> (macex-all `foo)
+foo
+
+> (qq-expand `foo)
+(#<mac:quote> foo)
+
+
+> (macex-all `,(+ 1 2))
+3
+
+> (qq-expand `,(+ 1 2))
+(#<mac:quote> 3)
+
+
+> (macex-all `,@(list 1 2 3))
+error: ,@ cannot be used immediately after `
+
+> (qq-expand `,@(list 1 2 3))
+error: ,@ cannot be used immediately after `
+
+
+> (macex-all '`(foo bar qux corge))
+(cons (quote foo) (cons (quote bar) (cons (quote qux) (cons (quote corge) nil))))
+
+> (qq-expand '`(foo bar qux corge))
+(#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> foo) nil)) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> bar) nil)) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> qux) nil)) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> corge) nil)) (#<fn:cons> (#<mac:quote> nil) nil))) nil))) nil))) nil)))
+
+
+> (macex-all '`(foo bar ,@qux ,corge))
+(cons (quote foo) (cons (quote bar) (join qux (cons corge nil))))
+
+> (qq-expand '`(foo bar ,@qux ,corge))
+(#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> foo) nil)) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> bar) nil)) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:join>) (#<fn:cons> (#<mac:quote> qux) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<mac:quote> corge) (#<fn:cons> (#<mac:quote> nil) nil))) nil))) nil))) nil)))
+
+
+> (macex-all '`(foo (bar nou) ,@qux ,corge))
+(cons (quote foo) (cons (cons (quote bar) (cons (quote nou) nil)) (join qux (cons corge nil))))
+
+> (qq-expand '`(foo (bar nou) ,@qux ,corge))
+(#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> foo) nil)) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> bar) nil)) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> nou) nil)) (#<fn:cons> (#<mac:quote> nil) nil))) nil))) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:join>) (#<fn:cons> (#<mac:quote> qux) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<mac:quote> corge) (#<fn:cons> (#<mac:quote> nil) nil))) nil))) nil))) nil)))
+
+
+> (macex-all '`(foo `(bar nou) ,@qux ,corge))
+(cons (quote foo) (cons (cons (quote cons) (cons (cons (quote quote) (cons (quote bar) nil)) (cons (cons (quote cons) (cons (cons (quote quote) (cons (quote nou) nil)) (cons (quote nil) nil))) nil))) (join qux (cons corge nil))))
+
+> (qq-expand '`(foo `(bar nou) ,@qux ,corge))
+(#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> foo) nil)) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> #<fn:cons>) nil)) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> #<mac:quote>) nil)) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> bar) nil)) (#<fn:cons> (#<mac:quote> nil) nil))) nil))) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> #<fn:cons>) nil)) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> #<mac:quote>) nil)) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> nou) nil)) (#<fn:cons> (#<mac:quote> nil) nil))) nil))) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> nil) nil)) (#<fn:cons> (#<mac:quote> nil) nil))) nil))) nil))) (#<fn:cons> (#<mac:quote> nil) nil))) nil))) nil))) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:join>) (#<fn:cons> (#<mac:quote> qux) (#<fn:cons> (#<fn:cons> (#<mac:quote> #<fn:cons>) (#<fn:cons> (#<mac:quote> corge) (#<fn:cons> (#<mac:quote> nil) nil))) nil))) nil))) nil)))
+
+
+;=============================================================================
+;  Parameters
+;=============================================================================
+
+> stdout
+#<output-port:stdout>
+
+> (stdout)
+#<output-port:stdout>
+
+
+> (w/stdout stderr stdout)
+#<output-port:stderr>
+
+> (w/stdout stderr (stdout))
+#<output-port:stderr>
+
+
+> (= stdout stderr)
+#<output-port:stderr>
+
+> stdout
+#<output-port:stderr>
+
+> (stdout)
+#<output-port:stderr>
+
+
+> ((fn ((o a stdout)) a))
+#<output-port:stdout>
+
+
+> (parameter foo 5)
+5
+
+> foo
+5
+
+> (w/foo 10 foo)
+10
+
+> foo
+5
+
+
+> (= foo 50)
+50
+
+> foo
+50
+
+> (w/foo 15 foo)
+15
+
+> foo
+50

@@ -821,6 +821,7 @@
   #`(zap [reinsert-sorted test elt '_] seq))
 
 
+#|
 ;; TODO: ew code duplication
 (def hash args
   (table (pair args))
@@ -831,7 +832,7 @@
                      (pair args)))|#
           (pair args)
           'table)|#
-  )
+  )|#
 
 #|(mac obj args
   #`(racket-make-hash (list ,@(map (fn ((k v))
@@ -839,8 +840,8 @@
                                    (pair args)))))|#
 
 (mac obj args
-  #`(table (list ,@(map (fn ((k v)) #`(list ',k v))
-                        (pair args)))))
+  #`(make-table ,@(mappend (fn ((k v)) #`(',k v))
+                           (pair args))))
 
 
 ; Could make this look at the sig of f and return a fn that took the

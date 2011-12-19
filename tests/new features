@@ -1,0 +1,658 @@
+> (= namespace arc3-namespace)
+#<namespace:0>
+
+;=============================================================================
+;  %nocompile
+;=============================================================================
+
+> (ac-compile `(%nocompile (+ 1 2 3 4 5)))
+(+ 1 2 3 4 5)
+
+> (ac-compile `(,%nocompile (+ 1 2 3 4 5)))
+(+ 1 2 3 4 5)
+
+> (type (ac-compile `(,%nocompile (+ 1 2 3 4 5))))
+cons
+
+
+> (ac-compile `(%nocompile + 1 2 3 4 5))
+(racket-begin + 1 2 3 4 5)
+
+> (ac-compile `(,%nocompile + 1 2 3 4 5))
+(racket-begin + 1 2 3 4 5)
+
+> (type (ac-compile `(,%nocompile + 1 2 3 4 5)))
+cons
+
+
+> (ac-compile '(%nocompile 5 10 (foo 10) (bar (qux (%compile (corge)))) (%compile (foo 10)) (%compile 5)))
+(racket-begin 5 10 (foo 10) (bar (qux (%compile (corge)))) (%compile (foo 10)) (%compile 5))
+
+> (ac-compile `(%nocompile 5 10 (foo 10) (bar (qux ,(ac-compile '(corge)))) ,(ac-compile '(foo 10)) ,(ac-compile '5)))
+(racket-begin 5 10 (foo 10) (bar (qux (#<fn:ac-funcall0> (#<fn:ac-lookup-global> corge)))) (#<fn:ac-funcall1> (#<fn:ac-lookup-global> foo) 10) 5)
+
+> (%nocompile (racket-parameterize ((racket-current-namespace (racket-current-namespace))) (racket-current-namespace)))
+#<namespace:0>
+
+> (%nocompile (racket-parameterize ((racket-current-namespace (racket-current-namespace)))
+    (%compile (+ 10 5) (+ 15 20))))
+error: reference to undefined identifier: %compile
+
+> (eval `(%nocompile (racket-parameterize ((racket-current-namespace (racket-current-namespace)))
+           ,@(ac-args '((+ 10 5) (+ 15 20))))))
+35
+
+> (let ac-compile nil
+    (%nocompile (+ 10 5)))
+15
+
+> (let %nocompile nil
+    (%nocompile (+ 10 5)))
+error: function call on inappropriate object () 15
+
+
+;=============================================================================
+;  %splice
+;=============================================================================
+
+> (+ (%splice 1 2 3))
+6
+
+> ((%splice + 1 2 3) 4 5 6)
+21
+
+> ((%splice + 1 2 3) (%splice 4 5 6))
+21
+
+> (ac-compile '(+ (%splice 1 2 3)))
+(#<fn:ac-funcall3> (#<fn:ac-lookup-global> +) 1 2 3)
+
+
+;=============================================================================
+;  pipe-from
+;=============================================================================
+
+> (w/pipe-from x "echo 'foo\nbar\nqux'" (readlines x))
+("foo" "bar" "qux")
+
+> (pipe-lines "echo 'foo\nbar\nqux'")
+("foo" "bar" "qux")
+
+
+;=============================================================================
+;  quasisyntax
+;=============================================================================
+
+> (macex1 '#`(foo 'bar qux))
+(#<fn:cons> foo (#<fn:cons> (#<mac:quote> bar) (#<fn:cons> qux nil)))
+
+> (macex1 '#`(foo ''bar qux))
+(#<fn:cons> foo (#<fn:cons> (#<fn:list> (#<mac:quote> #<mac:quote>) (#<mac:quote> bar)) (#<fn:cons> qux nil)))
+
+
+> (macex1 '#`(foo ,bar qux))
+(#<fn:cons> foo (#<fn:cons> bar (#<fn:cons> qux nil)))
+
+> (macex1 '#`(foo ',bar qux))
+(#<fn:cons> foo (#<fn:cons> (#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:list> bar)) (#<fn:cons> qux nil)))
+
+> (macex1 '#`(foo '',bar qux))
+(#<fn:cons> foo (#<fn:cons> (#<fn:list> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:list> bar))) (#<fn:cons> qux nil)))
+
+> (macex1 '#`(foo ''',bar qux))
+(#<fn:cons> foo (#<fn:cons> (#<fn:list> (#<mac:quote> #<mac:quote>) (#<fn:list> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:list> bar)))) (#<fn:cons> qux nil)))
+
+
+> (macex1 '#`(foo qux . bar))
+(#<fn:cons> foo (#<fn:cons> qux bar))
+
+> (macex1 '#`(foo qux . ,bar))
+(#<fn:cons> foo (#<fn:cons> qux bar))
+
+;; TODO: not sure about this
+> (macex1 '#`(foo qux unquote bar))
+(#<fn:cons> foo (#<fn:cons> qux bar))
+
+> (macex1 '#`(foo unquote qux bar))
+(#<fn:cons> foo (#<fn:cons> unquote (#<fn:cons> qux (#<fn:cons> bar nil))))
+
+
+> (macex1 '#`(foo qux . ,@bar))
+error: cannot use ,@ after .
+
+> (macex1 '#`(foo qux unquote-splicing bar))
+error: cannot use ,@ after .
+
+> (macex1 '#`(foo unquote-splicing qux bar))
+(#<fn:cons> foo (#<fn:cons> unquote-splicing (#<fn:cons> qux (#<fn:cons> bar nil))))
+
+
+> (macex1 '#`(foo qux ,@bar))
+(#<fn:cons> foo (#<fn:cons> qux bar))
+
+> (macex1 '#`(foo ,@bar qux))
+(#<fn:cons> foo (#<fn:join> bar (#<fn:cons> qux nil)))
+
+> (macex1 '#`(foo ,@bar ,@qux))
+(#<fn:cons> foo (#<fn:join> bar qux))
+
+> (macex1 '#`(foo ,@bar ,@qux ,@corge))
+(#<fn:cons> foo (#<fn:join> bar (#<fn:join> qux corge)))
+
+> (macex1 '#`(foo ',@bar qux))
+(#<fn:cons> foo (#<fn:cons> (#<fn:cons> (#<mac:quote> #<mac:quote>) bar) (#<fn:cons> qux nil)))
+
+> (macex1 '#`(foo '',@bar qux))
+(#<fn:cons> foo (#<fn:cons> (#<fn:list> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> #<mac:quote>) bar)) (#<fn:cons> qux nil)))
+
+
+> (with (foo  1
+         bar  2
+         qux  3)
+    #`(foo ',bar qux))
+(1 (#<mac:quote> 2) 3)
+
+> (with (foo  1
+         bar  2
+         qux  3)
+    #`(foo '',bar qux))
+(1 (#<mac:quote> (#<mac:quote> 2)) 3)
+
+> (with (foo  1
+         bar  2
+         qux  3)
+    #`(foo ''',bar qux))
+(1 (#<mac:quote> (#<mac:quote> (#<mac:quote> 2))) 3)
+
+
+> (with (foo  1
+         bar  '(2 3 4)
+         qux  5)
+    #`(foo ',@bar qux))
+(1 (#<mac:quote> 2 3 4) 5)
+
+> (with (foo  1
+         bar  '(2 3 4)
+         qux  5)
+    #`(foo '',@bar qux))
+(1 (#<mac:quote> (#<mac:quote> 2 3 4)) 5)
+
+> (with (foo  1
+         bar  '(2 3 4)
+         qux  5)
+    #`(foo ''',@bar qux))
+(1 (#<mac:quote> (#<mac:quote> (#<mac:quote> 2 3 4))) 5)
+
+
+
+> (let name 'foo
+    (qq-expand #`',name))
+(#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> foo) nil))
+
+> (let name '(foo bar qux)
+    (qq-expand #`',@name))
+(#<fn:cons> (#<mac:quote> #<mac:quote>) (#<fn:cons> (#<mac:quote> foo) (#<fn:cons> (#<mac:quote> bar) (#<fn:cons> (#<mac:quote> qux) nil))))
+
+
+> (let body '(1 2 3)
+    (macex1 #`(fn ('a 'b 'c) (,@body))))
+(g4 racket-lambda (a b c) (#<fn:ac-funcall2> 1 2 3))
+
+> (let body '(1 2 3)
+    (qq-expand #`(fn (('o '_)) (,@body))))
+(#<fn:cons> (#<mac:quote> #<mac:fn>) (#<fn:cons> (#<fn:cons> (#<fn:cons> (#<mac:quote> o) (#<fn:cons> (#<mac:quote> _) nil)) nil) (#<fn:cons> (#<fn:cons> (#<mac:quote> 1) (#<fn:cons> (#<mac:quote> 2) (#<fn:cons> (#<mac:quote> 3) nil))) nil)))
+
+
+> (macex1 #`+)
+#<fn:+>
+
+> (qq-expand #`+)
+(#<mac:quote> #<fn:+>)
+
+
+> (macex1 #`'+)
++
+
+> (qq-expand #`'+)
+(#<mac:quote> +)
+
+
+> (macex1 #`(+ 1 2))
+(#<fn:+> 1 2)
+
+> (macex1 #`'(+ 1 2))
+(+ 1 2)
+
+
+> (macex1 #`,(+ 1 2))
+3
+
+> (qq-expand #`,(+ 1 2))
+(#<mac:quote> 3)
+
+
+> (macex-all #`,@(list 1 2 3))
+error: ,@ cannot be used immediately after #`
+
+> (qq-expand #`,@(list 1 2 3))
+error: ,@ cannot be used immediately after #`
+
+
+> (macex-all '#`(foo bar qux corge))
+(cons foo (cons bar (cons qux (cons corge nil))))
+
+> (qq-expand '#`(foo bar qux corge))
+(#<fn:cons> (#<mac:quote> quasisyntax) (#<fn:cons> (#<fn:cons> (#<mac:quote> foo) (#<fn:cons> (#<mac:quote> bar) (#<fn:cons> (#<mac:quote> qux) (#<fn:cons> (#<mac:quote> corge) nil)))) nil))
+
+
+> (macex-all '#`(foo bar ,@qux ,corge))
+(cons foo (cons bar (join qux (cons corge nil))))
+
+> (qq-expand '#`(foo bar ,@qux ,corge))
+(#<fn:cons> (#<mac:quote> quasisyntax) (#<fn:cons> (#<fn:cons> (#<mac:quote> foo) (#<fn:cons> (#<mac:quote> bar) (#<fn:join> qux (#<fn:cons> corge nil)))) nil))
+
+
+> (macex-all '#`(foo (bar nou) ,@qux ,corge))
+(cons foo (cons (cons bar (cons nou nil)) (join qux (cons corge nil))))
+
+> (qq-expand '#`(foo (bar nou) ,@qux ,corge))
+(#<fn:cons> (#<mac:quote> quasisyntax) (#<fn:cons> (#<fn:cons> (#<mac:quote> foo) (#<fn:cons> (#<fn:cons> (#<mac:quote> bar) (#<fn:cons> (#<mac:quote> nou) nil)) (#<fn:join> qux (#<fn:cons> corge nil)))) nil))
+
+
+> (macex-all '#`(foo #`(bar nou) ,@qux ,corge))
+(cons foo (cons (cons cons (cons bar (cons (cons cons (cons nou (cons nil nil))) nil))) (join qux (cons corge nil))))
+
+> (qq-expand '#`(foo #`(bar nou) ,@qux ,corge))
+(#<fn:cons> (#<mac:quote> quasisyntax) (#<fn:cons> (#<fn:cons> (#<mac:quote> foo) (#<fn:cons> (#<fn:cons> (#<mac:quote> quasisyntax) (#<fn:cons> (#<fn:cons> (#<mac:quote> bar) (#<fn:cons> (#<mac:quote> nou) nil)) nil)) (#<fn:join> qux (#<fn:cons> corge nil)))) nil))
+
+
+;=============================================================================
+;  Keyword args
+;=============================================================================
+
+> ((fn (:a b c) (list a b c)) 1)
+error: #<procedure>: expects 2 arguments plus an optional argument with keyword #:a, given 1: 1
+
+> ((fn (:a b c) (list a b c)) 1 2)
+(nil 1 2)
+
+> ((fn (:a b c) (list a b c)) 1 2 3)
+error: #<procedure>: expects 2 arguments plus an optional argument with keyword #:a, given 3: 1 2 3
+
+> ((fn (:a b c) (list a b c)) 1 2 :a 3)
+(3 1 2)
+
+> ((fn (:a b c) (list a b c)) :a 3 1 2)
+(3 1 2)
+
+
+> ((fn ((o :a) b c) (list a b c)) 1 2)
+(nil 1 2)
+
+> ((fn ((o :a) b c) (list a b c)) 1 2 :a 10)
+(10 1 2)
+
+> ((fn ((o :a 15) b c) (list a b c)) 1 2)
+(15 1 2)
+
+> ((fn ((o :a 15) b c) (list a b c)) 1 2 :a 3)
+(3 1 2)
+
+> ((fn (b c (o :a 15)) (list a b c)) 1 2)
+(15 1 2)
+
+> ((fn (b c (o :a 15)) (list a b c)) 1 2 :a 3)
+(3 1 2)
+
+
+> ((fn (:a (b c)) (list a b c)))
+error: #<procedure>: expects 1 argument plus an optional argument with keyword #:a, given 0
+
+> ((fn (:a (b c)) (list a b c)) 1)
+error: car: expects argument of type <pair>; given 1
+
+> ((fn (:a (b c)) (list a b c)) 1 2)
+error: #<procedure>: expects 1 argument plus an optional argument with keyword #:a, given 2: 1 2
+
+> ((fn (:a (b c)) (list a b c)) '(1 2))
+(nil 1 2)
+
+> ((fn (:a (b c)) (list a b c)) '(1 2) :a 5)
+(5 1 2)
+
+
+> (def foo (:a :b)
+    (list a b))
+#<fn:foo>
+
+> (foo 1 2)
+error: procedure foo: expects 0 arguments plus optional arguments with keywords #:a and #:b, given 2: 1 2
+
+> (foo :a 1)
+(1 nil)
+
+> (foo :b 2)
+(nil 2)
+
+> (foo :a 1 2)
+error: foo: no case matching 1 non-keyword argument; arguments were: 2 #:a 1
+
+> (foo :a 1 :b 2)
+(1 2)
+
+> (foo :b 2 :a 1)
+(1 2)
+
+
+> (def foo (:a (o :b 5))
+    (list a b))
+*** redefining foo
+#<fn:foo>
+
+> (foo :a 1)
+(1 5)
+
+> (foo :a 1 :b nil)
+(1 5)
+
+> (foo :a 1 :b 2)
+(1 2)
+
+
+> (def foo (:a :b . rest)
+    (list a b rest))
+*** redefining foo
+#<fn:foo>
+
+> (apply foo :a 1 :b 2)
+(1 2 nil)
+
+> (apply foo :a 1 :b 2 3 (list 4 5))
+(1 2 (3 4 5))
+
+
+;=============================================================================
+;  Keyword destructuring
+;=============================================================================
+
+> (let (:a :b :c) (obj a 1 b 2)
+    (list a b c))
+(1 2 nil)
+
+;; TODO: not sure about this
+> (let (:a (:b :c)) (obj a 1 b (obj c 2))
+    (list a b c))
+(list 1 #hash() 2)
+
+> (let (:a :b (o :c 5)) (obj a 1 b 2)
+    (list a b c))
+(1 2 5)
+
+> (let (:a :b (o :c 5) . d) (obj a 1 b 2)
+    (list a b c d))
+(1 2 5 #hash((a . 1) (b . 2)))
+
+> (let (:a :b . c) (obj a 1 b 2)
+    (list a b c))
+(1 2 #hash((a . 1) (b . 2)))
+
+> (let (:a :b :c) (obj a 1 b 2 c 3)
+    (list a b c))
+(1 2 3)
+
+> (let (:a :b :c) (obj a 1 b 2 c 3 d 4)
+    (list a b c))
+(1 2 3)
+
+
+> (ac-compile '(let (:a :b :c) (obj a 1 b 2 c 3)
+                 (list a b c)))
+((racket-lambda (g1) (racket-let* ((a (#<fn:ac-funcall1> g1 (racket-quote a))) (b (#<fn:ac-funcall1> g1 (racket-quote b))) (c (#<fn:ac-funcall1> g1 (racket-quote c)))) (#<fn:ac-funcall3> (#<fn:ac-lookup-global> list) a b c))) (#<fn:listtab> (#<fn:list> (#<fn:list> #<quoted> 1) (#<fn:list> #<quoted> 2) (#<fn:list> #<quoted> 3))))
+
+> (ac-compile '(let (:a :b . c) (obj a 1 b 2)
+                 (list a b c)))
+((racket-lambda (g1) (racket-let* ((a (#<fn:ac-funcall1> g1 (racket-quote a))) (b (#<fn:ac-funcall1> g1 (racket-quote b))) (c g1)) (#<fn:ac-funcall3> (#<fn:ac-lookup-global> list) a b c))) (#<fn:listtab> (#<fn:list> (#<fn:list> #<quoted> 1) (#<fn:list> #<quoted> 2))))
+
+> (ac-compile '(let (:a :b (o :c 5)) (obj a 1 b 2)
+                 (list a b c)))
+((racket-lambda (g1) (racket-let* ((a (#<fn:ac-funcall1> g1 (racket-quote a))) (b (#<fn:ac-funcall1> g1 (racket-quote b))) (c (#<fn:ac-funcall2> g1 (racket-quote c) 5))) (#<fn:ac-funcall3> (#<fn:ac-lookup-global> list) a b c))) (#<fn:listtab> (#<fn:list> (#<fn:list> #<quoted> 1) (#<fn:list> #<quoted> 2))))
+
+
+> (ac-compile '(fn ((:a)) a))
+(racket-lambda (g1) (racket-let* ((a (#<fn:ac-funcall1> g1 (racket-quote a)))) a))
+
+;; TODO: not sure about this
+> (ac-compile '(fn ((a (o :b 5))) (list a b)))
+(racket-lambda (g1) (racket-let* ((a (#<fn:car> g1)) (g1 (#<fn:cdr> g1)) (b (#<fn:ac-funcall2> g1 (racket-quote b) 5))) (#<fn:ac-funcall2> (#<fn:ac-lookup-global> list) a b)))
+
+
+> (let (:a :b :c) '((b 2) (a 1) (c 3))
+    (list a b c))
+(1 2 3)
+
+
+;=============================================================================
+;  Hygienic macros
+;=============================================================================
+
+> (mac unless (test . body)
+    `(if (no ,test) (do ,@body)))
+*** redefining unless
+#<mac:unless>
+
+> (let foo nil
+    (unless foo 5))
+5
+
+> (let foo nil
+    (let no (fn (x) nil)
+      (unless foo 5)))
+nil
+
+
+> (mac unless (test . body)
+    `(,if (,no ,test) (,do ,@body)))
+*** redefining unless
+#<mac:unless>
+
+> (let foo nil
+    (unless foo 5))
+5
+
+> (let foo nil
+    (let no (fn (x) nil)
+      (unless foo 5)))
+5
+
+
+> (mac unless (test . body)
+    #`(if (no test) (do ,@body)))
+*** redefining unless
+#<mac:unless>
+
+> (let foo nil
+    (unless foo 5))
+5
+
+> (let foo nil
+    (let no (fn (x) nil)
+      (unless foo 5)))
+5
+
+
+;=============================================================================
+;  Pipe composition
+;=============================================================================
+
+> (quote : )
+nil
+
+> (ac-compile '(fn : a b))
+(racket-lambda (a b) (#<fn:ac-lookup-global-arg> nil))
+
+> (ac-compile '(fn : (a b)))
+(racket-lambda (g1) (racket-let* ((a (#<fn:car> g1)) (g1 (#<fn:cdr> g1)) (b (#<fn:car> g1))) (#<fn:ac-lookup-global-arg> nil)))
+
+> (ac-compile '(: a b c))
+(#<fn:ac-funcall0> (#<fn:ac-funcall2> (#<fn:ac-lookup-global-arg> a) (#<fn:ac-lookup-global-arg> b) (#<fn:ac-lookup-global-arg> c)))u
+
+> (car '(:))
+:
+
+
+> '(+ 1 2 : + 3 4)
+(+ 1 2 : + 3 4)
+
+> (ac-compile '(+ 1 2 : + 3 4))
+(#<fn:ac-funcall3> (#<fn:ac-lookup-global> +) 1 2 (#<fn:ac-funcall2> (#<fn:ac-lookup-global> +) 3 4))
+
+
+> (+ 1 2 : + 3 4)
+10
+
+> (+ 1 2 (+ 3 4))
+10
+
+
+> '(+ 1 2 : + 3 4 : + 5 6)
+(+ 1 2 : + 3 4 : + 5 6)
+
+> (ac-compile '(+ 1 2 : + 3 4 : + 5 6))
+(#<fn:ac-funcall3> (#<fn:ac-lookup-global> +) 1 2 (#<fn:ac-funcall3> (#<fn:ac-lookup-global> +) 3 4 (#<fn:ac-funcall2> (#<fn:ac-lookup-global> +) 5 6)))
+
+
+> (+ 1 2 : + 3 4 : + 5 6)
+21
+
+> (+ 1 2 (+ 3 4 (+ 5 6)))
+21
+
+
+> (ac-compile '(accum acc
+                 (each x args
+                   (acc (* 2 x)))))
+((racket-lambda (g1) ((racket-lambda (acc) ((racket-lambda nil (#<fn:eachfn> (racket-lambda (x) (#<fn:ac-funcall1> acc (#<fn:ac-funcall2> (#<fn:ac-lookup-global> *) 2 x))) (#<fn:ac-lookup-global-arg> args)) (#<fn:nrev> g1)))) (racket-lambda ((_ nil)) (racket-begin (racket-set! g1 (#<fn:cons> _ g1)) g1)))) nil)
+
+> (ac-compile '(accum acc :
+                 each x args :
+                   acc : * 2 x))
+((racket-lambda (g1) ((racket-lambda (acc) ((racket-lambda nil (#<fn:eachfn> (racket-lambda (x) (#<fn:ac-funcall1> acc (#<fn:ac-funcall2> (#<fn:ac-lookup-global> *) 2 x))) (#<fn:ac-lookup-global-arg> args)) (#<fn:nrev> g1)))) (racket-lambda ((_ nil)) (racket-begin (racket-set! g1 (#<fn:cons> _ g1)) g1)))) nil)
+
+
+> (iso (ac-compile '(accum acc  (each x args  (acc (* 2 x)))))
+       (ac-compile '(accum acc : each x args : acc : * 2 x)))
+tu
+
+
+> (let args '(1 2 3 4 5)
+    (accum acc
+      (each x args
+        (acc (* 2 x)))))
+(2 4 6 8 10)
+
+> (let args '(1 2 3 4 5)
+    (accum acc :
+      each x args :
+        acc : * 2 x))
+(2 4 6 8 10)
+
+
+;=============================================================================
+;  Association lists
+;=============================================================================
+
+> (= foo '((b 2) (a 1) (c 3)))
+((b 2) (a 1) (c 3))
+
+
+> foo!a
+1
+
+> foo!b
+2
+
+> foo!c
+3
+
+
+> foo.0
+(b 2)
+
+> foo.1
+(a 1)
+
+> foo.2
+(c 3)
+
+
+> (= foo.0 '(b 5))
+(b 5)
+
+> foo
+((b 5) (a 1) (c 3))
+
+
+> (= foo!b 10)
+10
+
+> foo
+((b 10) (a 1) (c 3))
+
+
+> (= foo!a "bar")
+"bar"
+
+> foo
+((b 10) (a "bar") (c 3))
+
+
+> (= foo!a nil)
+nil
+
+> foo
+((b 10) (c 3))
+
+
+> (= foo!c nil)
+nil
+
+> foo
+((b 10))
+
+
+> (= foo!b nil)
+nil
+
+> foo
+nil
+
+
+> (= foo '((b 2) (a 1) (c 3)))
+((b 2) (a 1) (c 3))
+
+
+> (= foo!d nil)
+nil
+
+> foo
+((b 2) (a 1) (c 3))
+
+
+> (= foo!d 500)
+500
+
+> foo
+((d 500) (b 2) (a 1) (c 3))
+
+
+> (= foo nil)
+nil
+
+> foo
+nil
+
+> (= foo!d 500)
+500
+
+> foo
+((d 500))

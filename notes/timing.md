@@ -4,25 +4,42 @@ Timing notes
   * How the hell is ar so fast for sorting?
 
         > (let bb (n-of 1000 (rand 50)) (time10 (bestn 100 > bb)))
-        Nu time:      363 msec
+        Nu time:      247 msec
+        Nu time:      149 msec
         Arc 3.1 time: 190 msec
-        ar time:      63  msec
+        ar time:      62  msec
 
         > (let td (n-of 10000 (rand 100)) (time (sort < td)) 1)
-        Nu time:      509 msec
+        Nu time:      334 msec
         Arc 3.1 time: 223 msec
         ar time:      81  msec
 
 
+        > (do (time (n-of 1000 (rand 50))) nil)
+
+        > (do (time (repeat 1000 (bestn 100 > '(1 2 3 4 5 6 7 8 9 10)))) nil)
+
+
+        > (time (repeat 10000000 (+ 1 2)))
+        ar time:      6387 msec
+        Nu time:      6011 msec
+        Arc 3.1 time: 5579 msec
+
+
         > (do (time (n-of 10000 (rand 100))) nil)
-        Arc 3.1 time: 50 msec
-        ar time:      49 msec
-        Nu time:      38 msec
+        Arc 3.1 time: 53 msec
+        ar time:      48 msec
+        Nu time:      17 msec
 
         > (do (time (repeat 10000 (< 1 2))) nil)
-        Nu time:      40 msec
         ar time:      14 msec
-        Arc 3.1 time: 5  msec
+        Arc 3.1 time: 8  msec
+        Nu time:      9  msec
+
+        > (do (time (repeat 10000 (> 1 2))) nil)
+        ar time:      13 msec
+        Arc 3.1 time: 14 msec
+        Nu time:      11 msec
 
   * `nrev` should be used in place of `rev` whenever it is safe to do so:
 

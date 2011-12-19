@@ -128,10 +128,23 @@
 ;  ac
 ;=============================================================================
 
+(mac %if args
+  (cons ac-nocompile
+        ((afn (x)
+           (if (cdr x)
+                 (list 'racket-if
+                       ;(ac-compile (car x))
+                       (car x)
+                       (cadr x)
+                       (self (cddr x)))
+               ;; TODO: or
+               (if (car x) (car x) '(racket-quote nil))))
+         args)))
+
 (def ac-make-read (f)
   (fn ((o port stdin) (o eof))
     (let c (f port)
-      (if (is c racket-eof) eof c))))
+      (%if (racket-eof? c) eof c))))
 
 (def ac-make-write (f)
   (fn ((o port stdout)) (f port)))
@@ -153,23 +166,21 @@
 
 
 ;=============================================================================
-;  square-bracket/curly-bracket
+;  square-bracket / curly-bracket
 ;=============================================================================
 
-(def ac-readtable-square-bracket (readtable)
-  (racket-make-readtable readtable #\[ 'terminating-macro
-    (fn (ch port src line col pos)
-      (racket-cons 'square-bracket (racket-read/recursive port #\[ #f)))))
-
-(def ac-readtable-curly-bracket (readtable)
-  (racket-make-readtable readtable #\{ 'terminating-macro
-    (fn (ch port src line col pos)
-      (racket-cons 'curly-bracket (racket-read/recursive port #\{ #f)))))
+(def ac-readtable-bracket (readtable)
+  (%nocompile
+    (racket-make-readtable readtable
+      #\[ (racket-quote terminating-macro)
+      (racket-lambda (ch port src line col pos)
+        (racket-cons (racket-quote square-bracket) (racket-read/recursive port #\[ #f)))
+      #\{ (racket-quote terminating-macro)
+      (racket-lambda (ch port src line col pos)
+        (racket-cons (racket-quote curly-bracket) (racket-read/recursive port #\{ #f))))))
 
 ;; TODO: should the old readtable be stored somewhere...?
-(racket-current-readtable
-  (ac-readtable-square-bracket
-    (ac-readtable-curly-bracket #f)))
+(racket-current-readtable (ac-readtable-bracket #f))
 
 (mac square-bracket body
   `(,fn ((o _)) (,@body)))
@@ -209,7 +220,7 @@
 
 (def list? (x) (if (no x) t (cons? x)))
 ;; TODO: should this be here...?
-(def uniq? (x) (no (ac-tnil (racket-symbol-interned? x))))
+(def uniq? (x) (ac-tnil (racket-not (racket-symbol-interned? x))))
 
 
 
@@ -219,9 +230,9 @@
 (def keyword? (x) (isa x 'keyword))
 (def keyword  (x) (coerce x 'keyword))
 
-(def table?     (x) (isa x 'table))
-(def table      (x) (coerce x 'table))
-(def make-table ()  (racket-make-hash))
+(def table?     (x)  (isa x 'table))
+(def table      (x)  (coerce x 'table))
+(def make-table args (table (pair args)))
 
 (def int? (x) (isa x 'int))
 (def int  (x (o base 10))
@@ -331,7 +342,7 @@
 (def defcoercefn (type to f)
   (aif (alref coerce-list* type)
          (sref it f to)
-       (let u (make-table)
+       (let u (racket-make-hash) ;(make-table)
          ;; TODO: push
          (= coerce-list* (cons (list type u) coerce-list*))
          (sref u f to))))
@@ -422,7 +433,7 @@
   'keyword (racket-string->keyword "")
   'string  ""
   ;; TODO: not sure about this
-  'table   (make-table)
+  'table   (racket-make-hash) ;(make-table)
   'cons    nil)
 
 
@@ -529,6 +540,7 @@
         (reduce f (cons (f (car xs) (cadr xs)) (cddr xs)))
       (apply f xs)))
 
+#|
 ; Rtm prefers to overload + to do this
 (def join args
   (if (no args)
@@ -536,7 +548,7 @@
       (let a (car args)
         (if (no a)
               (apply join (cdr args))
-            (cons (car a) (apply join (cdr a) (cdr args)))))))
+            (cons (car a) (apply join (cdr a) (cdr args)))))))|#
 
 
 (def caris (x val)
@@ -573,6 +585,7 @@
 ;  Strings
 ;=============================================================================
 
+;; TODO: sig for newstring
 (= newstring  racket-make-string)
 
 (def recstring (test s (o start 0))
@@ -600,14 +613,15 @@
 ;  Binary functions
 ;=============================================================================
 
+;; TODO: compile string and join (so they can be dynamic)
 (def +-2 ((o x 0) (o y 0))
-  (if (num? x)
-        (racket-+ x y)
-      (or (string? x)
-          (char? x))
-        (string x y)
-      (list? x)
-        (join x y)))
+  (%if (racket-number? x)
+         (racket-+ x y)
+       (racket-or (racket-string? x)
+                  (racket-char? x))
+         (string x y)
+       (racket-list? x)
+         (join x y)))
 
 #|(def <2 (x y)
   (ac-tnil
@@ -617,25 +631,25 @@
         (char? x)   (racket-char<? x y)
                     (err "can't <" x y))))|#
 
-;; TODO: pretty this up
-(%nocompile
-(ac-def <2 (x y)
+;; TODO: compile err
+(def <2 (x y)
   (ac-tnil
-    (racket-cond
-      ((racket-number? x) (racket-< x y))
-      ((racket-string? x) (racket-string<? x y))
-      ((racket-symbol? x) (racket-string<? (racket-symbol->string x)
-                                           (racket-symbol->string y)))
-      ((racket-char? x)   (racket-char<? x y))
-      (racket-else        (err "can't <" x y))))))
+    (%if (racket-number? x) (racket-< x y)
+         (racket-string? x) (racket-string<? x y)
+         (racket-symbol? x) (racket-string<? (racket-symbol->string x)
+                                             (racket-symbol->string y))
+         (racket-char? x)   (racket-char<? x y)
+                            (err "can't <" x y))))
 
+;; TODO: compile err
 (def >2 (x y)
   (ac-tnil
-    (if (num? x)    (racket-> x y)
-        (string? x) (racket-string>? x y)
-        (sym? x)    (racket-string>? (string x) (string y))
-        (char? x)   (racket-char>? x y)
-                    (err "can't >" x y))))
+    (%if (racket-number? x) (racket-> x y)
+         (racket-string? x) (racket-string>? x y)
+         (racket-symbol? x) (racket-string>? (racket-symbol->string x)
+                                             (racket-symbol->string y))
+         (racket-char? x)   (racket-char>? x y)
+                            (err "can't >" x y))))
 
 (= +  (ac-binary +-2 reduce)
    <  (ac-binary  <2 ac-pairwise)
@@ -655,6 +669,7 @@
 ;  Math
 ;=============================================================================
 
+;; TODO: sig for these
 (= -     racket--
    *     racket-*
    /     racket-/
@@ -674,6 +689,7 @@
 ;  Continuations
 ;=============================================================================
 
+;; TODO: sig for ccc
 (= ccc  racket-call-with-current-continuation)
 
 (def protect (during after)
@@ -781,6 +797,10 @@
                  (when debug-mode*
                    (apply prn (intersperse " " args)))))
 
+#|(def debug args
+  (when debug-mode*
+    (apply prn (intersperse " " args))))|#
+
 
 ;=============================================================================
 ;  I/O
@@ -852,6 +872,7 @@
       (sread x eof)))
 
 
+;; TODO: sig for infile
 (= infile     racket-open-input-file)
 
 (def outfile (filename (o append))
@@ -859,6 +880,7 @@
     (racket-open-output-file filename #:mode 'text #:exists flag)))
 
 
+;; TODO: sig for these
 (= instring   racket-open-input-string
    outstring  racket-open-output-string)
 
@@ -916,6 +938,7 @@
 ;  System
 ;=============================================================================
 
+;; TODO: sig for these
 (= system  racket-system
    rand    racket-random
    memory  racket-current-memory-use
@@ -955,6 +978,7 @@
 (def dir-exists (name)
   (ac-tnil (racket-directory-exists? name)))
 
+;; TODO: sig for rmfile
 (= rmfile  racket-delete-file)
 
 (def mvfile (old new)
@@ -966,6 +990,7 @@
 ;  Time
 ;=============================================================================
 
+;; TODO: sig for these
 (= msec                          racket-current-milliseconds
    current-process-milliseconds  racket-current-process-milliseconds
    current-gc-milliseconds       racket-current-gc-milliseconds
@@ -986,6 +1011,7 @@
 ;  Threads
 ;=============================================================================
 
+;; TODO: sig for these
 (= new-thread      racket-thread
    kill-thread     racket-kill-thread
    break-thread    racket-break-thread

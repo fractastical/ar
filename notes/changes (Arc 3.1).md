@@ -150,3 +150,6 @@ Other
     `((fn (g1) (if g1 g1 b)) a)`
 
   * `coerce` allows you to coerce to/from a table
+
+  * `coerce` is implemented better: you can use `defcoerce` and `defcoerces`
+    to easily define new coercion rules

@@ -41,6 +41,7 @@
   (when peekc.in
     (if (re-match "^ *>" in)
                     ;; TODO: hacky
+                    ;; TODO: write a function for this
           (let line (values (x y z) (racket-port-next-location in) x)
             (let x (readuntil in #\newline)
               (zap re-multi-replace x ("\n\\\\\n"  "\n\n" g))
