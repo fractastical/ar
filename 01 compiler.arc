@@ -683,10 +683,12 @@
     (racket-else
       (list (car fns) (ac-decompose (cdr fns) args)))))
 
-(ac-def ac-call (f args)
-  (racket-let* ((g    (racket-not (ac-lex? f)))
-                (m    (racket-and g (ac-macro? f)))
-                (args (ac-pipe-compose args)))
+(ac-def ac-call (args)
+  (racket-let* ((args (ac-pipe-compose args))
+                (f    (car args))
+                (args (cdr args))
+                (g    (racket-not (ac-lex? f)))
+                (m    (racket-and g (ac-macro? f))))
     (racket-if m
       (ac-mac-call m args)
       (racket-let ((f  (racket-parameterize ((ac-functional-position? #t))
@@ -776,18 +778,27 @@
                  ((rep x))
                x)))
 
+;; TODO: pretty ew that it works based on the symbol name, but...
+(ac-def ac-nolookup? (x)
+  (racket-let ((x (racket-symbol->string x)))
+    (racket-and (racket-> (racket-string-length x) 6)
+                (racket-equal? (racket-substring x 0 7) "racket-"))))
+
 (ac-def ac-global-var (x)
-  (racket-let* ((name (ac-namespace))
-                                 ;; woot optimizations
-                (x    (racket-if (racket-namespace? name)
-                                 ;(racket-eq? name (racket-current-namespace))
-                                   x
-                                 (list ac-lookup-global-raw
-                                       name
-                                       (list (racket-quote racket-quote) x)))))
-    (racket-if (ac-functional-position?)
-                 (list ac-lookup-global x)
-               (list ac-lookup-global-arg x))))
+  (racket-if
+    (ac-nolookup? x)
+      x
+    (racket-let* ((name (ac-namespace))
+                                   ;; woot optimizations
+                  (x    (racket-if (racket-namespace? name)
+                                   ;(racket-eq? name (racket-current-namespace))
+                                     x
+                                   (list ac-lookup-global-raw
+                                         name
+                                         (list (racket-quote racket-quote) x)))))
+      (racket-if (ac-functional-position?)
+                   (list ac-lookup-global x)
+                 (list ac-lookup-global-arg x)))))
 
 
 ;=============================================================================
@@ -1507,7 +1518,7 @@
     ((ac-caris x ac-nocompile)
       (cdr x))
     ((racket-pair? x)
-      (ac-call (car x) (cdr x)))
+      (ac-call x))
     (racket-else x)))
 
 (ac-def eval (x (runtime nil))

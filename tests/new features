@@ -407,15 +407,15 @@ error: foo: no case matching 1 non-keyword argument; arguments were: 2 #:a 1
 
 > (ac-compile '(let (:a :b :c) (obj a 1 b 2 c 3)
                  (list a b c)))
-((racket-lambda (g1) (racket-let* ((a (#<fn:ac-funcall1> g1 (racket-quote a))) (b (#<fn:ac-funcall1> g1 (racket-quote b))) (c (#<fn:ac-funcall1> g1 (racket-quote c)))) (#<fn:ac-funcall3> (#<fn:ac-lookup-global> list) a b c))) (#<fn:listtab> (#<fn:list> (#<fn:list> #<quoted> 1) (#<fn:list> #<quoted> 2) (#<fn:list> #<quoted> 3))))
+((racket-lambda (g1) (racket-let* ((a (#<fn:ac-funcall1> g1 (racket-quote a))) (b (#<fn:ac-funcall1> g1 (racket-quote b))) (c (#<fn:ac-funcall1> g1 (racket-quote c)))) (#<fn:ac-funcall3> (#<fn:ac-lookup-global> list) a b c))) (#<fn:make-table> #<quoted> 1 #<quoted> 2 #<quoted> 3))
 
 > (ac-compile '(let (:a :b . c) (obj a 1 b 2)
                  (list a b c)))
-((racket-lambda (g1) (racket-let* ((a (#<fn:ac-funcall1> g1 (racket-quote a))) (b (#<fn:ac-funcall1> g1 (racket-quote b))) (c g1)) (#<fn:ac-funcall3> (#<fn:ac-lookup-global> list) a b c))) (#<fn:listtab> (#<fn:list> (#<fn:list> #<quoted> 1) (#<fn:list> #<quoted> 2))))
+((racket-lambda (g1) (racket-let* ((a (#<fn:ac-funcall1> g1 (racket-quote a))) (b (#<fn:ac-funcall1> g1 (racket-quote b))) (c g1)) (#<fn:ac-funcall3> (#<fn:ac-lookup-global> list) a b c))) (#<fn:make-table> #<quoted> 1 #<quoted> 2))
 
 > (ac-compile '(let (:a :b (o :c 5)) (obj a 1 b 2)
                  (list a b c)))
-((racket-lambda (g1) (racket-let* ((a (#<fn:ac-funcall1> g1 (racket-quote a))) (b (#<fn:ac-funcall1> g1 (racket-quote b))) (c (#<fn:ac-funcall2> g1 (racket-quote c) 5))) (#<fn:ac-funcall3> (#<fn:ac-lookup-global> list) a b c))) (#<fn:listtab> (#<fn:list> (#<fn:list> #<quoted> 1) (#<fn:list> #<quoted> 2))))
+((racket-lambda (g1) (racket-let* ((a (#<fn:ac-funcall1> g1 (racket-quote a))) (b (#<fn:ac-funcall1> g1 (racket-quote b))) (c (#<fn:ac-funcall2> g1 (racket-quote c) 5))) (#<fn:ac-funcall3> (#<fn:ac-lookup-global> list) a b c))) (#<fn:make-table> #<quoted> 1 #<quoted> 2))
 
 
 > (ac-compile '(fn ((:a)) a))
@@ -494,10 +494,21 @@ nil
 (racket-lambda (g1) (racket-let* ((a (#<fn:car> g1)) (g1 (#<fn:cdr> g1)) (b (#<fn:car> g1))) (#<fn:ac-lookup-global-arg> nil)))
 
 > (ac-compile '(: a b c))
-(#<fn:ac-funcall0> (#<fn:ac-funcall2> (#<fn:ac-lookup-global-arg> a) (#<fn:ac-lookup-global-arg> b) (#<fn:ac-lookup-global-arg> c)))u
+(#<fn:ac-funcall0> (#<fn:ac-funcall2> (#<fn:ac-lookup-global> a) (#<fn:ac-lookup-global-arg> b) (#<fn:ac-lookup-global-arg> c)))
+
+> (ac-compile '((a b c)))
+(#<fn:ac-funcall0> (#<fn:ac-funcall2> (#<fn:ac-lookup-global> a) (#<fn:ac-lookup-global-arg> b) (#<fn:ac-lookup-global-arg> c)))
+
+> (iso (ac-compile '(: a b c))
+       (ac-compile '((a b c))))
+t
+
 
 > (car '(:))
 :
+
+> (ac-compile (car '(:)))
+#:
 
 
 > '(+ 1 2 : + 3 4)
@@ -539,8 +550,8 @@ nil
 ((racket-lambda (g1) ((racket-lambda (acc) ((racket-lambda nil (#<fn:eachfn> (racket-lambda (x) (#<fn:ac-funcall1> acc (#<fn:ac-funcall2> (#<fn:ac-lookup-global> *) 2 x))) (#<fn:ac-lookup-global-arg> args)) (#<fn:nrev> g1)))) (racket-lambda ((_ nil)) (racket-begin (racket-set! g1 (#<fn:cons> _ g1)) g1)))) nil)
 
 
-> (iso (ac-compile '(accum acc  (each x args  (acc (* 2 x)))))
-       (ac-compile '(accum acc : each x args : acc : * 2 x)))
+> (iso (w/uniq-counter 1 (ac-compile '(accum acc  (each x args  (acc  (* 2 x))))))
+       (w/uniq-counter 1 (ac-compile '(accum acc : each x args : acc : * 2 x))))
 tu
 
 

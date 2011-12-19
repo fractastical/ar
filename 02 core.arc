@@ -144,7 +144,7 @@
 (def ac-make-read (f)
   (fn ((o port stdin) (o eof))
     (let c (f port)
-      (%if (racket-eof? c) eof c))))
+      (%if (racket-eof-object? c) eof c))))
 
 (def ac-make-write (f)
   (fn ((o port stdout)) (f port)))
