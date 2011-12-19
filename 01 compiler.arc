@@ -407,14 +407,14 @@
   ;(racket-set-mcar! x val)
   (racket-if (racket-pair? x)
                (racket-unsafe-set-mcar! x val)
-             (racket-raise-type-error (racket-quote scar) "cons" x))
+             (racket-raise-type-error (racket-quote scar) "pair" x))
   val)
 
 (ac-def scdr (x val)
   ;(racket-set-mcdr! x val)
   (racket-if (racket-pair? x)
                (racket-unsafe-set-mcdr! x val)
-             (racket-raise-type-error (racket-quote scdr) "cons" x))
+             (racket-raise-type-error (racket-quote scdr) "pair" x))
   val)
 
 

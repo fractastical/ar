@@ -68,21 +68,19 @@
 
 
 ;; TODO: more granular extending
-;; TODO: use ac-def
-(%nocompile
-(racket-define (ac-fn-args x)
+#|(%nocompile
+(ac-def ac-fn-args (x)
   (racket-cond
     ;; TODO: make it work with rest args too
     ((racket-symbol? x)
-      (ac-fn-body (list (list* (racket-quote racket-let)
-                               (ac-fn-rest-args x)
-                               (ac-args (ac-fn-body)))))
+      (ac-add-to ac-local-env x)
+      (ac-fn-body (ac-args (ac-fn-body)))
       x)
     (racket-else
       (racket-parameterize ((ac-fn-let* nil))
-                      ;; This is one of two changes
-        (racket-let* ((env (ac-local-env))
-                      (x   (ac-fn-normal-args x)))
+                     ;; This is one of two changes
+        (racket-let ((env (ac-local-env))
+                     (x   (ac-fn-normal-args x)))
           ;; This is two of two changes
           (racket-unless (racket-eq? env (ac-local-env))
             (ac-add-to ac-fn-let* ((ac-var (racket-quote make-current-env))
@@ -95,7 +93,8 @@
                                                 (ac-args (ac-fn-body))))
                                  (ac-args (ac-fn-body))))
           x)))))
-)
+)|#
+
 
 ;(dynamic ac-fn-args ac-fn-args)
 

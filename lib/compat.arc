@@ -1,13 +1,3 @@
-(alias acons cons?)
-(alias alist list?)
-
-(def call-w/stdout (port thunk)
-  (parameterize (racket-current-output-port port) (thunk)))
-
-(def call-w/stdin (port thunk)
-  (parameterize (racket-current-input-port port) (thunk)))
-
-
 ;(= assoc (reverse-args assoc))
 
 (redef assoc (x y)
@@ -24,6 +14,63 @@
 
 ;; lib/strings.arc
 (alias num commafy)
+
+
+(redef table ((o init))
+  (let h (make-table)
+    (when init (init h))
+    h))
+
+
+(redef setforms (place)
+  (w/uniq u
+    (let (bind get set) (orig place)
+      (list bind get #`(fn (u) ,(set u))))))
+
+
+(= setter (obj))
+
+(mac defset (name parms . body)
+  (w/uniq gexpr
+    #`(sref setter
+            (fn (gexpr)
+              (let parms (cdr gexpr) . body))
+            ',name)))
+
+(defset car (x)
+  (w/uniq g
+    (list (list g x)
+          `(car ,g)
+          `(fn (val) (scar ,g val)))))
+
+(defset cdr (x)
+  (w/uniq g
+    (list (list g x)
+          `(cdr ,g)
+          `(fn (val) (scdr ,g val)))))
+
+(defset caar (x)
+  (w/uniq g
+    (list (list g x)
+          `(caar ,g)
+          `(fn (val) (scar (car ,g) val)))))
+
+(defset cadr (x)
+  (w/uniq g
+    (list (list g x)
+          `(cadr ,g)
+          `(fn (val) (scar (cdr ,g) val)))))
+
+(defset cddr (x)
+  (w/uniq g
+    (list (list g x)
+          `(cddr ,g)
+          `(fn (val) (scdr (cdr ,g) val)))))
+
+
+;; TODO: make sure this works as expected
+(extend sref-mac (f . args) (setter f)
+  (apply it args))
 
 #|(def setforms (place)
   (w/uniq (u v)

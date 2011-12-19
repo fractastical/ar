@@ -179,13 +179,13 @@
 
 (parameter imported-paths*
   ;; TODO: ew
-  (listtab:list (list (joinpath exec-dir* "01 compiler.arc") arc3-namespace)
-                (list (joinpath exec-dir* "02 core.arc")     arc3-namespace)
-                (list (joinpath exec-dir* "03 ssyntax.arc")  arc3-namespace)
-                ;(list (joinpath exec-dir* "compat.arc")      arc3-namespace)
-                (list (joinpath exec-dir* "04 arc.arc")      arc3-namespace)
-                (list (joinpath exec-dir* "05 extra.arc")    arc3-namespace)
-                (list (joinpath exec-dir* "06 import.arc")   arc3-namespace)))
+  (hash (joinpath exec-dir* "01 compiler.arc") arc3-namespace
+        (joinpath exec-dir* "02 core.arc")     arc3-namespace
+        (joinpath exec-dir* "03 ssyntax.arc")  arc3-namespace
+        ;(joinpath exec-dir* "compat.arc")      arc3-namespace
+        (joinpath exec-dir* "04 arc.arc")      arc3-namespace
+        (joinpath exec-dir* "05 extra.arc")    arc3-namespace
+        (joinpath exec-dir* "06 import.arc")   arc3-namespace))
 
 
 (parameter load-paths*
@@ -259,5 +259,5 @@
   #`(importfn ',args))
 
 (mac reimport args
-  #`(w/imported-paths* (table)
+  #`(w/imported-paths* (obj)
       (importfn ',args)))

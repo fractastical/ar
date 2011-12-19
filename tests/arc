@@ -1,18 +1,30 @@
+> (import compat)
+ loading:  compat.arc
+nil
+
 ;=============================================================================
 ;  setforms
 ;=============================================================================
 
 > (setforms 'foo)
-((g1 foo) g1 (fn (g2) (#<mac:assign> foo g2)))u
+(nil foo (#<mac:fn> (g1) (#<mac:assign> foo g1)))
 
 > (setforms '(car 5))
-((g1 5) (car g1) (fn (g2) (#<fn:scar> g1 g2)))u
+(nil (car 5) (#<mac:fn> (g1) (#<mac:sref-mac> car g1 5)))
 
 > (setforms '(car (car (car 5))))
-((g1 (car (car 5))) (car g1) (fn (g2) (#<fn:scar> g1 g2)))u
+((g2 (car (car 5))) (car g2) (#<mac:fn> (g1) (#<mac:sref-mac> car g1 g2)))
 
 > (setforms '(foo 5))
-((g1 foo g3 5) (g1 g3) (fn (g2) (#<mac:sref-mac> g1 g2 g3)))u
+(nil (foo 5) (#<mac:fn> (g1) (#<mac:sref-mac> foo g1 5)))
+
+
+;=============================================================================
+;  defset
+;=============================================================================
+
+> defset
+u
 
 
 ;=============================================================================
@@ -41,7 +53,7 @@ error: #<procedure>: expects 3 arguments, given 1: 1
 error: #<procedure>: expects 3 arguments, given 2: 1 2
 
 > ((fn (a (b) c) (list a b c)) 1 2 3)
-error: car: expects argument of type <mutable-pair>; given 2
+error: car: expects argument of type <pair>; given 2
 
 > ((fn (a (b) c) (list a b c)) 1 '(2) 3)
 (1 2 3)
@@ -57,7 +69,7 @@ error: #<case-lambda-procedure>: no clause matching 0 arguments
 error: #<case-lambda-procedure>: no clause matching 1 argument: 1
 
 > ((fn (a (b) (o c 5) (o d) . rest) (list a b c d rest)) 1 2)
-error: car: expects argument of type <mutable-pair>; given 2
+error: car: expects argument of type <pair>; given 2
 
 > ((fn (a (b) (o c 5) (o d) . rest) (list a b c d rest)) 1 '(2))
 (1 2 5 nil nil)
@@ -94,13 +106,13 @@ error: car: expects argument of type <mutable-pair>; given 2
 
 
 > ((fn (a (b (c d (e)))) (list a b c d e)) 1 2)
-error: car: expects argument of type <mutable-pair>; given 2
+error: car: expects argument of type <pair>; given 2
 
 > ((fn (a (b (c d (e)))) (list a b c d e)) 1 '(2))
 (1 2 nil nil nil)
 
 > ((fn (a (b (c d (e)))) (list a b c d e)) 1 '(2 3))
-error: car: expects argument of type <mutable-pair>; given 3
+error: car: expects argument of type <pair>; given 3
 
 > ((fn (a (b (c d (e)))) (list a b c d e)) 1 '(2 (3)))
 (1 2 3 nil nil)
@@ -109,20 +121,20 @@ error: car: expects argument of type <mutable-pair>; given 3
 (1 2 3 4 nil)
 
 > ((fn (a (b (c d (e)))) (list a b c d e)) 1 '(2 (3 4 5)))
-error: car: expects argument of type <mutable-pair>; given 5
+error: car: expects argument of type <pair>; given 5
 
 > ((fn (a (b (c d (e)))) (list a b c d e)) 1 '(2 (3 4 (5))))
 (1 2 3 4 5)
 
 
 > ((fn (a (b (c d (e) f)) . g) (list a b c d e f g)) 1 2)
-error: car: expects argument of type <mutable-pair>; given 2
+error: car: expects argument of type <pair>; given 2
 
 > ((fn (a (b (c d (e) f)) . g) (list a b c d e f g)) 1 '(2 (3 4)))
 (1 2 3 4 nil nil nil)
 
 > ((fn (a (b (c d (e) f)) . g) (list a b c d e f g)) 1 '(2 (3 4 5)))
-error: car: expects argument of type <mutable-pair>; given 5
+error: car: expects argument of type <pair>; given 5
 
 > ((fn (a (b (c d (e) f)) . g) (list a b c d e f g)) 1 '(2 (3 4 (5))))
 (1 2 3 4 5 nil nil)
@@ -144,13 +156,13 @@ error: #<procedure>: expects 3 arguments, given 1: 1
 error: #<procedure>: expects 3 arguments, given 2: 1 2
 
 > ((fn (a (b (c d)) e) (list a b c d e)) 1 2 3)
-error: car: expects argument of type <mutable-pair>; given 2
+error: car: expects argument of type <pair>; given 2
 
 > ((fn (a (b (c d)) e) (list a b c d e)) 1 '(2) 3)
 (1 2 nil nil 3)
 
 > ((fn (a (b (c d)) e) (list a b c d e)) 1 '(2 3) 3)
-error: car: expects argument of type <mutable-pair>; given 3
+error: car: expects argument of type <pair>; given 3
 
 > ((fn (a (b (c d)) e) (list a b c d e)) 1 '(2 (3)) 3)
 (1 2 3 nil 3)
@@ -175,10 +187,10 @@ error: #<procedure>: expects 3 arguments, given 1: 1
 error: #<procedure>: expects 3 arguments, given 2: 1 2
 
 > ((fn (a (b c d) c) (fn (a b c) (list a b c))) 1 2 3)
-error: car: expects argument of type <mutable-pair>; given 2
+error: car: expects argument of type <pair>; given 2
 
 > ((fn (a (b c d) c) (fn (a b c) (list a b c))) 1 '(2))
-error: #<procedure>: expects 3 arguments, given 2: 1 {2}
+error: #<procedure>: expects 3 arguments, given 2: 1 '(2)
 
 > ((fn (a (b c d) c) (fn (a b c) (list a b c))) 1 '(2) 3)
 #<fn>
@@ -194,7 +206,7 @@ error: #<procedure>: expects 3 arguments, given 2: 1 {2}
 error: #<procedure>: expects 3 arguments, given 2: 1 2
 
 > ((fn ((a) (b) (c)) (list a b c)) 1 2 3)
-error: car: expects argument of type <mutable-pair>; given 3
+error: car: expects argument of type <pair>; given 3
 
 > ((fn ((a) (b) (c)) (list a b c)) '(1) '(2) '(3))
 (1 2 3)
@@ -265,7 +277,7 @@ t
 
 > (w/uniq qux
     `(,qux ,qux . ,qux))
-(g1 g1 . g1)u
+(g1 g1 . g1)
 
 
 > (let name 'foo
@@ -309,14 +321,14 @@ t
 
 > (w/uniq qux
     #`(qux qux . qux))
-(g1 g1 . g1)u
+(g1 g1 . g1)
 
 
 > (let name 'foo
     (w/uniq (val body)
       #`(mac ,(sym "w/" name) (val . body)
           #`(parameterize (,',name val) ,@body))))
-u
+(#<mac:mac> w/foo (g1 . g2) (#<fn:cons> #<mac:parameterize> (#<fn:cons> (#<fn:cons> (#<mac:quote> foo) (#<fn:cons> g1 nil)) g2)))
 
 
 > #`(nil nil [push '_ nil])
@@ -337,7 +349,7 @@ u
 (#<fn:+> #<fn:-> * #<fn:/>)
 
 > #`(+ - ''* /)
-(#<fn:+> #<fn:-> (quote *) #<fn:/>)
+(#<fn:+> #<fn:-> (#<mac:quote> *) #<fn:/>)
 
 
 > (let body '(1 2 3)
@@ -516,7 +528,7 @@ nil
 
 
 > ('(1 2 3) -1)
-error: cdr: expects argument of type <mutable-pair>; given '()
+error: list-ref: expects type <non-negative exact integer> as 2nd argument, given: -1; other arguments were: '(1 2 3)
 
 > ('(1 2 3) 0)
 1
@@ -528,14 +540,14 @@ error: cdr: expects argument of type <mutable-pair>; given '()
 3
 
 > ('(1 2 3) 3)
-error: car: expects argument of type <mutable-pair>; given 3
+error: list-ref: index 3 too large for list: '(1 2 3)
 
 
-> (scar (table) 5)
-u
+> (scar (obj) 5)
+error: scar: expected argument of type <pair>; given '#hash()
 
-> (scdr (table) 10)
-u
+> (scdr (obj) 10)
+error: scdr: expected argument of type <pair>; given '#hash()
 
 
 ;=============================================================================
@@ -567,11 +579,14 @@ t
 ;=============================================================================
 
 > (fromstring "one\n\nthree\n" (drain (readline)))
-("one" "\nthree")u
+("one" "\nthree")
 
 
 > (readline:instring "")
 nil
+
+> (readline:instring "foo")
+"foo"
 
 > (readline:instring "\n")
 "\n"
@@ -621,6 +636,20 @@ nil
 
 
 ;=============================================================================
+;  assoc
+;=============================================================================
+
+> (assoc 'a '((b 10) (a 5)))
+(a 5)
+
+> (assoc 'b '((b 10) (a 5)))
+(b 10)
+
+> (assoc 'c '((b 10) (a 5)))
+nil
+
+
+;=============================================================================
 ;  Strings
 ;=============================================================================
 
@@ -632,3 +661,130 @@ nil
 
 > foo
 "nar"
+
+
+;=============================================================================
+;  coerce
+;=============================================================================
+
+> (coerce #\a 'string)
+"a"
+
+> (coerce #\a 'int)
+97
+
+> (coerce #\a 'sym)
+a
+
+> (coerce #\a 'nou)
+error: can't coerce #\a nou
+
+
+> (coerce '((a 2) (b 4)) 'table)
+#hash((a . 2) (b . 4))
+
+> (coerce '((a 2) (b 4)) 'string)
+"a2b4"
+
+> (coerce '((a 2) (b 4)) 'nou)
+error: can't coerce ((a 2) (b 4)) nou
+
+
+> (coerce 10 'string)
+"10"
+
+> (coerce 10 'char)
+#\newline
+
+> (coerce 10 'num)
+10.0
+
+> (coerce 10 'nou)
+error: can't coerce 10 nou
+
+
+> (coerce '#:foo 'string)
+"foo"
+
+> (coerce '#:foo 'sym)
+foo
+
+> (coerce '#:foo 'nou)
+error: can't coerce #:foo nou
+
+
+> (coerce nil 'cons)
+nil
+
+> (coerce nil 'string)
+""
+
+> (coerce nil 'table)
+#hash()
+
+> (coerce nil 'nou)
+error: can't coerce () nou
+
+
+> (coerce 10.5 'string)
+"10.5"
+
+> (coerce 10.5 'char)
+#\newline
+
+> (coerce 10.5 'int)
+10
+
+> (coerce 10.5 'nou)
+error: can't coerce 10.5 nou
+
+
+> (coerce "foo" 'keyword)
+#:foo
+
+> (coerce "foo" 'cons)
+(#\f #\o #\o)
+
+> (coerce "foo" 'sym)
+foo
+
+> (coerce "foo" 'int)
+error: can't coerce "foo" int
+
+> (coerce "10.5" 'int)
+10
+
+> (coerce "10.5" 'int 16)
+16
+
+> (coerce "10.5" 'int 17)
+error: string->number: expects type <exact integer in [2, 16]> as 2nd argument, given: 17; other arguments were: "10.5"
+
+> (coerce "foo" 'num)
+error: can't coerce "foo" num
+
+> (coerce "10.5" 'num)
+10.5
+
+> (coerce "10.5" 'num 16)
+16.3125
+
+> (coerce "10.5" 'num 17)
+error: string->number: expects type <exact integer in [2, 16]> as 2nd argument, given: 17; other arguments were: "10.5"
+
+> (coerce "foo" 'nou)
+error: can't coerce "foo" nou
+
+
+> (coerce 'foo 'string)
+"foo"
+
+> (coerce 'foo 'nou)
+error: can't coerce foo nou
+
+
+> (coerce (obj a 1 b 2) 'cons)
+((a 1) (b 2))
+
+> (coerce (obj a 1 b 2) 'nou)
+error: can't coerce #hash((b . 2) (a . 1)) nou

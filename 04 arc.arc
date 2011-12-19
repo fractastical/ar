@@ -131,18 +131,6 @@
   (map [do (write _) (disp " ")] args)
   (disp #\newline))
 
-(mac atomic body
-  #`(atomic-invoke (fn () ,@body)))
-
-(mac atlet args
-  #`(atomic (let ,@args)))
-
-(mac atwith args
-  #`(atomic (with ,@args)))
-
-(mac atwiths args
-  #`(atomic (withs ,@args)))
-
 
 ;=============================================================================
 ;  = Assignment
@@ -150,7 +138,7 @@
 ; seems meaningful to e.g. (push 1 (pop x)) if (car x) is a cons.
 ; can't in cl though.  could I define a setter for push or pop?
 
-#|(= setter (table))
+#|(= setter (obj))
 
 (mac defset (name parms . body)
   #`(sref setter (fn parms ,@body) ',name))
@@ -372,7 +360,7 @@
              (f car.x)
              (self cdr.x)))
          x)
-      (isa x 'table)
+      table?.x
         (maptable (fn args f.args) x)
       (for y 0 (- len.x 1)
         (f x.y)))
@@ -394,6 +382,10 @@
             (= (s2 i) (seq (+ start i))))
           s2)
         (firstn (- end start) (nthcdr start seq)))))
+
+(def split (seq pos)
+  (list (cut seq 0 pos) (cut seq pos)))
+
 
 (def last (xs)
   (if (cons? xs)
@@ -427,10 +419,9 @@
 
 (def trues (f xs)
   (and xs
-      (let fx (f (car xs))
-        (if fx
-            (cons fx (trues f (cdr xs)))
-            (trues f (cdr xs))))))
+       (let fx (f (car xs))
+         (if fx (cons fx (trues f (cdr xs)))
+                (trues f (cdr xs))))))
 
 (mac do1 args
   (w/uniq g
@@ -618,7 +609,7 @@
   #`(do ,@(map (fn (a) #`(= a t)) args)))
 
 (mac awhen (expr . body)
-  #`(let 'it expr (if 'it (do ,@body))))
+  #`(let 'it expr (if 'it (do . body))))
 
 (mac aand args
   (if (no args)
@@ -662,6 +653,7 @@
 ;            (apply (rep op) (cdr e))
 ;            e))))
 
+(def carif  (x)   (if (atom x) x (car x)))
 (def consif (x y) (if x (cons x y) y))
 
 (def flat x
@@ -688,10 +680,6 @@
            (nthcdr start seq)
            start)
         (recstring [if (f (seq _)) _] seq start))))
-
-(def even (n) (is (mod n 2) 0))
-
-(def odd (n) (no (even n)))
 
 
 (mac w/outstring (var . body)
@@ -832,11 +820,34 @@
 (mac insortnew (test elt seq)
   #`(zap [reinsert-sorted test elt '_] seq))
 
+
+;; TODO: ew code duplication
+(def hash args
+  (table (pair args))
+  ;(prn args)
+  #|(racket-make-hash (list (map (fn ((k v)) (cons k v))
+                               (pair args))))|#
+  #|(coerce #|(list (map (fn ((k v)) (cons k v))
+                     (pair args)))|#
+          (pair args)
+          'table)|#
+  )
+
+#|(mac obj args
+  #`(racket-make-hash (list ,@(map (fn ((k v))
+                                     #`(cons ',k v))
+                                   (pair args)))))|#
+
+(mac obj args
+  #`(table (list ,@(map (fn ((k v)) #`(list ',k v))
+                        (pair args)))))
+
+
 ; Could make this look at the sig of f and return a fn that took the
 ; right no of args and didn't have to call apply (or list if 1 arg).
 
 (def memo (f)
-  (with (cache (table) nilcache (table))
+  (with (cache (obj) nilcache (obj))
     (fn args
       (or (cache args)
           (and (no (nilcache args))
@@ -861,6 +872,7 @@
       (and (no (< (car args) (cadr args)))
            (apply >= (cdr args)))))
 
+
 (def whitec (c)
   (in c #\space #\newline #\tab #\return))
 
@@ -876,13 +888,51 @@
   (in c #\. #\, #\; #\: #\! #\?))
 
 (def readline ((o str stdin))
+  (when peekc.str
+    (tostring:whiler c readc.str
+                       [or (and (is _ #\return)
+                                (is peekc.str #\newline)
+                                (readc str))
+                           (in _ nil #\newline)]
+      (writec c))))
+
+#|(def readline ((o str stdin))
   ;; TODO: a little hacky
   (let x (tostring:whiler c (readc str)
                             [or (and (is _ #\return)
                                      (is peekc.str #\newline))
                                 (in _ nil #\newline)]
            (writec c))
-    (and (isnt x "") x)))
+    (and (isnt x "") x)))|#
+
+#|(def readline ((o str stdin))
+  ;; TODO: aloop
+  ((afn (acc)
+     (iflet c (readc str)
+       (if (is c #\newline)
+             (string:nrev acc)
+           (and (is c #\return)
+                (is peekc.str #\newline))
+             (do (readc str)
+                 (string:nrev acc))
+           (self (cons c acc)))
+       (string:nrev acc)))
+   nil))|#
+
+#|(def readline ((o s stdin))
+  (awhen readc.s
+                 ;; TODO: aloop
+                 ;; TODO: maybe a accum-style afn macro...?
+    (string:nrev ((afn (c acc)
+                    (if (in c #\newline nil)
+                          acc
+                        (and (is c #\return)
+                             (is peekc.s #\newline))
+                          ;; TODO: ew
+                          (do (readc s) acc)
+                        (self (readc s) (cons c acc))))
+                  it nil))))|#
+
 
 ; Don't currently use this but suspect some code could.
 
@@ -903,8 +953,6 @@
       (base tree)
       (f (treewise f base (car tree))
          (treewise f base (cdr tree)))))
-
-(def carif (x) (if (atom x) x (car x)))
 
 ; Could prob be generalized beyond printing.
 
@@ -947,28 +995,12 @@
 (def vals (h)
   (accum a (each (k v) h (a v))))
 
-; These two should really be done by coerce.  Wrap coerce?
-
-(def tablist (h)
-  (accum a (maptable (fn args (a args)) h)))
-
-(def listtab (al)
-  (let h (table)
-    (map (fn ((k v)) (= (h k) v))
-         al)
-    h))
-
-(mac obj args
-  #`(listtab (list ,@(map (fn ((k v))
-                            #`(list ',k v))
-                          (pair args)))))
 
 (def load-table (file (o eof))
   (w/infile i file (read-table i eof)))
 
 (def read-table ((o i (stdin)) (o eof))
-  (let e (read i eof)
-    (if (list? e) (listtab e) e)))
+  (coerce (read i eof) 'table))
 
 (def load-tables (file)
   (w/infile i file
@@ -976,10 +1008,10 @@
       (drain (read-table i eof) eof))))
 
 (def save-table (h file)
-  (writefile (tablist h) file))
+  (writefile (coerce h 'cons) file))
 
 (def write-table (h (o o (stdout)))
-  (write (tablist h) o))
+  (write (coerce h 'cons) o))
 
 (def copy (x . args)
   (let x2 (case (type x)
@@ -989,7 +1021,7 @@
                      (forlen i x
                        (= (new i) (x i)))
                      new)
-            table  (let new (table)
+            table  (let new (obj)
                      (each (k v) x
                        (= (new k) v))
                      new)
@@ -1000,6 +1032,10 @@
 
 (def abs (n)
   (if (< n 0) (- n) n))
+
+(def even (n) (is (mod n 2) 0))
+
+(def odd (n) (no (even n)))
 
 ; The problem with returning a list instead of multiple values is that
 ; you can't act as if the fn didn't return multiple vals in cases where
@@ -1091,30 +1127,17 @@
           (do (if (cdr x) (lup x (cdr x) y t) (scdr x y))
               x)))))
 
+
 (def bestn (n f seq)
   (firstn n (sort f seq)))
 
-(def split (seq pos)
-  (list (cut seq 0 pos) (cut seq pos)))
-
-(mac time (expr)
-  (w/uniq (t1 t2)
-    #`(let t1 (msec)
-        (do1 expr
-             (let t2 (msec)
-               (prn "time: " (- t2 t1) " msec."))))))
-
-(mac jtime (expr)
-  #`(do1 ''ok (time expr)))
-
-(mac time10 (expr)
-  #`(time (repeat 10 expr)))
 
 (def union (f xs ys)
   (+ xs (rem (fn (y) (some [f _ y] xs))
              ys)))
 
-(= templates* (table))
+
+(= templates* (obj))
 
 (mac deftem (tem . fields)
   (withs (name (carif tem) includes (if (cons? tem) (cdr tem)))
@@ -1132,7 +1155,7 @@
               (templates* ',name))))
 
 (def inst (tem . args)
-  (let x (table)
+  (let x (obj)
     (each (k v) (if (cons? tem) tem (templates* tem))
       (unless (no v) (= (x k) (v))))
     (each (k v) (pair args)
@@ -1167,11 +1190,33 @@
 (def number (n) (in (type n) 'int 'num))
 
 
+(mac time (expr)
+  (w/uniq (t1 t2)
+    #`(let t1 (msec)
+        (do1 expr
+             (let t2 (msec)
+               (prn "time: " (- t2 t1) " msec."))))))
+
+(mac jtime (expr)
+  #`(do1 ''ok (time expr)))
+
+(mac time10 (expr)
+  #`(time (repeat 10 expr)))
+
+
 (def since (t1) (- (seconds) t1))
 
 (def minutes-since (t1) (/ (since t1) 60))
-(def hours-since (t1)   (/ (since t1) 3600))
-(def days-since (t1)    (/ (since t1) 86400))
+(def hours-since   (t1) (/ (since t1) 3600))
+(def days-since    (t1) (/ (since t1) 86400))
+
+(def date ((o s (seconds)))
+  (nrev (nthcdr 3 (timedate s))))
+
+(def datestring ((o s (seconds)))
+  (let (y m d) (date s)
+    (string y "-" (if (< m 10) "0") m "-" (if (< d 10) "0") d)))
+
 
 ; could use a version for fns of 1 arg at least
 
@@ -1187,6 +1232,7 @@
   #`(safeset name (cache (fn () lasts)
                          (fn () ,@body))))
 
+
 (mac errsafe (expr)
   (w/uniq c
     #`(on-err (fn (c) nil)
@@ -1196,18 +1242,14 @@
 
 (def safe-load-table (filename)
   (or (errsafe:load-table filename)
-      (table)))
+      (obj)))
 
+
+;; TODO: Racket version for this...?
 (def ensure-dir (path)
   (unless (dir-exists path)
     (system (string "mkdir -p " path))))
 
-(def date ((o s (seconds)))
-  (nrev (nthcdr 3 (timedate s))))
-
-(def datestring ((o s (seconds)))
-  (let (y m d) (date s)
-    (string y "-" (if (< m 10) "0") m "-" (if (< d 10) "0") d)))
 
 (def count (test x)
   (with (n 0 testf (testify test))
@@ -1215,13 +1257,16 @@
       (if (testf elt) (++ n)))
     n))
 
+
 (def ellipsize (str (o limit 80))
   (if (<= (len str) limit)
       str
       (+ (cut str 0 limit) "...")))
 
+
 (def rand-elt (seq)
   (seq (rand (len seq))))
+
 
 (mac until (test . body)
   #`(while (no test) ,@body))
@@ -1229,6 +1274,7 @@
 (def before (x y seq (o i 0))
   (with (xp (pos x seq i) yp (pos y seq i))
     (and xp (or (no yp) (< xp yp)))))
+
 
 (def orf fns
   (fn args
@@ -1244,6 +1290,7 @@
                          (and (apply (car fs) args) (self (cdr fs)))))
      fns)))
 
+
 (def atend (i s)
   (> i (- (len s) 2)))
 
@@ -1251,7 +1298,7 @@
   (is 0 (mod x y)))
 
 (mac nor args
-  #`(no (or ,@args)))
+  #`(no (or . args)))
 
 ; Consider making the default sort fn take compare's two args (when do
 ; you ever have to sort mere lists of numbers?) and rename current sort
@@ -1286,8 +1333,9 @@
       (f (car xs))           (cons (car xs) (retrieve (- n 1) f (cdr xs)))
                              (retrieve n f (cdr xs))))
 
+;; TODO: does this allow for a single nil in lists?
 (def dedup (xs)
-  (with (h (table) acc nil)
+  (with (h (obj) acc nil)
     (each x xs
       (unless (h x)
         (push x acc)
@@ -1300,7 +1348,7 @@
   (and ys (cons (car ys)
                 (mappend [list x _] (cdr ys)))))
 
-(def counts (seq (o c (table)))
+(def counts (seq (o c (obj)))
   (if (no seq)
       c
       (do (++ (c (car seq) 0))
@@ -1318,7 +1366,6 @@
       (apply f xs)))
 
 (let argsym (uniq)
-
   (def parse-format (str)
     (accum a
       (with (chars nil  i -1)
@@ -1351,7 +1398,7 @@
   (and (number x) (> x 0)))
 
 (mac w/table (var . body)
-  #`(let var (table) ,@body var))
+  #`(let var (obj) ,@body var))
 
 (def ero args
   (w/stdout (stderr)
@@ -1361,35 +1408,6 @@
     (writec #\newline))
   (car args))
 
-(def queue () (list nil nil 0))
-
-; Despite call to atomic, once had some sign this wasn't thread-safe.
-; Keep an eye on it.
-
-(def enq (obj q)
-  (atomic
-    (++ (q 2))
-    (if (no (car q))
-        (= (cadr q) (= (car q) (list obj)))
-        (= (cdr (cadr q)) (list obj)
-           (cadr q)       (cdr (cadr q))))
-    (car q)))
-
-(def deq (q)
-  (atomic (unless (is (q 2) 0) (-- (q 2)))
-          (pop (car q))))
-
-; Should redef len to do this, and make queues lists annotated queue.
-
-(def qlen (q) (q 2))
-
-(def qlist (q) (car q))
-
-(def enq-limit (val q (o limit 1000))
-  (atomic
-     (unless (< (qlen q) limit)
-       (deq q))
-     (enq val q)))
 
 (def median (ns)
   ((sort > ns) (trunc (/ (len ns) 2))))
@@ -1415,29 +1433,6 @@
 (mac catch body
   #`(point 'throw ,@body))
 
-(def downcase (x)
-  (let downc (fn (c)
-               (let n (coerce c 'int)
-                 (if (or (< 64 n 91) (< 191 n 215) (< 215 n 223))
-                     (coerce (+ n 32) 'char)
-                     c)))
-    (case (type x)
-      string (map downc x)
-      char   (downc x)
-      sym    (sym (map downc (coerce x 'string)))
-             (err "can't downcase" x))))
-
-(def upcase (x)
-  (let upc (fn (c)
-             (let n (coerce c 'int)
-               (if (or (< 96 n 123) (< 223 n 247) (< 247 n 255))
-                   (coerce (- n 32) 'char)
-                   c)))
-    (case (type x)
-      string (map upc x)
-      char   (upc x)
-      sym    (sym (map upc (coerce x 'string)))
-             (err "can't upcase" x))))
 
 (def inc (x (o n 1))
   (coerce (+ (coerce x 'int) n) (type x)))
@@ -1454,7 +1449,7 @@
         (throw index)))))
 
 (def memtable (ks)
-  (let h (table)
+  (let h (obj)
     (each k ks (set (h k)))
     h))
 
@@ -1486,13 +1481,6 @@
            ,@(map [list _ g] fs)))
        x)))
 
-(= hooks* (table))
-
-(def hook (name . args)
-  (aif (hooks* name) (apply it args)))
-
-(mac defhook (name . rest)
-  #`(= (hooks* ',name) (fn ,@rest)))
 
 (mac out (expr)
   #`(pr ,(tostring (eval expr))))
@@ -1501,7 +1489,7 @@
 
 (def get (index) [_ index])
 
-(= savers* (table))
+(= savers* (obj))
 
 (mac fromdisk (var file init load save)
   (w/uniq (gf gv)
@@ -1515,7 +1503,7 @@
   #`(fromdisk var file nil readfile1 writefile))
 
 (mac disktable (var file)
-  #`(fromdisk var file (table) load-table save-table))
+  #`(fromdisk var file (obj) load-table save-table))
 
 (mac todisk (var (o expr var))
   #`((savers* ',var)

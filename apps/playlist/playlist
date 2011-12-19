@@ -29,7 +29,7 @@
 
 (= all-files (dirall-ext '(webm mp3 mp4 ogm ogg wma mid flv wav)))
 
-(= titles (table))
+(= titles (obj))
 
 (def include (xs)
   ;; TODO: should use ret
@@ -85,8 +85,8 @@
                                          (err:string "the pattern \"" p "\" matched both:\n  \"" l "\"\n  \"" r "\"\n")))
                           (o :file     (fn (p (l r))
                                          (err:string "the file \"" p "\" was matched by both:\n  \"" l "\"\n  \"" r "\"\n"))))
-  (withs (track   (table)
-          files   (table)
+  (withs (track   (obj)
+          files   (obj)
           errors  nil
           matches (boyer-multi-match patterns strings
                     :every (fn (x y)

@@ -7,7 +7,7 @@
         (zap if tab.c (min tab.c x) x)))))
 
 (def boyer-moore-process (x)
-  (let tab (table)
+  (let tab (obj)
     (boyer-moore-process-char x tab)
     (list x tab)))
 

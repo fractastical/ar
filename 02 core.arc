@@ -183,101 +183,68 @@
   (is (type x) y))
 
 
-(mac make-predicate (x (o y x))
+#|(mac make-predicate (x (o y x))
          ;; TODO: this is just (sym x "?")
   #`(def ,(racket-string->symbol
-            (racket-string-append (string1 x) "?"))
-         ('x) (isa 'x ',y)))
+            (racket-string-append (racket-symbol->string x) "?")) ;string1
+         ('x) (isa 'x ',y)))|#
 
-(make-predicate cons)
-(make-predicate int)
-(make-predicate string)
-(make-predicate sym)
-(make-predicate char)
-(make-predicate fn)
-(make-predicate mac)
-(make-predicate keyword)
-(make-predicate table)
+#|(mac deftype (pred (o to) (o make))
+  #`(do (def ,@pred)
+        ,(if to   #`(def ,@to))
+        ,(if make #`(def ,@make))))|#
 
-(def num?  (x) (ac-tnil (racket-number? x)))
+;(make-predicate cons)
+;(make-predicate int)
+;(make-predicate string)
+;(make-predicate sym)
+;(make-predicate char)
+;(make-predicate fn)
+;(make-predicate mac)
+;(make-predicate keyword)
+;(make-predicate table)
+
+(def fn?  (x) (isa x 'fn))
+(def mac? (x) (isa x 'mac))
+
 (def list? (x) (if (no x) t (cons? x)))
 ;; TODO: should this be here...?
 (def uniq? (x) (no (ac-tnil (racket-symbol-interned? x))))
 
-(def testify (x)
-  (if (fn? x) x [is _ x]))
 
 
-(def string args
-  (apply racket-string-append (map1 string1 args)))
+(def char?    (x) (isa x 'char))
+(def char     (x) (coerce x 'char))
 
+(def keyword? (x) (isa x 'keyword))
+(def keyword  (x) (coerce x 'keyword))
 
-;; TODO: should these throw errors...?
-(def sym1 (x)
-  (if (sym? x)
-        x
-      (char? x)
-        (racket-string->symbol (racket-string x))
-      (string? x)
-        (racket-string->symbol x)))
+(def table?     (x) (isa x 'table))
+(def table      (x) (coerce x 'table))
+(def make-table ()  (racket-make-hash))
 
-(def sym args
-  (sym1 (apply string args)))
+(def int? (x) (isa x 'int))
+(def int  (x (o base 10))
+  (coerce x 'int base))
 
+(def num? (x) (ac-tnil (racket-number? x)))
+(def num  (x (o base 10))
+  (coerce x 'num base))
 
-(def ac-iround (x)
-  (racket-inexact->exact (racket-round x)))
+(def cons?  (x) (isa x 'cons))
+;; TODO: kinda ew name
+(def tocons (x) (coerce x 'cons))
 
-(def int (x (o base 10))
-  (if (int? x)
-        x
-      (char? x)
-        (racket-char->integer x)
-      (num? x)
-        (ac-iround x)
-      (string? x)
-        ;; TODO: can this be a simple `or` like in `num`...?
-        (let n (racket-string->number x base)
-          (if n  (ac-iround n)
-                 (err "can't coerce" x 'string)))))
+#|(redef string1 (x)
+  (coerce x 'string))|#
 
-(def char (x)
-  (if (char? x)
-        x
-      (int? x)
-        (racket-integer->char x)
-      (num? x)
-        (racket-integer->char (int x))))
+(def string? (x) (isa x 'string))
+(def string  args
+  (apply racket-string-append (map1 (fn (x) (coerce x 'string)) #|string1|# args)))
 
-(def num (x (o base 10))
-  (if (int? x)
-        (+ 0.0 x)
-      (num? x)
-        x
-      (string? x)
-        (or (racket-string->number x base)
-            (err "can't coerce" x 'string))))
-
-(def keyword (x)
-  (racket-string->keyword (string x)))
-
-
-;; TODO: need to figure out a better way to deal with types
-(def coerce (x totype (o base 10))
-  (if (ac-tnil (ac-tagged? x))
-        (err "can't coerce annotated object")
-
-      (is totype (type x))  x
-      (is totype 'int)      (int x base)
-      (is totype 'num)      (num x base)
-      (is totype 'char)     (char x)
-      (is totype 'string)   (string x)
-      (is totype 'sym)      (sym x)
-      (is totype 'cons)     (if (string? x)
-                                  (racket-string->list x) ;(racket-list->mlist )
-                                (no x)
-                                  nil)
-                            (err "can't coerce" x type)))
+(def sym? (x) (isa x 'sym))
+(def sym  args
+  (coerce (apply string args) 'sym))
 
 
 ;=============================================================================
@@ -334,6 +301,209 @@
           #`(let g x
               (or ,@(map1 (fn (c) #`(is g c)) choices))))
       #`(is x ,(car choices))))
+
+
+;=============================================================================
+;  Type coercion
+;=============================================================================
+
+(def testify (x)
+  (if (fn? x) x [is _ x]))
+
+(def ac-iround (x)
+  (racket-inexact->exact (racket-round x)))
+
+
+#|(def make-table ()
+  (racket-make-hash))|#
+
+#|
+(def int     (x (o base 10)) (coerce x 'int base))
+(def num     (x (o base 10)) (coerce x 'num base))
+(def char    (x)             (coerce x 'char))
+(def keyword (x)             (coerce x 'keyword))
+(def table   (x)             (coerce x 'table))
+(def tocons  (x)             (coerce x 'cons))|#
+
+
+(= coerce-list* nil)
+
+(def defcoercefn (type to f)
+  (aif (alref coerce-list* type)
+         (sref it f to)
+       (let u (make-table)
+         ;; TODO: push
+         (= coerce-list* (cons (list type u) coerce-list*))
+         (sref u f to))))
+
+(mac defcoerce (type to parms . body)
+  #`(defcoercefn type to (fn parms . body)))
+#|  (w/uniq (u v)
+    #`(let v type
+        (aif (alref coerce-list* v)
+               (sref 'it (fn parms . body) to)
+             (let u (make-table)
+               ;; TODO: push
+               (ac-prn coerce-list*)
+               (= 'coerce-list* (cons (list v u) 'coerce-list*))
+               (sref u (fn parms . body) to)))))|#
+#|  (push coerce-list* (cons (list to (fn parms . body))
+                           (coerce-table* type)) type)|#
+
+(mac defcoerces (type parms . body)
+  #`(do ,@(map1 (fn ((x y))
+                  #`(defcoerce type x parms y))
+                (pair body))))
+
+
+(defcoerces (compose ac-tnil racket-bytes?) (x)
+  'string (racket-bytes->string/utf-8 x))
+
+(defcoerces (compose ac-tnil racket-path?) (x)
+  'string (racket-path->string x))
+
+(defcoerces keyword? (x)
+  'string (racket-keyword->string x)
+  'sym    (racket-string->symbol (racket-keyword->string x)))
+
+(defcoerces int? (x)
+  'string (racket-number->string x)
+  'char   (racket-integer->char x))
+
+(defcoerces int? (x (o base 10))
+  'num    (+ 0.0 x))
+
+(defcoerces num? (x)
+  'string (racket-number->string x)
+  'char   (racket-integer->char (int x)))
+
+(defcoerces num? (x (o base 10))
+  'int    (ac-iround x))
+
+(defcoerces table? (x)
+  ;'cons (accum a (maptable (fn args (a args)) x))
+  'cons (let a nil (maptable (fn args (= a (cons args a))) x) (nrev a))
+  )
+
+(defcoerces cons? (x)
+  'string (apply string x)
+  'table  (let h (make-table)
+            (map (fn ((k v)) (sref h v k)) x)
+            h))
+
+(defcoerces string? (x)
+  'keyword (racket-string->keyword x)
+  'cons    (racket-string->list x)
+  'sym     (racket-string->symbol x))
+
+(defcoerces string? (x (o base 10))
+  'int (let n (racket-string->number x base)
+         (if (is n #f)
+               (err "can't coerce" x 'int)
+             (ac-iround n)))
+  'num (let n (racket-string->number x base)
+         (if (is n #f)
+               (err "can't coerce" x 'num)
+             n)))
+
+(defcoerces char? (x)
+  'string (racket-string x)
+  'sym    (racket-string->symbol (racket-string x)))
+
+(defcoerces char? (x (o base 10))
+  'int    (racket-char->integer x))
+
+(defcoerces sym? (x)
+  'keyword (racket-string->keyword (racket-symbol->string x))
+  'string  (racket-symbol->string x))
+
+;; must be under sym?
+(defcoerces no (x)
+  'keyword (racket-string->keyword "")
+  'string  ""
+  ;; TODO: not sure about this
+  'table   (make-table)
+  'cons    nil)
+
+
+#|(defcoerces 'string (x)
+  (string (racket-string->list x)) ;(racket-list->mlist )
+  (no     nil))
+
+(defcoerces cons? (x)
+  ('string (string x)) ;(racket-list->mlist )
+  ('table  (let h (make-table)
+             (map (fn ((k v)) (sref h v k)) x)
+             h)))
+
+(defcoerces 'keyword (x)
+  (string? (racket-string->keyword x)))
+
+(defcoerces 'table (x)
+  (cons? (accum a (maptable (fn args (a args)) x))))|#
+
+#|(deftype table (fn () (racket-make-hash))
+                 (fn (x)
+                   (if (cons? x)
+                         (let h (racket-make-hash)
+                           (map (fn ((k v)) (= (h k) v)) x)
+                           h))))|#
+
+#|
+;; TODO: need to figure out a better way to deal with types
+(def coerce (x totype (o base 10))
+  (if (ac-tnil (ac-tagged? x))
+        (err "can't coerce annotated object")
+
+      (is totype (type x))  x
+      (is totype 'int)      (int x base)
+      (is totype 'num)      (num x base)
+      (is totype 'char)     (char x)
+      (is totype 'string)   (string x)
+      (is totype 'sym)      (sym x)
+      (is totype 'cons)     (if (string? x) (racket-string->list x)
+                                (table? x)  (let a nil (maptable (fn args (push args a)) x) (nrev a))
+                                (no x)      nil)
+      (is totype 'table)    (if (cons? x) (let h (make-table)
+                                            (map (fn ((k v)) (sref h v k)) x)
+                                            h))
+                            (err "can't coerce" x type)))|#
+
+;(map1 ac-prn coerce-list*)
+
+#|(= coerced-types* (make-table))
+
+#hash((sym     . 4563)
+      (char    . 556)
+      (string  . 184)
+      (cons    . 134)
+      (unknown . 38))|#
+
+(def coerce (x totype . args)
+  ;(ac-prn x totype args)
+  (if (ac-tnil (ac-tagged? x))
+        (err "can't coerce annotated object")
+      (is totype (type x))
+        x
+      ;; TODO: aloop
+      ((afn (xs)
+         (if (no xs)
+               (err "can't coerce" x totype)
+             (let (isa? f) (car xs)
+               (aif (and (isa? x)
+                         ;(sref coerced-types* (+ (or (coerced-types* (type x)) 0) 1) (type x))
+                         (f totype))
+                      (apply it x args)
+                     #|(do ;(ac-prn f x totype)
+                         ;(ac-prn (f totype (fn () (self (cdr xs)) nil)))
+                       (w/uniq u
+                         (let f (f totype u)
+                           (if (is f u)
+                                 (self (cdr xs))
+                               )))
+                      )|#
+                    (self (cdr xs))))))
+       coerce-list*)))
 
 
 ;=============================================================================
@@ -439,13 +609,25 @@
       (list? x)
         (join x y)))
 
-(def <2 (x y)
+#|(def <2 (x y)
   (ac-tnil
     (if (num? x)    (racket-< x y)
         (string? x) (racket-string<? x y)
-        (sym? x)    (racket-string<? (sym x) (sym y))
+        (sym? x)    (racket-string<? (string x) (string y))
         (char? x)   (racket-char<? x y)
-                    (err "can't <" x y))))
+                    (err "can't <" x y))))|#
+
+;; TODO: pretty this up
+(%nocompile
+(ac-def <2 (x y)
+  (ac-tnil
+    (racket-cond
+      ((racket-number? x) (racket-< x y))
+      ((racket-string? x) (racket-string<? x y))
+      ((racket-symbol? x) (racket-string<? (racket-symbol->string x)
+                                           (racket-symbol->string y)))
+      ((racket-char? x)   (racket-char<? x y))
+      (racket-else        (err "can't <" x y))))))
 
 (def >2 (x y)
   (ac-tnil
@@ -463,11 +645,6 @@
 ;=============================================================================
 ;  Hash tables
 ;=============================================================================
-
-(def table ((o init))
-  (let x (racket-make-hash)
-    (if init (init x))
-    x))
 
 (def maptable (fn table)               ; arg is (fn (key value) ...)
   (racket-hash-for-each table fn)

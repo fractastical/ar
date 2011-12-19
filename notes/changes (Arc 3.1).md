@@ -78,7 +78,7 @@ Like *Arc 3.1* and *ar*, this means the overhead from destructuring is
 Other
 =====
 
-  * _arc.arc_ is now split into multiple files:
+  * _"arc.arc"_ is now split into multiple files:
 
       * _"01 compiler.arc"_ contains the bare minimum needed to run _"02 core.arc"_
       * _"02 core.arc"_ contains very basic things (like `def`, `mac`, and `let`)
@@ -145,3 +145,8 @@ Other
     courtesy of rocketnia
 
   * The `whilet` and `while` macros have been implemented better (see _"core.arc"_)
+
+  * `or` is implemented better: `(or a b)` is compiled into
+    `((fn (g1) (if g1 g1 b)) a)`
+
+  * `coerce` allows you to coerce to/from a table

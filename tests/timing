@@ -3,23 +3,26 @@
  skipping: strings.arc
 nil
 
-> (w/arc3 (timeit-range (+ 1 2) 300000 #|3097468|#))
+> (w/arc3 (timeit-range (+ 1 2) 390000 #|3097468|#))
 t
 
 > (timeit-range (+ 1 2) 62000 #|638625|#)
 t
 
 
-> (timeit-range 'foo 370000)
+> (timeit-range 'foo 680000)
 t
 
 
-> (timeit-range (apply idfn (list 'x)) 19000)
+> (timeit-range (apply idfn (list 'x)) 20500)
 t
 
-> (timeit-range (idfn 'x) 51500)
+> (timeit-range (idfn 'x) 61000)
 t
 
 
-> (timeit-range (do 1 2 3) 370000)
+> (timeit-range (do 1 2 3) 690000)
+t
+
+> (timeit-range (< 1 2) 61000)
 t
