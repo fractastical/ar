@@ -15,6 +15,9 @@
                   (if (is expr racket-eof)
                         (prn)
                       (let expr (racket-syntax->datum expr) ;(ac-deep-toarc )
+                        ;; > (readline) ;Fee fi fo fum
+                        ;; " ;Fee fi fo fum"
+                        (readline)
                         (let val (eval expr)
                           (write val)
                           (prn)

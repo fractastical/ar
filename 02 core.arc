@@ -45,7 +45,7 @@
 
 ;; TODO: get this working
 #|(mac nomac (name parms . body)
-  #`(mac name parms (%nocompile ,@(ac-args body))))|#
+  #`(mac name parms (% ,@(ac-args body))))|#
 
 
 ;=============================================================================
@@ -169,21 +169,12 @@
 ;  square-bracket / curly-bracket
 ;=============================================================================
 
-(def ac-readtable-bracket (readtable)
-  (%nocompile
-    (racket-make-readtable readtable
-      #\[ (racket-quote terminating-macro)
-      (racket-lambda (ch port src line col pos)
-        (racket-cons (racket-quote square-bracket) (racket-read/recursive port #\[ #f)))
-      #\{ (racket-quote terminating-macro)
-      (racket-lambda (ch port src line col pos)
-        (racket-cons (racket-quote curly-bracket) (racket-read/recursive port #\{ #f))))))
-
-;; TODO: should the old readtable be stored somewhere...?
-(racket-current-readtable (ac-readtable-bracket #f))
-
 (mac square-bracket body
   `(,fn ((o _)) (,@body)))
+
+;; Was originally in arubic.arc New Additions
+(mac curly-bracket args
+  #`(obj ,@args))
 
 
 ;=============================================================================
@@ -521,14 +512,22 @@
 ;  Loops
 ;=============================================================================
 
-(mac whilet (var test . body)
-  (w/uniq gf
-    #`((rfn gf (var)
-         (when var ,@body (gf test)))
+;; TODO: can be defined in terms of whilet, but it's way less efficient
+(mac while (test . body)
+  (w/uniq (gf gp)
+    #`((rfn gf (gp)
+         (when gp ,@body (gf test)))
        test)))
 
-(mac while (test . body)
-  #`(whilet ,(uniq) test . body))
+(mac whilet (var test . body)
+  (w/uniq (gf gp)
+    #`((rfn gf (gp)
+         ;; TODO: this can use whenlet, but it's less efficient
+         (when gp (let var gp ,@body) (gf test)))
+       test)))
+
+#|(mac while (test . body)
+  #`(whilet ,(uniq) test . body))|#
 
 
 ;=============================================================================
@@ -737,11 +736,11 @@
 
 
 (mac parameterize (x . body)
-  `(,%nocompile (racket-parameterize ,(map1 (fn ((x y))
-                                              ;; TODO: should probably use ac-compile for x
-                                              #`((rep x) ,(ac-compile y)))
-                                            (pair x))
-                  ,@(or (ac-args body) nil))))
+  `(,% (racket-parameterize ,(map1 (fn ((x y))
+                                     ;; TODO: should probably use ac-compile for x
+                                     #`((rep x) ,(ac-compile y)))
+                                   (pair x))
+         ,@(or (ac-args body) nil))))
 
 #|(nomac parameterize (x . body)
   `(racket-parameterize ,(map1 (fn ((x y))
@@ -947,7 +946,7 @@
 ; allow Arc to give up root privileges after it
 ; calls open-socket. thanks, Eli!
 ;; TODO: get this to work
-;;(= setuid (%nocompile (get-ffi-obj 'setuid #f (_fun _int -> _int))))
+;;(= setuid (% (get-ffi-obj 'setuid #f (_fun _int -> _int))))
 (ac-notimpl setuid)
 
 (def dir ((o name "") (o f))
@@ -1109,11 +1108,11 @@
 
 #|(mac require (x)
     ;; TODO: use dont
-  #`(do (%nocompile (racket-namespace-require/copy ('racket-quote ('prefix 'racket- x))))
+  #`(do (% (racket-namespace-require/copy ('racket-quote ('prefix 'racket- x))))
         nil))|#
 
 (mac require (x)
     ;; TODO: use dont
     ;; TODO: figure out a way to use quote rather than racket-quote
-  #`(do (racket-namespace-require/copy (%nocompile ('racket-quote ('prefix 'racket- x))))
+  #`(do (racket-namespace-require/copy (% ('racket-quote ('prefix 'racket- x))))
         nil))

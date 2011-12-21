@@ -41,8 +41,8 @@
     (ac-load "03 ssyntax.arc")
     ;(ac-load "compat.arc")
     (ac-load "04 arc.arc")
-    (ac-load "05 extra.arc")
-    (ac-load "06 import.arc")
+    (ac-load "05 import.arc")
+    (ac-load "06 extra.arc")
     (ac-load "lib/time.arc"))
 
   (let ((read     (namespace-variable-value 'read #f))

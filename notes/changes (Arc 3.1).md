@@ -85,8 +85,8 @@ Other
         and implements the rest of _"01 compiler.arc"_
       * _"03 ssyntax.arc"_ implements `ssyntax` and `ssexpand`
       * _"04 arc.arc"_ contains everything else
-      * _"05 extra.arc"_ contains new functions that I've found to be useful
-      * _"06 import.arc"_ implements namespace inheritance and file loading
+      * _"05 import.arc"_ implements namespace inheritance and file loading
+      * _"06 extra.arc"_ contains new functions that I've found to be useful
 
       * _"lib/repl.arc"_ contains the REPL
       * _"lib/compat.arc"_ serves as a compatibility layer between _Nu_ and _Arc 3.1_
@@ -144,7 +144,17 @@ Other
   * Nu no longer has `defset`: everything is done in `sref`. This idea is
     courtesy of rocketnia
 
-  * The `whilet` and `while` macros have been implemented better (see _"core.arc"_)
+  * The `whilet` macro supports destructuring:
+
+        > (= my-alist '((a 1) (b 2) (c 3) (d 4)))
+
+        > (whilet (k v) pop.my-alist
+            (prn k " " v))
+        a 1
+        b 2
+        c 3
+        d 4
+        nil
 
   * `or` is implemented better: `(or a b)` is compiled into
     `((fn (g1) (if g1 g1 b)) a)`

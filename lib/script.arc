@@ -14,6 +14,8 @@
 (= script-src (car script-args))
 (zap cdr script-args)
 
+;(= cwd (dirname script-src))
+
 
 (def hidden-file (x)
   (is x.0 #\.))

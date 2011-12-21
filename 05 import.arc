@@ -1,4 +1,52 @@
 ;=============================================================================
+;  from 06 extra.arc
+;=============================================================================
+
+(mac rloop (name parms . body)
+  ;; TODO: can this just use mappend rather than zip? should it?
+  ;;       what about (map car parms)...?
+  ;;       look at xloop in ar's arc.arc
+  (let (l r) (apply zip pair.parms)
+    #`((rfn name l ,@body) ,@r)))
+
+(mac aloop (parms . body)
+  #`(rloop 'self parms ,@body))
+
+
+(def maplast (f xs)
+  (if (no cdr.xs)
+        (f car.xs)
+      (do (f car.xs)
+          (maplast f cdr.xs))))
+
+
+;; TODO: should probably be in core.arc, under Types
+(def listify (x)
+  (if (cons? x) x (list x)))
+
+
+(mac extend (name parms test . body)
+  (w/uniq u
+    #`(let 'orig name
+        (= name (fn u
+                  ;; TODO: (apply (fn ,parms ...) ,u) ?
+                  (let parms u
+                    (aif test (do ,@body)
+                              (apply 'orig u)))
+                 )))))
+
+
+(= defcall-types* (obj))
+
+(mac defcall (name parms . body)
+  #`(= (defcall-types* ',name) (fn parms ,@body)))
+
+(extend ac-apply-non-fn (x . args)
+  (orig defcall-types* (type x))
+  (apply it x args))
+
+
+;=============================================================================
 ;  from script.arc
 ;=============================================================================
 
@@ -67,14 +115,17 @@
   #`(w/namespace (new-namespace x) ,@body))
 
 
-#|(def namespace-copy1 ((o x   (racket-current-namespace))
-                      (o new (racket-make-empty-namespace)))
+#|(def empty-namespace ()
+  (racket-make-empty-namespace))
+
+(def namespace-copy1 ((o x   (racket-current-namespace))
+                      (o new (empty-namespace)))
   (each n (racket-namespace-mapped-symbols x) ;(racket-list->mlist )
     (namespace-set new n (namespace-get x n)))
   new)
 
 (def namespace-copy args
-  (let new (racket-make-base-empty-namespace)
+  (let new (empty-namespace) ;(racket-make-base-empty-namespace)
     ;(prn (racket-namespace-mapped-symbols new))
     (each x nrev.args
       (namespace-copy1 x new))
@@ -90,16 +141,16 @@
 ;; TODO: extend should work with keyword args
 (defcall namespace (x k (o d))
   ;; TODO: use afn or aloop
-  (let self nil ;(%nocompile )
+  (let self nil ;(% )
     (= self (fn (x)
-              (if x ((car x) ;(%nocompile )
+              (if x ((car x) ;(% )
                      k
                      (fn ()
-                       (self (cdr x)))) ;(%nocompile )
-                    (if (fn? d) ;(%nocompile )
+                       (self (cdr x)))) ;(% )
+                    (if (fn? d) ;(% )
                           (d)
                         d))))
-    (self (rep x))) ;(%nocompile )
+    (self (rep x))) ;(% )
   )
 
 (extend sref (x v k) (isa x 'namespace)
@@ -184,8 +235,8 @@
               (joinpath exec-dir* "03 ssyntax.arc")  arc3-namespace
               ;(joinpath exec-dir* "compat.arc")      arc3-namespace
               (joinpath exec-dir* "04 arc.arc")      arc3-namespace
-              (joinpath exec-dir* "05 extra.arc")    arc3-namespace
-              (joinpath exec-dir* "06 import.arc")   arc3-namespace))
+              (joinpath exec-dir* "05 import.arc")   arc3-namespace
+              (joinpath exec-dir* "06 extra.arc")    arc3-namespace))
 
 
 (parameter load-paths*
@@ -226,10 +277,10 @@
   (parameterize (racket-port-count-lines-enabled #t)
     (let y (load-normalize-path x)
       (iflet it (load-file-dir y)
-        (w/cwd it (f y))
+        (f (joinpath it y))
         (iflet it (and (isnt x y)
                        (load-file-dir x))
-          (w/cwd it (f x))
+          (f (joinpath it x))
           (err:string "file \"" x "\" was not found"))))))
 
 

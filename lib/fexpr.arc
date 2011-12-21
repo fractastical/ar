@@ -68,7 +68,7 @@
 
 
 ;; TODO: more granular extending
-#|(%nocompile
+#|(%
 (ac-def ac-fn-args (x)
   (racket-cond
     ;; TODO: make it work with rest args too

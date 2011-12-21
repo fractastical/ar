@@ -328,6 +328,13 @@
 (remac = args
   (expand=list args))
 
+#|(ac-prn (macex-all '(mac loop (start test update . body)
+  (w/uniq (gfn gparm)
+    #`(do start
+          ((rfn gfn (gparm)
+             (if gparm
+               (do ,@body update (gfn test))))
+           test))))))|#
 
 (mac loop (start test update . body)
   (w/uniq (gfn gparm)

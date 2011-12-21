@@ -33,6 +33,8 @@
 (racket-define t              (racket-quote t))
 (racket-define nil            racket-null)
 
+(racket-define ac-dot         (racket-string->symbol "."))
+
 ;; TODO: tests for the fn environment
 (racket-define ac-local-env   (racket-make-parameter nil))
 
@@ -629,12 +631,18 @@
     (racket-let loop ((x args))
       #|((ac-caris x (racket-quote :))
           (list (ac-compile (cdr x))))|#
+      ;(ac-prn x)
       (racket-if (racket-pair? x)
-                   (racket-let ((c (ac-compile (car x))))
-                     (racket-if (ac-caris c ac-splice)
-                                  ;; TODO: test this
-                                  (join (cdr c) (loop (cdr x)))
-                                (cons c (loop (cdr x)))))
+                   (racket-let ((c (car x)))
+                     (racket-if (racket-eq? c ac-dot)
+                       (loop (cdr x))
+                       #|(cons (ac-compile (cadr x))
+                             (loop (cddr x)))|#
+                       (racket-let ((c (ac-compile c)))
+                         (racket-if (ac-caris c ac-splice)
+                                      ;; TODO: test this
+                                      (join (cdr c) (loop (cdr x)))
+                                    (cons c (loop (cdr x)))))))
                  x))
     #|(ac-mappend (racket-lambda (x)
                   (racket-let ((c (ac-compile x)))
@@ -724,13 +732,13 @@
 
 
 ;=============================================================================
-;  %nocompile
+;  ac-nocompile / %
 ;=============================================================================
 
 (racket-define ac-nocompile (uniq))
 
 ;; TODO: maybe define this in core.arc?
-(ac-mac %nocompile args
+(ac-mac % args
   (cons ac-nocompile
         (racket-if (ac-no (racket-cdr args))
                      (racket-car args)
@@ -738,14 +746,14 @@
                          args ;(racket-list->mlist )
                          ))))
 
-#|(ac-mac %nocompile args
+#|(ac-mac % args
   (racket-let ((args (racket-list->mlist args)))
     (racket-if (ac-no (cdr args))
                  (car args)
                (cons (racket-quote racket-begin) args))))|#
 #|
 ;; TODO: custom sig
-(ac-mac %nocompile (args)
+(ac-mac % (args)
   (racket-if (ac-no (cdr args))
                (car args)
              (cons (racket-quote racket-begin) args)))|#
@@ -1007,7 +1015,15 @@
     ((racket-symbol? x)                   ;; dotted rest args
       ;(ac-fn-let* (join (ac-fn-rest-args x) (ac-fn-let*)))
       (ac-add-to ac-local-env x)
-      x)
+      x
+      )
+    ((ac-caris x ac-dot)                  ;; dotted rest args
+      (ac-fn-normal-args (cadr x))
+      #|(ac-add-to ac-local-env (cadr x))
+      (racket-if (ac-no (cddr x))
+                   (cadr x)
+                 (err "invalid use of . in function argument list" x))|#
+      )
     ((ac-caris (car x) (racket-quote o))  ;; optional args
       (racket-let* ((c (car x))
                     (n (cadr c))
@@ -1069,6 +1085,7 @@
 
 
 (ac-def ac-fn (parms body)
+  ;(ac-prn parms (racket-when (racket-pair? parms) (len parms)))
   (cons (racket-quote racket-lambda)
         (racket-parameterize ((ac-fn-body (racket-if (ac-no body)
                                                        (list (racket-quote nil))
@@ -1107,9 +1124,9 @@
   x)
 
 (ac-mac quote (x)
-  ;; TODO: not sure about the %nocompile part: is it
+  ;; TODO: not sure about the % part: is it
   ;;       fast enough?
-  ;(list %nocompile (list (racket-lambda () x)))
+  ;(list % (list (racket-lambda () x)))
 
   ;; TODO: can I make due without ac-quote...?
   (list ac-quote
@@ -1141,6 +1158,8 @@
   (racket-if (racket-pair? x)
     (racket-let ((c (car x)))
       (racket-cond
+        ((racket-eq? c ac-dot)
+          (qs-expand-pair (cadr x)))
         ;; TODO: don't hardcode the symbol unquote
         ((racket-and (racket-eq? c (racket-quote unquote))
                      (ac-no (cddr x)))
@@ -1242,6 +1261,9 @@
   (racket-if (racket-pair? x)
     (racket-let ((c (car x)))
       (racket-cond
+        ((racket-eq? c ac-dot)
+          ;(ac-prn x)
+          (qs-expand-pair (cadr x)))
         ;; TODO: don't hardcode the symbol unquote
         ((racket-and (racket-eq? c (racket-quote unquote))
                      (ac-no (cddr x)))
@@ -1545,3 +1567,36 @@
 
 (ac-def ac-load (x)
   (racket-call-with-input-file x ac-eval-all))
+
+
+;=============================================================================
+;  readtable
+;=============================================================================
+
+#|(ac-def ac-readtable-round-bracket (ch port src line col pos)
+  (racket-let loop ()
+    (racket-let ((x (racket-peek-char port)))
+      (ac-prn x)
+      (racket-if (racket-eq? x #\))
+                   (racket-begin (racket-read-char port)
+                                 nil)
+                 (racket-cons (ac-prn (racket-read port)) (loop))))))|#
+  ;(racket-read/recursive port #\( #f)
+
+(ac-def ac-readtable-dot-syntax (ch port src line col pos) ac-dot)
+
+(ac-def ac-readtable-square-bracket (ch port src line col pos)
+  (racket-cons (racket-quote square-bracket) (racket-read/recursive port #\[ #f)))
+
+(ac-def ac-readtable-curly-bracket (ch port src line col pos)
+  (racket-cons (racket-quote curly-bracket) (racket-read/recursive port #\{ #f)))
+
+(ac-def ac-readtable (readtable)
+  (racket-make-readtable readtable
+    ;#\. (racket-quote terminating-macro) ac-readtable-dot-syntax
+    ;#\( (racket-quote terminating-macro) ac-readtable-round-bracket
+    #\[ (racket-quote terminating-macro) ac-readtable-square-bracket
+    #\{ (racket-quote terminating-macro) ac-readtable-curly-bracket))
+
+;; TODO: should the old readtable be stored somewhere...?
+(racket-current-readtable (ac-readtable #f))

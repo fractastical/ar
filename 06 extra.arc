@@ -3,17 +3,6 @@
   (apply map list args))
 
 
-(mac rloop (name parms . body)
-  ;; TODO: can this just use mappend rather than zip? should it?
-  ;;       what about (map car parms)...?
-  ;;       look at xloop in ar's arc.arc
-  (let (l r) (apply zip pair.parms)
-    #`((rfn name l ,@body) ,@r)))
-
-(mac aloop (parms . body)
-  #`(rloop 'self parms ,@body))
-
-
 (mac afnlet (parms x . body)
   (w/uniq u
     #`((afn (u)
@@ -22,25 +11,20 @@
        x)))
 
 
-(def maplast (f xs)
-  (if (no cdr.xs)
-        (f car.xs)
-      (do (f car.xs)
-          (maplast f cdr.xs))))
-
-
 (mac catcherr (expr)
   (w/uniq c
     #`(on-err (fn (c) (details c))
               (fn ()  expr nil))))
 
+;; TODO: should be in strings.arc
 (def xml-encode (s)
   (multisubst '(("&" "&amp;")
                 ("<" "&lt;")) s))
 
 
-(def readlines args
-  (drain:apply readline args))
+;; TODO: these should be in io.arc
+(def readlines (x (o eof (uniq)) . args)
+  (drain (apply readline x eof args) eof))
 
 (def pipe-lines (y)
   (w/pipe-from x y readlines.x))
@@ -49,31 +33,6 @@
   ;; TODO: should probably use a temporary file
   (w/outfile o file (disp val o))
   val)
-
-
-(mac extend (name parms test . body)
-  (w/uniq u
-    #`(let 'orig name
-        (= name (fn u
-                  ;; TODO: (apply (fn ,parms ...) ,u) ?
-                  (let parms u
-                    (aif test (do ,@body)
-                              (apply 'orig u)))
-                 )))))
-
-
-(= defcall-types* (obj))
-
-(mac defcall (name parms . body)
-  #`(= (defcall-types* ',name) (fn parms ,@body)))
-
-(extend ac-apply-non-fn (x . args)
-  (orig defcall-types* (type x))
-  (apply it x args))
-
-
-(def listify (x)
-  (if (cons? x) x (list x)))
 
 
 ;=============================================================================
@@ -94,13 +53,13 @@
           (car x)
         (cons 'racket-begin x))))|#
 
-#|(nomac %nocompile args
+#|(nomac % args
   (if (cdr args)
         `(racket-begin ,@args)
       (car args)))|#
 
 (mac %splice args
-  #`(%nocompile (ac-splice . args)))
+  #`(% (ac-splice . args)))
 
 (mac %eval body
   (maplast eval body))
@@ -138,9 +97,6 @@
   ;; only difference with mvfile is this one uses #f
   (racket-rename-file-or-directory old new #f)
   nil)
-
-(mac curly-bracket args
-  #`(obj ,@args))
 
 
 (mac buildeach (name f)

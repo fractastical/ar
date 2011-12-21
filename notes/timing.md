@@ -60,7 +60,7 @@ Timing notes
         iter: 2,647,141  gc: 0  mem: 504
         iter: 2,510,846  gc: 0  mem: 824
 
-        > (%nocompile (+ 1 2))
+        > (% (+ 1 2))
         iter: 2,795,937  gc: 0  mem: 984
         iter: 2,673,457  gc: 0  mem: 824
         iter: 2,821,147  gc: 0  mem: 1048
@@ -72,7 +72,7 @@ Timing notes
         iter: 3,860,042  gc: 0  mem: 824
         iter: 3,820,783  gc: 0  mem: 824
 
-        > (%nocompile (racket-begin 1 2 3))
+        > (% (racket-begin 1 2 3))
         iter: 3,863,665  gc: 0  mem: 984
         iter: 3,804,157  gc: 0  mem: 824
         iter: 3,875,776  gc: 0  mem: 824
@@ -282,16 +282,16 @@ Timing notes
 
   * `namespace-set-variable-value!` is slower than `set!`:
 
-        > (timeit (%nocompile (racket-set! foo 10)))
+        > (timeit (% (racket-set! foo 10)))
         iter: 11,389,643  gc: 0  mem: 1028704
 
-        > (timeit (%nocompile (racket-namespace-set-variable-value! (racket-quote foo) 10)))
+        > (timeit (% (racket-namespace-set-variable-value! (racket-quote foo) 10)))
         iter: 7,369,962  gc: 0  mem: 1024064
 
-        > (timeit (%nocompile (racket-namespace-set-variable-value! (racket-quote foo) 10 #f)))
+        > (timeit (% (racket-namespace-set-variable-value! (racket-quote foo) 10 #f)))
         iter: 7,595,915  gc: 0  mem: 922336
 
-        > (timeit (%nocompile (racket-namespace-set-variable-value! (racket-quote foo) 10 #t)))
+        > (timeit (% (racket-namespace-set-variable-value! (racket-quote foo) 10 #t)))
         iter: 7,078,268  gc: 0  mem: 762368
 
         > (let name (obj foo 5)
@@ -300,20 +300,20 @@ Timing notes
 
   * `namespace-variable-value` is slower than direct access:
 
-        > (timeit (%nocompile foo))
+        > (timeit (% foo))
         iter: 10,617,404  gc: 0  mem: 1616824
 
-        > (timeit (%nocompile (racket-namespace-variable-value (racket-quote foo))))
+        > (timeit (% (racket-namespace-variable-value (racket-quote foo))))
         iter: 3,954,457  gc: 36  mem: -7896744
 
-        > (timeit (%nocompile (racket-namespace-variable-value (racket-quote foo) #f)))
+        > (timeit (% (racket-namespace-variable-value (racket-quote foo) #f)))
         iter: 7,542,512  gc: 0  mem: 1171400
 
         ;; TODO: alternative to %compile
-        > (timeit (%nocompile (racket-namespace-variable-value (racket-quote foo) #f (%compile (fn () nil)))))
+        > (timeit (% (racket-namespace-variable-value (racket-quote foo) #f (%compile (fn () nil)))))
         iter: 7,115,895  gc: 0  mem: 1137640
 
-        > (timeit (%nocompile (racket-namespace-variable-value (racket-quote foo) #f (racket-lambda () nil))))
+        > (timeit (% (racket-namespace-variable-value (racket-quote foo) #f (racket-lambda () nil))))
         iter: 7,020,827  gc: 0  mem: 1342384
 
         > (timeit (racket-namespace-variable-value 'foo #f (fn () nil)))
@@ -481,47 +481,47 @@ Timing notes
 
   * `make-keyword-procedure` is about twice as slow as a normal `lambda`:
 
-        > (timeit (%nocompile ((racket-make-keyword-procedure (racket-lambda (kw kw-val . rest) rest)) 1 2 3)))
+        > (timeit (% ((racket-make-keyword-procedure (racket-lambda (kw kw-val . rest) rest)) 1 2 3)))
         time: 18.043  gc: 0.856  mem: 2992.04
 
-        > (timeit (%nocompile ((racket-lambda rest rest) 1 2 3)))
+        > (timeit (% ((racket-lambda rest rest) 1 2 3)))
         time:  9.149  gc: 0.1    mem: -8635.272
 
 
-        > (timeit (%nocompile ((racket-make-keyword-procedure (racket-lambda (kw kw-val a) a)) 1)))
+        > (timeit (% ((racket-make-keyword-procedure (racket-lambda (kw kw-val a) a)) 1)))
         time: 13.35   gc: 0.38   mem: 645.072
 
-        > (timeit (%nocompile ((racket-lambda (a) a) 1)))
+        > (timeit (% ((racket-lambda (a) a) 1)))
         time:  7.957  gc: 0.004  mem: -14541.976
 
     But it has a much smaller cost when the function is created only once:
 
-        > (let foo (%nocompile (racket-make-keyword-procedure (racket-lambda (kw kw-val a) a)))
-            (timeit (%nocompile (foo 1))))
+        > (let foo (% (racket-make-keyword-procedure (racket-lambda (kw kw-val a) a)))
+            (timeit (% (foo 1))))
         time: 9.565  gc: 0.032  mem: -2701.456
 
-        > (let foo (%nocompile (racket-lambda (a) a))
-            (timeit (%nocompile (foo 1))))
+        > (let foo (% (racket-lambda (a) a))
+            (timeit (% (foo 1))))
         time: 7.99   gc: 0.0    mem: 97.504
 
 
   * `keyword-apply` is *very comparable* in speed to a normal `apply`:
 
-        > (let foo (%nocompile (racket-lambda rest rest))
-            (timeit (%nocompile (racket-keyword-apply foo nil nil (racket-list 1 2 3)))))
+        > (let foo (% (racket-lambda rest rest))
+            (timeit (% (racket-keyword-apply foo nil nil (racket-list 1 2 3)))))
         time: 12.951 gc: 0.388 mem: -1748.512
 
-        > (let foo (%nocompile (racket-lambda rest rest))
-            (timeit (%nocompile (racket-apply foo (racket-list 1 2 3)))))
+        > (let foo (% (racket-lambda rest rest))
+            (timeit (% (racket-apply foo (racket-list 1 2 3)))))
         time: 12.692 gc: 0.536 mem: -10373.568
 
 
-        > (let foo (%nocompile (racket-lambda (#:b (b nil) . rest) rest))
-            (timeit (%nocompile (racket-keyword-apply foo nil nil (racket-list 1 2 3)))))
+        > (let foo (% (racket-lambda (#:b (b nil) . rest) rest))
+            (timeit (% (racket-keyword-apply foo nil nil (racket-list 1 2 3)))))
         time: 15.309 gc: 0.536 mem: -1729.12
 
-        > (let foo (%nocompile (racket-lambda (#:b (b nil) . rest) rest))
-            (timeit (%nocompile (racket-apply foo (racket-list 1 2 3)))))
+        > (let foo (% (racket-lambda (#:b (b nil) . rest) rest))
+            (timeit (% (racket-apply foo (racket-list 1 2 3)))))
         time: 14.282 gc: 0.356 mem: -1215.76
 
   * Keyword functions are almost twice as slow as normal functions:
@@ -535,7 +535,7 @@ Timing notes
         time:  9.515  gc: 0.3    mem: -22736.128
 
 
-  * Using `%nocompile` is slow because it calls `ac-mappend`:
+  * Using `%` is slow because it calls `ac-mappend`:
 
-        Special forms with %nocompile: 3462ms
+        Special forms with %:          3462ms
         Special forms with ac-compile: 2340ms

@@ -58,13 +58,13 @@ Other
 
   * Compiler names uniformly start with `ac-` rather than `ac-` and `ar-`
 
-  * Does not provide `(ail-code ...)`. Instead, `(%nocompile ...)` causes the
+  * Does not provide `(ail-code ...)`. Instead, `(% ...)` causes the
     expression to not be compiled at all: it passes directly to Racket. This
     is mostly needed when dealing with Racket macros. If you want an
-    expression within `%nocompile` to be compiled, you can splice it in with
+    expression within `%` to be compiled, you can splice it in with
     `ac-compile` or `ac-args` like so:
 
-        #`(%nocompile ('some-racket-macro ,(ac-compile ...) ,@(ac-args ...)))
+        #`(% ('some-racket-macro ,(ac-compile ...) ,@(ac-args ...)))
 
   * `nil` is a global variable that contains the Racket null value `'()`
     rather than the symbol `'nil`.
@@ -83,7 +83,7 @@ Other
     _ac.arc_. This results in much shorter and clearer code
 
   * Can include literal Racket values like `#t` and `#f` in code, without
-    needing to wrap them in `ail-code` or `%nocompile`
+    needing to wrap them in `ail-code` or `%`
 
   * Global functions have names. In _ar_, all global functions are given a
     gensym as a name:

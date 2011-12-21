@@ -566,8 +566,8 @@ error: #<procedure>: expects 1 argument, given 0
 > quasisyntax
 #<mac:quasisyntax>
 
-> %nocompile
-#<mac:%nocompile>
+> %
+#<mac:%>
 
 > %splice
 #<mac:%splice>

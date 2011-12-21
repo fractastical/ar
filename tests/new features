@@ -2,52 +2,52 @@
 #<namespace:0>
 
 ;=============================================================================
-;  %nocompile
+;  %
 ;=============================================================================
 
-> (ac-compile `(%nocompile (+ 1 2 3 4 5)))
+> (ac-compile `(% (+ 1 2 3 4 5)))
 (+ 1 2 3 4 5)
 
-> (ac-compile `(,%nocompile (+ 1 2 3 4 5)))
+> (ac-compile `(,% (+ 1 2 3 4 5)))
 (+ 1 2 3 4 5)
 
-> (type (ac-compile `(,%nocompile (+ 1 2 3 4 5))))
+> (type (ac-compile `(,% (+ 1 2 3 4 5))))
 cons
 
 
-> (ac-compile `(%nocompile + 1 2 3 4 5))
+> (ac-compile `(% + 1 2 3 4 5))
 (racket-begin + 1 2 3 4 5)
 
-> (ac-compile `(,%nocompile + 1 2 3 4 5))
+> (ac-compile `(,% + 1 2 3 4 5))
 (racket-begin + 1 2 3 4 5)
 
-> (type (ac-compile `(,%nocompile + 1 2 3 4 5)))
+> (type (ac-compile `(,% + 1 2 3 4 5)))
 cons
 
 
-> (ac-compile '(%nocompile 5 10 (foo 10) (bar (qux (%compile (corge)))) (%compile (foo 10)) (%compile 5)))
+> (ac-compile '(% 5 10 (foo 10) (bar (qux (%compile (corge)))) (%compile (foo 10)) (%compile 5)))
 (racket-begin 5 10 (foo 10) (bar (qux (%compile (corge)))) (%compile (foo 10)) (%compile 5))
 
-> (ac-compile `(%nocompile 5 10 (foo 10) (bar (qux ,(ac-compile '(corge)))) ,(ac-compile '(foo 10)) ,(ac-compile '5)))
+> (ac-compile `(% 5 10 (foo 10) (bar (qux ,(ac-compile '(corge)))) ,(ac-compile '(foo 10)) ,(ac-compile '5)))
 (racket-begin 5 10 (foo 10) (bar (qux (#<fn:ac-funcall0> (#<fn:ac-lookup-global> corge)))) (#<fn:ac-funcall1> (#<fn:ac-lookup-global> foo) 10) 5)
 
-> (%nocompile (racket-parameterize ((racket-current-namespace (racket-current-namespace))) (racket-current-namespace)))
+> (% (racket-parameterize ((racket-current-namespace (racket-current-namespace))) (racket-current-namespace)))
 #<namespace:0>
 
-> (%nocompile (racket-parameterize ((racket-current-namespace (racket-current-namespace)))
+> (% (racket-parameterize ((racket-current-namespace (racket-current-namespace)))
     (%compile (+ 10 5) (+ 15 20))))
 error: reference to undefined identifier: %compile
 
-> (eval `(%nocompile (racket-parameterize ((racket-current-namespace (racket-current-namespace)))
+> (eval `(% (racket-parameterize ((racket-current-namespace (racket-current-namespace)))
            ,@(ac-args '((+ 10 5) (+ 15 20))))))
 35
 
 > (let ac-compile nil
-    (%nocompile (+ 10 5)))
+    (% (+ 10 5)))
 15
 
-> (let %nocompile nil
-    (%nocompile (+ 10 5)))
+> (let % nil
+    (% (+ 10 5)))
 error: function call on inappropriate object () 15
 
 
