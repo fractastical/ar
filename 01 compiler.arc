@@ -1503,6 +1503,26 @@
 
 
 ;=============================================================================
+;  Conveniences for core.arc
+;=============================================================================
+
+(ac-mac = args
+  (cons assign args))
+
+(ac-mac =sig (name parms x)
+  (list ac-nocompile
+        (racket-quote racket-begin)
+        (ac-compile (list sref sig (list quote parms) (list quote name)))
+        (ac-compile (list = name x))))
+
+(ac-mac =sigdef (name parms . body)
+  (list =sig name parms (list* fn parms body)))
+
+(ac-mac =sigmac (name parms . body)
+  (list =sig name parms (list annotate (list quote (racket-quote mac)) (list* fn parms body))))
+
+
+;=============================================================================
 ;  ssyntax
 ;=============================================================================
 

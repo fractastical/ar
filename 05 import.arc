@@ -3,11 +3,10 @@
 ;=============================================================================
 
 (mac rloop (name parms . body)
-  ;; TODO: can this just use mappend rather than zip? should it?
-  ;;       what about (map car parms)...?
-  ;;       look at xloop in ar's arc.arc
-  (let (l r) (apply zip pair.parms)
-    #`((rfn name l ,@body) ,@r)))
+  ;; TODO: need a better abstraction for this common pattern
+  ;;       with should use the abstraction too
+  (let p (pair parms)
+    #`((rfn name ,(map1 car p) . body) ,@(map1 cadr p))))
 
 (mac aloop (parms . body)
   #`(rloop 'self parms ,@body))
