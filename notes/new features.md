@@ -5,6 +5,8 @@ Links
 
   * Nu has good [namespace support](namespaces.md)
 
+  * Nu has [fexprs](fexprs.md)
+
 
 Other
 =====
@@ -65,3 +67,11 @@ Other
 
         (+ 1 2 : + 3 4 : + 5 6)
         (+ 1 2 (+ 3 4 (+ 5 6)))
+
+  * `plist` and `plref` for plists:
+
+        > (plist '(b 10 a 5 c 15) 'a)
+        (a 5 c 15)
+
+        > (plref '(b 10 a 5 c 15) 'a)
+        5

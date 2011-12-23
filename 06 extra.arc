@@ -3,6 +3,11 @@
   (apply map list args))
 
 
+;; Infinite nil generator, courtesy of akkartik (rocketnia reminded me)
+(= nils list.nil)
+(= (cdr nils) nils)
+
+
 (mac afnlet (parms x . body)
   (w/uniq u
     #`((afn (u)
@@ -33,6 +38,35 @@
   ;; TODO: should probably use a temporary file
   (w/outfile o file (disp val o))
   val)
+
+
+;; TODO: should this be (+ 1 x) or (+ x 1)?
+(def 1+ (x) (+ 1 x))
+(def 1- (x) (- x 1))
+
+
+;=============================================================================
+;  defmac / defprint
+;=============================================================================
+
+;; TODO: macro for generating these
+(= defmac-types* (obj))
+
+(mac defmac (name parms . body)
+  #`(= (defmac-types* ',name) (fn parms ,@body)))
+
+(extend ac-macro? (x) (defmac-types* (type x))
+  (fn args (apply it x args)))
+
+
+;; TODO: macro for generating these
+(= defprint-types* (obj))
+
+(mac defprint (name parms . body)
+  #`(= (defprint-types* ',name) (fn parms ,@body)))
+
+(extend print (primitive x port) (defprint-types* (type x))
+  (it primitive x port))
 
 
 ;=============================================================================

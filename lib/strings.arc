@@ -175,7 +175,7 @@
                  (+ i 1))))
         "")))
 
-(def commafy (n (o digits 2) (o trail-zeros nil) (o init-zero nil))
+(def commafy (n (o digits 2) (o trail-zeros nil) (o init-zero t))
   (withs (commafy
           (fn (i)
             (tostring

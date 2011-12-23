@@ -141,18 +141,22 @@
   ;(namespace-require '(prefix racket- racket/system))
   ;(namespace-require "compiler.arc")
 
-  (namespace-set-variable-value! 'exec-dir*       exec-dir        #f)
-  (namespace-set-variable-value! 'ac-require-base ac-require-base #f)
-
   (profile-thunk (lambda ()
     (load/use-compiled (build-path exec-dir "01 compiler.arc"))
+
+    (eval `(ac-init ,exec-dir* ,ac-require-base)) ;,arguments
+    ;((namespace-variable-value 'ac-init) exec-dir* ac-require-base)
+
+    ;(namespace-set-variable-value! 'exec-dir*       exec-dir        #f)
+    ;(namespace-set-variable-value! 'ac-require-base ac-require-base #f)
+
     ;(load/use-compiled (string->path "compiler.arc"))
 
      ;(displayln (namespace-mapped-symbols))
 
      ;(parameterize ((current-namespace (module->namespace "compiler.arc"))))
 
-    (let (;(exec-dir (namespace-variable-value 'exec-dir* #f))
+    #|(let (;(exec-dir (namespace-variable-value 'exec-dir* #f))
           (ac-load  (namespace-variable-value 'ac-load #f)))
 
       ;(parameterize ((current-directory exec-dir))
@@ -170,21 +174,22 @@
       ;(ac-load "lib/time.arc")
       ;(ac-load "lib/compile.arc")
       ;)
+    |#
 
-      (let ((importfn1  (namespace-variable-value 'importfn1 #f)))
-        (unless (null? arguments)
-          (if (all)
-                (map importfn1 arguments)
-                ;(importfn arguments)
-                ;(map ac-load arguments)
-              (importfn1 (car arguments))
-              ;(ac-load (car arguments))
-              ))
+    (let ((importfn1 (namespace-variable-value 'importfn1 #f)))
+      (unless (null? arguments)
+        (if (all)
+              (map importfn1 arguments)
+              ;(importfn arguments)
+              ;(map ac-load arguments)
+            (importfn1 (car arguments))
+            ;(ac-load (car arguments))
+            ))
 
-        (when (or (repl) (null? arguments))
-          (importfn1 "repl")
-          ;(ac-load "repl.arc")
-          )))
+      (when (or (repl) (null? arguments))
+        (importfn1 "repl")
+        ;(ac-load "repl.arc")
+        ))
   ))
 
   ;; This is to prevent () from being printed when the REPL exits

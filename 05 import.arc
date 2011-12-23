@@ -35,6 +35,7 @@
                  )))))
 
 
+;; TODO: macro for generating these
 (= defcall-types* (obj))
 
 (mac defcall (name parms . body)
@@ -120,6 +121,7 @@
 (def namespace-copy1 ((o x   (racket-current-namespace))
                       (o new (empty-namespace)))
   (each n (racket-namespace-mapped-symbols x) ;(racket-list->mlist )
+    ;; TODO; use = and remove namespace-get...?
     (namespace-set new n (namespace-get x n)))
   new)
 
@@ -181,6 +183,7 @@
 ;; TODO: not sure about this
 (let u (uniq)
   (extend bound (x) (isa namespace 'namespace)
+          ;; TODO: remove namespace-get...?
     (isnt (namespace-get (car rep.namespace) x u) u)))
 
 (redef redefine-warning (var)
@@ -276,25 +279,25 @@
   (parameterize (racket-port-count-lines-enabled #t)
     (let y (load-normalize-path x)
       (iflet it (load-file-dir y)
-        (f (joinpath it y))
+        (f (joinpath it y) y)
         (iflet it (and (isnt x y)
                        (load-file-dir x))
-          (f (joinpath it x))
+          (f (joinpath it x) x)
           (err:string "file \"" x "\" was not found"))))))
 
 
 (def importfn1 (x)
   (if (basename x)
-        (w/load-automatic-namespaces* t
-          (call-w/find-file string.x
-            (fn (x)
-              (let path abspath.x
-                    ;; TODO: fix this
-                (if ((imported-paths*) path)
-                      (debug " skipping:" x)
-                    (do (debug " loading: " x)
-                        (= ((imported-paths*) path) t)
-                        (load x)))))))
+        (call-w/find-file string.x
+          (fn (path name)
+            (let path abspath.path
+                  ;; TODO: fix this
+              (if ((imported-paths*) path)
+                    (debug " skipping:" name)
+                  (do (debug " loading: " name)
+                      (= ((imported-paths*) path) t)
+                      (w/load-automatic-namespaces* t
+                        (load path)))))))
       ;; TODO: use dont
       (do (push abspath.x load-paths*)
           nil)

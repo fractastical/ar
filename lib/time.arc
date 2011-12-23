@@ -24,19 +24,20 @@
 
 
 (mac timeit1 (x limit)
-  (w/uniq (u n time gc mem)
-    #`(with (n     0
-             time  (msec)
-             gc    (gc-msec)
-             mem   (memory))
-        ((rfn u ()
-           x
-           (++ n)
-           (when (< (- (msec) time) limit)
-             (u))))
-        (list n
-              (- (gc-msec) gc)
-              (- (memory)  mem)))))
+  (let x (ac-compile x)
+    (w/uniq (u n time gc mem)
+      #`(with (n     0
+               time  (msec)
+               gc    (gc-msec)
+               mem   (memory))
+          ((rfn u ()
+             (% x)
+             (++ n)
+             (when (< (- (msec) time) limit)
+               (u))))
+          (list n
+                (- (gc-msec) gc)
+                (- (memory)  mem))))))
 
 
 (mac timeit (x (o limit 10000))

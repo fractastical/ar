@@ -30,16 +30,18 @@
 ;                                     racket/system))
 
 
-(racket-define t              (racket-quote t))
-(racket-define nil            racket-null)
+(racket-define t               (racket-quote t))
+(racket-define nil             racket-null)
 
-(racket-define ac-dot         (racket-string->symbol "."))
+(racket-define ac-dot          (racket-string->symbol "."))
 
 ;; TODO: tests for the fn environment
-(racket-define ac-local-env   (racket-make-parameter nil))
+(racket-define ac-local-env    (racket-make-parameter nil))
+;; TODO: get rid of this
+(racket-define ac-eval-runtime (racket-make-parameter nil))
 
-(racket-define arc3-namespace (racket-current-namespace))
-(racket-define ac-namespace   (racket-make-parameter arc3-namespace))
+(racket-define arc3-namespace  (racket-current-namespace))
+(racket-define ac-namespace    (racket-make-parameter arc3-namespace))
 
 
 ;=============================================================================
@@ -111,7 +113,6 @@
                                       (racket-lambda parms . body))))
 
 
-
 (ac-def ac-prn args
   (racket-for-each (racket-lambda (x)
                      (racket-display x)
@@ -171,16 +172,17 @@
 
 (ac-def map1 (f xs)
   (racket-if (racket-pair? xs)
-               (cons (f (car xs)) (map1 f (cdr xs)))
+               (cons (ac-funcall1 f (car xs)) (map1 f (cdr xs)))
              xs))
 
+;; TODO: can this be moved into Arc?
 (ac-def dottedmap1 (f xs)
   (racket-cond ((racket-pair? xs)
-                 (cons (f (car xs)) (dottedmap1 f (cdr xs))))
+                 (cons (ac-funcall1 f (car xs)) (dottedmap1 f (cdr xs))))
                ((ac-no xs)
                  xs)
                (racket-else
-                 (f xs))))
+                 (ac-funcall1 f xs))))
 
 
 ;=============================================================================
@@ -188,6 +190,7 @@
 ;=============================================================================
 
 ;; TODO: should this throw an error...?
+;; TODO: make this shorter/simpler/etc.
 (ac-def string1 (x)
   (racket-cond
     ((racket-string? x)
@@ -232,7 +235,7 @@
   (ac-apply-non-fn (ac-namespace) x def))
 
 (ac-assign-sig bound (name)
-  (racket-let ((undef (uniq)))
+  (racket-let ((undef (racket-gensym)))
     (racket-lambda (name)
       (ac-tnil
         (racket-not (racket-eq? (ac-var name undef) undef))))))
@@ -248,6 +251,15 @@
   ;#:transparent
   #:constructor-name annotate
   #:mutable
+  #:property racket-prop:custom-write
+             (racket-lambda (x port mode)
+               ;; TODO: maybe remove the clause in print and define it here
+               ;;       instead
+               (racket-display "#(tagged " port)
+               (racket-display (type x) port)
+               (racket-display " " port)
+               (racket-display (rep x) port)
+               (racket-display ")" port))
 ;  #:guard (racket-lambda (type rep name)
 ;            (racket-let ((n (ac-assign-name)))
 ;              (racket-if (racket-and n
@@ -288,6 +300,10 @@
   (racket-if (ac-tagged? x)
                (ac-tagged-rep x)
              x))
+
+;; TODO: change all uses of `annotate` to use variables rather than symbols
+(racket-define parameter (racket-gensym))
+(racket-define alias     (racket-gensym))
 
 #|(ac-def ac-deep-fromarc (x)
   (racket-cond
@@ -363,8 +379,7 @@
     ((ac-isa x (racket-quote mac))
       (print-w/name x "#<mac" ":" ">" port))
     ((ac-tagged? x)
-      (racket-display "#(" port)
-      (racket-display "tagged " port)
+      (racket-display "#(tagged " port)
       (print primitive (type x) port)
       (racket-display " " port)
       (print primitive (rep x) port)
@@ -470,8 +485,28 @@
 (ac-def assoc (al key)
   (car (assoc-ref al key)))
 
-(ac-def alref (al key)
-  (cadr (assoc al key)))
+(ac-def alref (al key (eof nil))
+        #:sig (al key (o eof))
+  (racket-let ((x (assoc al key)))
+    (racket-if (racket-pair? x)
+                 (cadr x)
+               eof)))
+
+
+(ac-def plist (pl key (fail nil))
+        #:sig (pl key (o fail))
+  (racket-if (racket-pair? pl)
+               (racket-if (racket-eq? (car pl) key)
+                            pl
+                          (plist (cddr pl) key fail))
+             fail))
+
+(ac-def plref (pl key (fail nil))
+        #:sig (pl key (o fail))
+  (racket-let ((x (plist pl key fail)))
+    (racket-if (racket-eq? x fail)
+                 x
+               (cadr x))))
 
 
 ;=============================================================================
@@ -512,7 +547,7 @@
 
 (ac-assign-sig ac-apply-non-fn (x (o k) (o d))
   (racket-case-lambda
-    [(x)     (racket-if (ac-isa x (racket-quote parameter))
+    [(x)     (racket-if (ac-isa x parameter)
                           ((rep x))
                         (err "function call on inappropriate object" x))]
     [(x k)   (racket-cond
@@ -526,7 +561,7 @@
                  (racket-if (racket-number? k)
                               (racket-list-ref x k)
                             (alref x k)))
-               ((ac-isa x (racket-quote parameter))
+               ((ac-isa x parameter)
                  ((rep x) k)
                  k)
                (racket-else
@@ -543,11 +578,9 @@
   ;; TODO: ew
   (racket-make-keyword-procedure
     (racket-lambda (kw kw-val f . racket-arg-list)
-      (racket-cond
-        ((racket-procedure? f)
-          (racket-keyword-apply f kw kw-val racket-arg-list))
-        (racket-else
-          (racket-keyword-apply ac-apply-non-fn kw kw-val f racket-arg-list)))))
+      (racket-if (racket-procedure? f)
+                   (racket-keyword-apply f kw kw-val racket-arg-list)
+                 (racket-keyword-apply ac-apply-non-fn kw kw-val f racket-arg-list))))
   )
 
 #|(ac-def ac-apply (f . racket-arg-list)
@@ -558,10 +591,14 @@
       (racket-apply ac-apply-non-fn f racket-arg-list))))|#
 
 ;; TODO: why is apply very slow compared to ar and Arc 3.1? fix it
+;; TODO: ew code duplication
 (ac-assign-sig apply (f . args)
   (racket-make-keyword-procedure
     (racket-lambda (kw kw-val f . args)
-      (racket-keyword-apply ac-apply kw kw-val f (ac-arg-list* args)))))
+      ;(ac-prn args (ac-arg-list* args))
+      (racket-if (racket-procedure? f)
+                   (racket-keyword-apply f kw kw-val (ac-arg-list* args))
+                 (racket-keyword-apply ac-apply-non-fn kw kw-val f (ac-arg-list* args))))))
 
 
 #|(ac-def apply (f . args)
@@ -616,6 +653,8 @@
                    #f))|#
     ((ac-isa f (racket-quote mac))
       f)
+    #|((ac-isa f (racket-quote inline-fn))
+      (car (rep f)))|#
     (racket-else #f)))
 
 (ac-def ac-mac-call (m args)
@@ -626,24 +665,26 @@
       (cons m args)
     (ac-compile (apply (rep m) args))))
 
+(ac-def ac-args1 (x)
+  #|((ac-caris x (racket-quote :))
+      (list (ac-compile (cdr x))))|#
+  ;(ac-prn x)
+  (racket-if (racket-pair? x)
+               (racket-let ((c (car x)))
+                 (racket-if (racket-eq? c ac-dot)
+                   (ac-args1 (cdr x))
+                   #|(cons (ac-compile (cadr x))
+                         (loop (cddr x)))|#
+                   (racket-let ((c (ac-compile c)))
+                     (racket-if (ac-caris c ac-splice)
+                                  ;; TODO: test this
+                                  (join (cdr c) (ac-args1 (cdr x)))
+                                (cons c (ac-args1 (cdr x)))))))
+             x))
+
 (ac-def ac-args (args)
   (racket-parameterize ((ac-functional-position? #f))
-    (racket-let loop ((x args))
-      #|((ac-caris x (racket-quote :))
-          (list (ac-compile (cdr x))))|#
-      ;(ac-prn x)
-      (racket-if (racket-pair? x)
-                   (racket-let ((c (car x)))
-                     (racket-if (racket-eq? c ac-dot)
-                       (loop (cdr x))
-                       #|(cons (ac-compile (cadr x))
-                             (loop (cddr x)))|#
-                       (racket-let ((c (ac-compile c)))
-                         (racket-if (ac-caris c ac-splice)
-                                      ;; TODO: test this
-                                      (join (cdr c) (loop (cdr x)))
-                                    (cons c (loop (cdr x)))))))
-                 x))
+    (ac-args1 args)
     #|(ac-mappend (racket-lambda (x)
                   (racket-let ((c (ac-compile x)))
                     (racket-if (ac-caris c ac-splice)
@@ -665,7 +706,9 @@
   (racket-let loop ((x x) (n 0))
     (racket-cond
       ((racket-> n 4)
-        ac-apply)
+        ac-apply
+        ;apply
+        )
       ((ac-no x)
         (racket-case n
           ((0) ac-funcall0)
@@ -674,12 +717,15 @@
           ((3) ac-funcall3)
           ((4) ac-funcall4)))
       ((racket-keyword? (car x))
-        ac-apply)
+        ac-apply
+        ;apply
+        )
       (racket-else
         (loop (cdr x) (racket-+ n 1))))))
 
-(racket-define compose    (uniq))
-(racket-define complement (uniq))
+;; TODO: make these into parameters
+(racket-define compose    (racket-gensym))
+(racket-define complement (racket-gensym))
 
 (ac-def ac-decompose (fns args)
   (racket-cond
@@ -716,7 +762,7 @@
               (racket-cond
                 ;; if we're about to call a literal fn such as ((fn (a b) ...) 1 2)
                 ;; then we know we can just call it in Racket and we don't
-                ;; have to use ac-apply
+                ;; have to use apply
                 ((racket-or (racket-procedure? f)
                             (ac-caris f (racket-quote racket-lambda)))
                   (cons f args))
@@ -735,7 +781,7 @@
 ;  ac-nocompile / %
 ;=============================================================================
 
-(racket-define ac-nocompile (uniq))
+(racket-define ac-nocompile (racket-gensym))
 
 ;; TODO: maybe define this in core.arc?
 (ac-mac % args
@@ -775,14 +821,14 @@
 
 (ac-def ac-lookup-global (x)
              ;; This implements aliases
-  (racket-if (ac-isa x (racket-quote alias))
+  (racket-if (ac-isa x alias)
                ((car (rep x)))
              x))
 
 (ac-def ac-lookup-global-arg (x)
   (racket-let ((x (ac-lookup-global x)))
                ;; This implements parameters
-    (racket-if (ac-isa x (racket-quote parameter))
+    (racket-if (ac-isa x parameter)
                  ((rep x))
                x)))
 
@@ -792,21 +838,42 @@
     (racket-and (racket-> (racket-string-length x) 6)
                 (racket-equal? (racket-substring x 0 7) "racket-"))))
 
-(ac-def ac-global-var (x)
-  (racket-if
-    (ac-nolookup? x)
-      x
-    (racket-let* ((name (ac-namespace))
-                                   ;; woot optimizations
-                  (x    (racket-if (racket-namespace? name)
-                                   ;(racket-eq? name (racket-current-namespace))
-                                     x
-                                   (list ac-lookup-global-raw
-                                         name
-                                         (list (racket-quote racket-quote) x)))))
-      (racket-if (ac-functional-position?)
-                   (list ac-lookup-global x)
-                 (list ac-lookup-global-arg x)))))
+(ac-assign-sig ac-global-var (x)
+  (racket-let ((u (racket-gensym)))
+    (racket-lambda (x)
+      ;; TODO: implement fexprs better than this, i.e. get rid of this hackiness
+      ;; This is to make fexprs work properly
+      ;; TODO: this seems to have essentially no speed penalty, but look into it anyways
+      (racket-if (racket-pair? (ac-eval-runtime))
+        (racket-let ((v (plref (ac-eval-runtime) x u)))
+          (racket-if (racket-eq? v u)
+                       (racket-parameterize ((ac-eval-runtime nil))
+                         (ac-global-var x))
+                     ;; TODO: not sure about this
+                     ;;       doesn't this cause the expression to be double-evaluated?
+                     (ac-compile v)))
+        ;; TODO: this seems to have essentially no speed penalty, but look into it anyways
+        ;; TODO: get rid of this racket-let
+        (racket-let ((v (ac-var x)))
+          ;(ac-prn v)
+          ;; TODO: make this into an if rather than a cond
+          (racket-cond
+            #|((ac-isa v (racket-quote inline-fn))
+              (ac-compile ((cadr (rep v)))))|#
+            ((ac-nolookup? x)
+              x)
+            (racket-else
+              (racket-let* ((name (ac-namespace))
+                                             ;; woot optimizations
+                            (x    (racket-if (racket-namespace? name)
+                                             ;(racket-eq? name (racket-current-namespace))
+                                               x
+                                             (list ac-lookup-global-raw
+                                                   name
+                                                   (list (racket-quote racket-quote) x)))))
+                (racket-if (ac-functional-position?)
+                             (list ac-lookup-global x)
+                           (list ac-lookup-global-arg x))))))))))
 
 
 ;=============================================================================
@@ -818,37 +885,36 @@
         a
         (ac-compile b)))
 
-(ac-def ac-assign-global (x a b)
+(ac-def ac-assign-global (space x a b)
   (racket-when (racket-or (ac-tagged? b)
                           (racket-procedure? b))
     (racket-hash-set! ac-names b a))
 
   (racket-cond
     ;; This implements parameters
-    ((ac-isa x (racket-quote parameter))
+    ((ac-isa x parameter)
       ((rep x) b))
     ;; This implements aliases
-    ((ac-isa x (racket-quote alias))
+    ((ac-isa x alias)
       ;; TODO: not sure if `b` or `a` should go first
       ((cadr (rep x)) x b a))
     (racket-else
-      (sref (ac-namespace) b a)))
+      (sref space b a)))
   b)
 
-(ac-def ac-assign-global-undefined (x a b)
-  (ac-assign-global x a b))
+(ac-def ac-assign-global-undefined (space x a b)
+  (ac-assign-global space x a b))
 
-(ac-def ac-assign-global-defined (x a b)
-  (ac-assign-global x a b))
+(ac-def ac-assign-global-defined (space x a b)
+  (ac-assign-global space x a b))
 
 (ac-assign-sig ac-assign-global-raw (space a b)
-  (racket-let ((u (uniq)))
+  (racket-let ((u (racket-gensym)))
     (racket-lambda (space a b)
-                      ;; TODO: should this be ac-var or ac-lookup-global?
-      (racket-let ((x (ac-var a u)))
+      (racket-let ((x (ac-apply-non-fn space a u)))
         (racket-if (racket-eq? x u)
-                     (ac-assign-global-undefined x a b)
-                   (ac-assign-global-defined x a b))))))
+                     (ac-assign-global-undefined space x a b)
+                   (ac-assign-global-defined space x a b))))))
 
 (ac-def ac-global-assign (a b)
   (list ac-assign-global-raw
@@ -871,6 +937,7 @@
              (cons (ac-assign1 (car x) (cadr x))
                               ;; TODO: ew
                    (racket-if (racket-and (ac-no (cddr x))
+                                          ;; TODO: why is this here?
                                           (ac-lex? (car x)))
                                 (list (ac-compile (car x)))
                               (ac-assignn (cddr x))))))
@@ -1061,6 +1128,7 @@
 
 (ac-def ac-fn-args (x)
   (racket-cond
+    ;; TODO: I can probably get rid of this clause
     ((racket-symbol? x)
       (ac-add-to ac-local-env x)
       #|(ac-fn-body (list (list* (racket-quote racket-let)
@@ -1473,10 +1541,10 @@
 
 (ac-def ac-pairwise (pred lst)
   (racket-cond
-    ((ac-no lst)       t)
+    ;((ac-no lst)       t)
     ((ac-no (cdr lst)) t)
     ((ac-true (pred (car lst) (cadr lst)))
-     (ac-pairwise pred (cdr lst)))
+      (ac-pairwise pred (cdr lst)))
     (racket-else nil)))
 
 (ac-def ac-binary (bin reduce)
@@ -1499,7 +1567,7 @@
 ;  %splice
 ;=============================================================================
 
-(racket-define ac-splice (uniq))
+(racket-define ac-splice (racket-gensym))
 
 
 ;=============================================================================
@@ -1565,9 +1633,20 @@
 
 (ac-def eval (x (runtime nil))
        #:sig (x (o runtime))
+  #|(racket-if (racket-pair? runtime)
+               (racket-let* ((u (uniq))
+                             (v (plref runtime x u)))
+                 (racket-if (racket-eq? v u)
+                              (eval x)
+                            v))
+  )|#
+
   ;(ac-prn (racket-eq? (ac-namespace) arc3-namespace))
-  (racket-eval (ac-compile x) ;(ac-deep-fromarc )
-               (racket-if (ac-no runtime)
+               ;; TODO: get rid of this
+  (racket-eval (racket-parameterize ((ac-eval-runtime runtime))
+                 (ac-compile x)) ;(ac-deep-fromarc )
+                          ;; TODO: this should be racket-null? or ac-no
+               (racket-if (racket-list? runtime)
                             (racket-if (racket-namespace? (ac-namespace))
                                          (ac-namespace)
                                        (racket-current-namespace))
@@ -1575,7 +1654,7 @@
 
 
 ;=============================================================================
-;  load
+;  load / init
 ;=============================================================================
 
 (ac-def ac-eval-all (in)
@@ -1587,6 +1666,35 @@
 
 (ac-def ac-load (x)
   (racket-call-with-input-file x ac-eval-all))
+
+(ac-def ac-load-all (dir)
+  (ac-load (build-path dir "02 core.arc"))
+  (ac-load (build-path dir "03 ssyntax.arc"))
+  (ac-load (build-path dir "04 arc.arc"))
+  (ac-load (build-path dir "05 import.arc"))
+  (ac-load (build-path dir "06 extra.arc")))
+
+(ac-def ac-init (dir require) ;arguments
+  ;; TODO: should use sref or namespace-set or something
+  (namespace-set-variable-value! 'exec-dir*       dir     #f)
+  (namespace-set-variable-value! 'ac-require-base require #f)
+
+  (ac-load-all exec-dir*) ;dir
+
+  #|(racket-unless (racket-null? arguments)
+    (racket-if (all)
+                 (map importfn1 arguments)
+                  ;(importfn arguments)
+                  ;(map ac-load arguments)
+                (importfn1 (car arguments))
+                ;(ac-load (car arguments))
+                ))
+
+  (when (or (repl) (null? arguments))
+    (importfn1 "repl")
+    ;(ac-load "repl.arc")
+    )|#
+  )
 
 
 ;=============================================================================

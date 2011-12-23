@@ -163,3 +163,13 @@ Other
 
   * `coerce` is implemented better: you can use `defcoerce` and `defcoerces`
     to easily define new coercion rules
+
+  * `assoc` and `alref` accept an optional "value not found" parameter:
+
+        > (alref '((a 5) (b 10)) 'c 15)
+        15
+
+  * `commafy` now inserts an initial `0` by default:
+
+        > (commafy 0.5)
+        "0.5"

@@ -4,10 +4,36 @@
 
 (=sigmac do args
   (if (cdr args)
+        #|(list* ac-nocompile
+               'racket-begin
+               (ac-args args))|#
         (list (list* fn nil args))
         ;#`((fn () ,@args))
         ;#`((fn () . args))
       (car args)))
+
+;(ac-prn (ac-compile '(do 1 2 3)))
+
+#|(sref sig '(name parms x) '=sig)
+(= =sig (annotate 'mac
+          (fn (name parms x)
+            #`(do (sref sig ',parms ',name)
+                  (= name x)))))
+
+(=sig =sigmac (name parms . body)
+  (annotate 'mac
+    (fn (name parms . body)
+      #`(=sig name parms (annotate ''mac (fn parms . body))))))|#
+
+#|(=sigmac =sig (name parms x)
+  #`(do (sref sig ',parms ',name)
+        (= name x)))|#
+
+#|(= =fn (annotate 'mac
+         (fn (name parms . body)
+           #`(=sig name parms (fn parms . body)))))|#
+
+;(mac fntable )
 
 (=sigdef redefine-warning (var)
   (disp "*** redefining " stderr)
@@ -20,8 +46,8 @@
         (= var val)))
 
 (=sigmac =safesig (name parms x)
-  #`(do (if (bound ',var)
-          (redefine-warning ',var))
+  #`(do (if (bound ',name)
+          (redefine-warning ',name))
         (=sig name parms x)
         #|(sref sig ',parms ',name)
         (safeset name x)|#
@@ -560,6 +586,9 @@
     (whilet head xs
       (= xs (cdr xs))
       (scdr head u) ; faster than (= cdr.head u) for various reasons
+                    ; actually, it basically shouldn't be faster anymore
+                    ; except for an additional call to sref, and conds in
+                    ; sref
       (= u head))
     u))
 
@@ -642,6 +671,7 @@
          (racket-char? x)   (racket-char>? x y)
                             (err "can't >" x y))))
 
+;; TODO: tests for sig for these (should be 'args)
 (= +  (ac-binary +-2 reduce)
    <  (ac-binary  <2 ac-pairwise)
    >  (ac-binary  >2 ac-pairwise))
@@ -685,17 +715,30 @@
 
 (def protect (during after)
   (racket-dynamic-wind (fn () #t) during after))
+#|
+
+;=============================================================================
+;  Inline fns
+;=============================================================================
+
+(mac make-inline-fn (name mac fn)
+  #`(safeset name (annotate ''inline-fn (list mac fn))))|#
 
 
 ;=============================================================================
 ;  Parameters
 ;=============================================================================
 
+;; TODO: move this elsewhere
+(mac =raw (name val)
+  #`(sref ,(ac-namespace) val ',name))
+
 ;; TODO: function version of make-alias...?
 (mac make-alias (name get set)
-  #`(= name (annotate ''alias (list get set))))
+  ;; TODO: should this be safeset or = or =raw?
+  #`(safeset name (annotate alias (list get set))))
 
-(mac alias (name orig)
+(remac alias (name orig)
   (w/uniq (x n v)
     #`(make-alias name
         (fn ()      orig)
@@ -747,10 +790,11 @@
         #`(parameterize (,',param val) . body))))
 
 (mac make-parameter (name param)
-  #`(do (= name (annotate ''parameter param))
+  ;; TODO: should call safeset or something (like redefine-warning) somewhere
+  #`(do (=raw name (annotate parameter param))
         (make-w/ name)))
 
-(mac parameter (name (o init))
+(remac parameter (name (o init))
   (w/uniq u
     #`(let u init
         (make-parameter name (racket-make-parameter u))
@@ -944,6 +988,7 @@
 (def dir ((o name "") (o f))
   ;; TODO: all of this is ew
   (= name (expandpath name))
+  ;; TODO: use (or= name "." empty) maybe...?
   (if (empty name) (= name "."))
   ;; TODO: w/cwd...?
   (parameterize (racket-current-directory name)

@@ -1,8 +1,8 @@
 Quasiquote
 ==========
 
-Nu uses a quasiquote algorithm which results in much shorter (and faster!)
-code:
+Nu uses a quasiquote algorithm which results in much shorter (and
+**significantly** faster!) code:
 
     > (qq-expand '`(foo (bar nou) ,@qux ,corge))
 

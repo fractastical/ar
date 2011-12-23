@@ -36,35 +36,112 @@
 
 ;; TODO: try implementing this in compiler.arc to see how slow it is
 
-(= current-env (uniq))
+;(= current-env (uniq))
 
-(= namespace.current-env nil)
+;(= namespace.current-env nil)
 
 ;(sref (ac-namespace) nil env)
 ;(sref namespace nil env)
 
-(def make-current-env (x)
+#|(def make-current-env (x)
   (let x (mappend (fn (x)
                     (unless uniq?.x
                       ;; TODO: use quote rather than racket-quote...?
                       #`(('racket-quote x) x)))
                   (dedup x))
                     ;; TODO: conswhen? consif?
-    #`(current-env ,(when x (cons list x)))))
+    #`(current-env ,(when x (cons list x)))))|#
+
+(def make-current-env (x)
+             ;; TODO: this should probably be a function somewhere, like in
+             ;;       extra.arc
+  (cons list (mappend (fn (x) #`(',x x))
+                      (dedup x))))
 #|        (list join
 
               env)|#
+
+(def make-fexpr-fn (u args x)
+  #`(fn args (apply (rep u) x args)))
+
+(mac fx-wrap (x (o env (make-current-env (ac-local-env))))
+  (make-fexpr-fn x (uniq) env))
 
 #|(mac fexpr (name parms . body)
   ;; TODO: macro to generate this
   #`(do (sref sig ',parms ',name)
         (safeset name (annotate ''fexpr (fn parms ,@body)))))|#
 
-(mac fexpr (name parms . body)
+#|(mac fexpr (name parms . body)
   (w/uniq (u args)
-    #`(let u (fn parms ,@body)
-        (mac name args
-          (list* u ',current-env args)))))
+    #`(let u (fx parms . body)
+        (make-inline-fn name
+          (fn args
+            ;(prn (ac-local-env))
+            ;(%eval (prn (make-current-env (ac-local-env))))
+
+            ;; TODO: is it faster at compile-time / runtime to map quote over
+            ;;       the args, or call apply like this:
+            ;;       #`(apply u (list ,@(make-current-env (ac-local-env))) ',args)
+            ;;       ?
+            (list* (rep u) (cons list (make-current-env (ac-local-env)))
+                           ;; TODO: unquote the fn...?
+                           (map (fn (u) (list quote u)) args))
+            ;(list* u ',current-env args)
+            )
+          (fn ()
+            u
+            ;(make-fexpr-fn u ',args (make-current-env (ac-local-env)))
+            ))
+        u)))|#
+
+;; TODO: use objects for this
+#|(object (type () 'fexpr)
+
+        (ref (x . args)
+          (apply (rep x) nil args))
+
+        (print (primitive x port)
+          (print-w/name x "#<fexpr" ":" ">" port))
+
+        ;; TODO: better name than this
+        (ac-macro? (x)
+          ;; TODO: is it faster at compile-time / runtime to map quote over
+          ;;       the args, or call apply like this:
+          ;;       #`(apply u (list ,@(make-current-env (ac-local-env))) ',args)
+          ;;       ?
+          (list* (rep x) (make-current-env (ac-local-env))
+                         ;; TODO: unquote the fn...?
+                         (map (fn (u) (list quote u)) args))))|#
+
+(defcall fexpr (x . args)
+  (apply (rep x) nil args))
+
+(defmac fexpr (x . args)
+  ;; TODO: is it faster at compile-time / runtime to map quote over
+  ;;       the args, or call apply like this:
+  ;;       #`(apply u (list ,@(make-current-env (ac-local-env))) ',args)
+  ;;       ?
+  (list* (rep x) (make-current-env (ac-local-env))
+                 ;; TODO: unquote the fn...?
+                 (map (fn (u) (list quote u)) args)))
+
+(defprint fexpr (primitive x port)
+  (print-w/name x "#<fexpr" ":" ">" port))
+
+
+(mac fx (parms . body)
+  #`(annotate ''fexpr (fn parms . body)))
+
+(mac fexpr (name parms . body)
+  #`(safeset name (fx parms . body)))
+
+#|(extend eval (x (o runtime)) (do (prn x " " runtime) (cons? runtime))
+  (w/uniq u
+    (let v (plref runtime x u)
+      (if (is v u)
+            (orig x)
+          v))))|#
 
 
 ;; TODO: more granular extending

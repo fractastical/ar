@@ -329,6 +329,9 @@ error: racket-lambda: default-value expression missing at: c in: (racket-lambda 
 > ac-apply-non-fn
 #<fn:ac-apply-non-fn>
 
+> ac-global-var
+#<fn:ac-global-var>u
+
 > ac-assign-global-raw
 #<fn:ac-assign-global-raw>
 
@@ -432,6 +435,13 @@ cons
 
 > (type (sig 'apply))
 cons
+
+
+> (sig 'ac-global-var)
+(x)u
+
+> (type (sig 'ac-global-var))
+consu
 
 
 > (sig 'ac-assign-global-raw)

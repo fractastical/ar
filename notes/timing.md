@@ -1,6 +1,106 @@
 Timing notes
 ============
 
+  * fexprs are shockingly costly:
+
+        > (do (def foo (a b) (list a b))
+              (eval #`(timeit (% ,(ac-compile '(let a 5
+                                                 (foo 1 2)))))))
+
+        > (do (def foo (a b) (list a b))
+              (timeit (let a 5
+                        (foo 1 2))))
+        iter: 8,520,845  gc: 68  mem: 10783456
+        iter: 9,082,125  gc: 72  mem: -482984
+        iter: 8,231,142  gc: 72  mem: 7929048
+        iter: 8,770,578  gc: 68  mem: 11019040
+
+        > (do (fexpr foo (env a b) (list a b))
+              (timeit (let a 5
+                        (foo 1 2))))
+        iter: 1,640,542  gc: 152  mem: 2066224
+        iter: 1,564,720  gc: 136  mem: -1799440
+        iter: 1,713,624  gc: 196  mem: 3967376
+
+    But that's because it's capturing the lexical environment of `timeit`:
+
+        > (do (fexpr foo (env a b) (list a b))
+              (eval #`(timeit (% ,(ac-compile '(let a 5
+                                                 (foo 1 2)))))))
+        iter: 9,139,868  gc: 180  mem: 6332872
+
+        > (do (fexpr foo (env a b) (list a b))
+              (eval #`(timeit (% ,(ac-compile
+                '(let a 5
+                   (let a 5
+                     (let a 5
+                       (let a 5
+                         (let a 5
+                           (foo 1 2)))))))))))
+        iter: 8,973,283  gc: 172  mem: 470584
+
+        > (do (fexpr foo (env a b) (list a b))
+              (eval #`(timeit (% ,(ac-compile
+                '(with (a 1
+                        b 2
+                        c 3
+                        d 4
+                        ;e 5
+                        )
+                   (foo 1 2)))))))
+        iter: 7,590,154  gc: 304  mem: 10051704
+        iter: 8,177,674  gc: 220  mem: 11069152
+        iter: 7,982,771  gc: 340  mem: 11486456
+
+
+        ((racket-lambda nil ((racket-lambda nil (racket-if (#<fn:ac-true> (#<fn:bound> #<quoted>)) (#<fn:redefine-warning> #<quoted>) nil) (racket-begin (#<fn:sref> sig #<quoted> #<quoted>) (#<fn:ac-assign-global-raw> #<namespace:0> (racket-quote foo)
+        (racket-lambda (a b) (#<fn:ac-funcall2> (#<fn:ac-lookup-global> list) a b))))))
+        ((racket-lambda (g314) (racket-let* ((g311 (#<fn:car> g314)) (g314 (#<fn:cdr> g314)) (g312 (#<fn:car> g314)) (g314 (#<fn:cdr> g314)) (g313 (#<fn:car> g314))) (#<fn:prn> "iter: " (#<fn:commafy> g311) "  gc: " g312 "  mem: " g313) nil)) ((racket-lambda (g316 g317 g318 g319) (#<fn:ac-funcall0> ((racket-lambda (g315) (racket-begin (racket-set! g315 (racket-lambda nil ((racket-lambda (a) (#<fn:ac-funcall2> (#<fn:ac-lookup-global> foo) 1 2)) 5) (racket-begin (racket-set! g316 (#<fn:+> g316 1)) g316) (racket-if (#<fn:ac-true> (#<fn:<> (#<fn:-> (#<fn:msec>) g317) 10000)) (#<fn:ac-funcall0> g315) nil))) g315)) nil)) (#<fn:list> g316 (#<fn:-> (#<fn:gc-msec>) g318) (#<fn:-> (#<fn:memory>) g319))) 0 (#<fn:msec>) (#<fn:gc-msec>) (#<fn:memory>)))))
+
+
+        ((racket-lambda nil ((racket-lambda nil (racket-if (#<fn:ac-true> (#<fn:bound> #<quoted>)) (#<fn:redefine-warning> #<quoted>) nil) (#<fn:ac-assign-global-raw> #<namespace:0> (racket-quote foo) (#<fn:annotate> #<quoted> (racket-lambda (env a b) (#<fn:ac-funcall2> (#<fn:ac-lookup-global> list) a b))))))
+        ((racket-lambda (g323) (racket-let* ((g320 (#<fn:car> g323)) (g323 (#<fn:cdr> g323)) (g321 (#<fn:car> g323)) (g323 (#<fn:cdr> g323)) (g322 (#<fn:car> g323))) (#<fn:prn> "iter: " (#<fn:commafy> g320) "  gc: " g321 "  mem: " g322) nil)) ((racket-lambda (g325 g326 g327 g328) (#<fn:ac-funcall0> ((racket-lambda (g324) (racket-begin (racket-set! g324 (racket-lambda nil ((racket-lambda (a) (#<fn> (#<fn:list> #<quoted> g325 #<quoted> g326 #<quoted> g327 #<quoted> g328 #<quoted> g324 #<quoted> a) #<quoted> #<quoted>)) 5) (racket-begin (racket-set! g325 (#<fn:+> g325 1)) g325) (racket-if (#<fn:ac-true> (#<fn:<> (#<fn:-> (#<fn:msec>) g326) 10000)) (#<fn:ac-funcall0> g324) nil))) g324)) nil)) (#<fn:list> g325 (#<fn:-> (#<fn:gc-msec>) g327) (#<fn:-> (#<fn:memory>) g328))) 0 (#<fn:msec>) (#<fn:gc-msec>) (#<fn:memory>)))))
+
+  * Raw global variables are fastest, followed by parameters, followed by
+    looking up a global variable at runtime:
+
+        > (do (= foo 5)
+              (timeit (% foo)))
+        iter: 15,808,324  gc: 0  mem: 747424
+
+        > (do (= foo (racket-make-parameter 5))
+              (timeit (% (foo))))
+        iter: 9,740,432  gc: 0  mem: 637640
+
+        > (do (parameter foo 5)
+              (timeit foo))
+        iter: 7,638,069  gc: 0  mem: 699064
+
+        > (do (make-parameter foo (racket-make-parameter 5))
+              (timeit foo))
+        iter: 7,146,990  gc: 0  mem: 567968
+
+        > (do (= foo 5)
+              (timeit (% (racket-namespace-variable-value (racket-quote foo)))))
+        iter: 5,029,164  gc: 60  mem: 11132264
+
+  * `racket-begin` is a bit faster than using `fn`:
+
+        ((fn () ...))
+        Total cpu time observed: 1038ms (out of 1080ms)
+        Number of samples taken: 26 (once every 40ms)
+
+        (racket-begin ...)
+        Total cpu time observed: 978ms (out of 1024ms)
+        Number of samples taken: 25 (once every 39ms)
+
+
+        > (timeit (% (racket-begin 1 2 3)))
+        iter: 15,465,466  gc: 0  mem: 733112
+
+        > (timeit ((fn () 1 2 3)))
+        iter: 15,356,915  gc: 0  mem: 754384
+
   * How the hell is ar so fast for sorting?
 
         > (let bb (n-of 1000 (rand 50)) (time10 (bestn 100 > bb)))
@@ -223,8 +323,16 @@ Timing notes
         > (timeit ''foo)
         iter: 77,401  gc: 244  mem: 1045880
 
-  * `quote` is awfully fast, and so is `list`:
+  * Use `quote` whenever possible, instead of `list`:
 
+        > '(1 2 3 4 5)
+        iter: 1,428,372  gc: 0  mem: 1744
+
+        > (list 1 2 3 4 5)
+        iter: 475,625    gc: 23  mem: 221516
+
+
+        ;; TODO: redo these comparisons, in light of the above
         > (timeit '(foo bar qux))
         iter: 3,333,270  gc: 0  mem: 1688488
 

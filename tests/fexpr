@@ -7,35 +7,39 @@ nil
 
 > (fexpr foo (env x y z)
     (list env x y z))
-#<mac:foo>
+#<fexpr:foo>
 
 
-;> (macex1 '(fexpr foo (env x y z)
+> #`(,(fx (env) env))
+(#<fexpr>)u
+
+
+> (macex1 '(fexpr foo (env x y z)
              (list env x y z)))
-u
+(#<mac:safeset> foo (#<mac:fx> (env x y z) (list env x y z)))
 
 
-> (macex1 '(foo 1 2 3))
+> (ac-compile '(foo 1 2 3))
 (#<fn> (#<fn:ac-lookup-global-arg> g2) 1 2 3)
 
-> (macex1 '(let a 5 (foo 1 2 3)))
+> (ac-compile '(let a 5 (foo 1 2 3)))
 ((racket-lambda (a) (racket-let* ((g2 (#<fn:list> (racket-quote a) a))) (#<fn> g2 1 2 3))) 5)
 
-> (macex1 '(with (a 5 b 10)
-             (foo 1 2 3)))
+> (ac-compile '(with (a 5 b 10)
+                 (foo 1 2 3)))
 ((racket-lambda (a b) (racket-let* ((g2 (#<fn:list> (racket-quote a) a (racket-quote b) b))) (#<fn> g2 1 2 3))) 5 10)
 
-> (macex1 '(let a 5
-             (with ()
-               (with ()
-                 (foo 1 2 3)))))
+> (ac-compile '(let a 5
+                 (with ()
+                   (with ()
+                     (foo 1 2 3)))))
 ((racket-lambda (a) (racket-let* ((g2 (#<fn:list> (racket-quote a) a))) ((racket-lambda nil ((racket-lambda nil (#<fn> g2 1 2 3))))))) 5)
 
 
-> (macex1 '(let a 5
-             (let a 10
-               (let a 15
-                 (foo 1 2 3)))))
+> (ac-compile '(let a 5
+                 (let a 10
+                   (let a 15
+                     (foo 1 2 3)))))
 ((racket-lambda (a) (racket-let* ((g2 (#<fn:list> (racket-quote a) a))) ((racket-lambda (a) (racket-let* ((g2 (#<fn:list> (racket-quote a) a))) ((racket-lambda (a) (racket-let* ((g2 (#<fn:list> (racket-quote a) a))) (#<fn> g2 1 2 3))) 15))) 10))) 5)
 
 
@@ -54,3 +58,219 @@ u
       (let a 15
         (foo 1 2 3))))
 ((a 15) 1 2 3)
+
+
+
+> (fexpr foo (env a b c)
+    (list env a b c))
+*** redefining foo
+#<fexpr:foo>
+
+> (ac-compile '(foo 1 2 3))
+(#<fn> (#<fn:list>) #<quoted> #<quoted> #<quoted>)
+
+> (ac-compile '(let a 5 (foo 1 2 3)))
+((racket-lambda (a) (#<fn> (#<fn:list> #<quoted> a) #<quoted> #<quoted> #<quoted>)) 5)
+
+> (let a 5 (foo 1 2 3))
+((a 5) 1 2 3)
+
+> (parameterize (ac-local-env '(a b c d)) (macex1 '(foo 1 2 3)))
+(#<fn> (#<fn:list> (#<mac:quote> a) a (#<mac:quote> b) b (#<mac:quote> c) c (#<mac:quote> d) d) (#<mac:quote> 1) (#<mac:quote> 2) (#<mac:quote> 3))
+
+> (parameterize (ac-local-env '(a b c d)) (macex1 '(foo (bar qux) 2 3)))
+(#<fn> (#<fn:list> (#<mac:quote> a) a (#<mac:quote> b) b (#<mac:quote> c) c (#<mac:quote> d) d) (#<mac:quote> (bar qux)) (#<mac:quote> 2) (#<mac:quote> 3))
+
+> foo
+#<fexpr:foo>
+
+> (is foo foo)
+t
+
+> (iso foo foo)
+t
+
+> (let a 5 (is foo foo))
+t
+
+> (let a 5 (iso foo foo))
+t
+
+
+> (fexpr foo (env a)
+    (list env a))
+*** redefining foo
+#<fexpr:foo>
+
+> (foo)
+error: foo: expects 1 argument, given 0
+
+> (foo 1)
+(nil 1)
+
+> (foo 1 2)
+error: foo: expects 1 argument, given 2: 1 2
+
+
+> (foo (bar qux))
+(nil (bar qux))
+
+> (do.foo '(bar qux))
+(nil (bar qux))
+
+> (map foo '(1 2 3 4))
+((nil 1) (nil 2) (nil 3) (nil 4))
+
+> (map foo '((bar qux) 2 3 4))
+((nil (bar qux)) (nil 2) (nil 3) (nil 4))
+
+> (apply foo '((bar qux)))
+(nil (bar qux))
+
+
+> (let a 5 (foo 1))
+((a 5) 1)
+
+> (let a 5 (map foo '(1 2 3 4)))
+((nil 1) (nil 2) (nil 3) (nil 4))
+
+> (let a 5 (map fx-wrap.foo '(1 2 3 4)))
+(((a 5) 1) ((a 5) 2) ((a 5) 3) ((a 5) 4))
+
+> (let a 5 (map foo '((bar qux) 2 3 4)))
+((nil (bar qux)) (nil 2) (nil 3) (nil 4))
+
+> (let a 5 (map fx-wrap.foo '((bar qux) 2 3 4)))
+(((a 5) (bar qux)) ((a 5) 2) ((a 5) 3) ((a 5) 4))
+
+> (let a 5 (apply foo '((bar qux))))
+(nil (bar qux))
+
+> (let a 5 (apply fx-wrap.foo '((bar qux))))
+((a 5) (bar qux))
+
+
+
+> (fexpr foo (env x)
+    (list env (eval '(list a) env) x))
+*** redefining foo
+#<fexpr:foo>
+
+> (foo 1)
+error: reference to undefined identifier: a
+
+> (map foo '(1 2 3))
+error: reference to undefined identifier: a
+
+> (let a 5 (foo 1))
+((a 5) (5) 1)
+
+> (let a 5 (map foo '(1 2 3)))
+error: reference to undefined identifier: a
+
+> (let a 5 (map fx-wrap.foo '(1 2 3)))
+(((a 5) (5) 1) ((a 5) (5) 2) ((a 5) (5) 3))
+
+> (let a 5 (map (fx-wrap foo '(a 9013)) '(1 2 3)))
+(((a 9013) (9013) 1) ((a 9013) (9013) 2) ((a 9013) (9013) 3))
+
+
+;> (fexpr foo (env a)
+    (list env a))
+u
+
+> ((fx-wrap foo '(b 20 c 50)) 1)
+((b 20 c 50) 1)u
+
+> (rep.foo '(b 20 c 50) 1)
+((b 20 c 50) 1)u
+
+
+
+> (fexpr foo (env)
+    (w/uniq a
+      (eval #`(fn (a) (+ a 20)) env)))
+*** redefining foo
+#<fexpr:foo>
+
+> (let a 5 (foo))
+#<fn>
+
+> (let a 5 ((foo)))
+error: #<procedure>: expects 1 argument, given 0
+
+> (let a 5 ((foo) 10))
+30
+
+
+
+> (fexpr my-when (env var . body)
+    (eval #`(when var . body) env))
+#<fexpr:my-when>
+
+> (let a nil (my-when a (+ a 10)))
+nil
+
+> (let a 5 (my-when a (+ a 10)))
+15
+
+
+
+> (fexpr my-let (env var expr . body)
+    (eval #`((fn (var) . body) expr) env))
+#<fexpr:my-let>
+
+> (my-let a 5
+    (prn a)
+    (my-let b 10
+      (prn a " " b)))
+5
+5 10
+5
+
+> (my-let unou 4
+    (+ unou unou))
+8
+
+
+> (let a 5
+    (fx-wrap.list 1 2 3))
+((a 5) 1 2 3)u
+
+> (let a 5
+    (fx-wrap:list 1 2 3))
+u
+
+> (ac-compile '(let a 5
+                 (fx-wrap.list 1 2 3)))
+u
+
+> (ac-compile '(let a 5
+                 (fx-wrap:list 1 2 3)))
+u
+
+
+
+> (mac module body
+    #`((fx-wrap (fn ('current-env) . body))))
+u
+
+> (module (prn "foo")
+          (prn "bar")
+          (prn current-env))
+u
+
+> (module (prn "foo")
+          (prn "bar")
+          (prn current-env)
+          (push 5 current-env)
+          (push 'a current-env)
+          (prn current-env))
+u
+
+
+> (let g1 nil
+    (push 5 g1)
+    (push 'foo g1)
+    (eval 'foo g1))
+u
