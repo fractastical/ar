@@ -182,10 +182,13 @@
 
   (ac-require-base)
 
-  (namespace-set-variable-value! 'exec-dir*       (nu-dir)        #f)
-  (namespace-set-variable-value! 'ac-require-base ac-require-base #f)
+  ;(namespace-set-variable-value! 'exec-dir*       (nu-dir)        #f)
+  ;(namespace-set-variable-value! 'ac-require-base ac-require-base #f)
 
   (load/use-compiled "01 compiler.arc")
+
+  (eval `(ac-init ,(nu-dir) ,ac-require-base))
+  (eval '(importfn1 "time"))
 
   #|(eval '(racket-begin (ac-load "02 core.arc")
                        (ac-load "03 ssyntax.arc")
@@ -194,13 +197,14 @@
                        (ac-load "06 extra.arc")
                        (ac-load "lib/time.arc")))|#
 
-  (let ((ac-load (namespace-variable-value 'ac-load #f)))
+  #|(let ((ac-load (namespace-variable-value 'ac-load #f)))
     (ac-load "02 core.arc")
     (ac-load "03 ssyntax.arc")
     (ac-load "04 arc.arc")
     (ac-load "05 import.arc")
     (ac-load "06 extra.arc")
-    (ac-load "lib/time.arc")))
+    (ac-load "lib/time.arc"))|#
+  )
 
 
 (define (nu-compile x)

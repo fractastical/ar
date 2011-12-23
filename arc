@@ -144,7 +144,7 @@
   (profile-thunk (lambda ()
     (load/use-compiled (build-path exec-dir "01 compiler.arc"))
 
-    (eval `(ac-init ,exec-dir* ,ac-require-base)) ;,arguments
+    (eval `(ac-init ,exec-dir ,ac-require-base)) ;,arguments
     ;((namespace-variable-value 'ac-init) exec-dir* ac-require-base)
 
     ;(namespace-set-variable-value! 'exec-dir*       exec-dir        #f)

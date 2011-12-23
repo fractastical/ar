@@ -112,16 +112,6 @@
     matches))
 
 
-;; TODO: should be in utils.arc
-(def partition (f xs)
-  ((afn (x l r)
-     (if no.x
-           (list l r)
-         (f car.x)
-           (self cdr.x (cons car.x l) r)
-         (self cdr.x l (cons car.x r))))
-   xs nil nil))
-
 (mac playlist args
   (let (l r) (partition cons? args)
     ;; TODO: unquote this?

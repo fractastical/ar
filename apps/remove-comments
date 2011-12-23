@@ -31,7 +31,7 @@
     (list str type)))
 
 (def find-comments (input)
-  (aloop ()
+  (awith ()
     (let (str type) lex.input
       (if (is type 'eof)
             nil

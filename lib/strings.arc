@@ -39,21 +39,20 @@
 
 (def lines (s)
   (accum a
-    ((afn ((p . ps))
-       (if ps
-           (do (a (rem #\return (cut s (+ p 1) (car ps))))
-               (self ps))
-           (a (cut s (+ p 1)))))
-     (cons -1 (positions #\newline s)))))
+    (alet (p . ps) (cons -1 (positions #\newline s))
+      (if ps
+          (do (a (rem #\return (cut s (+ p 1) (car ps))))
+              (self ps))
+          (a (cut s (+ p 1)))))))
 
+;; TODO: code duplication
 (def slices (s test)
   (accum a
-    ((afn ((p . ps))
-       (if ps
-           (do (a (cut s (+ p 1) (car ps)))
-               (self ps))
-           (a (cut s (+ p 1)))))
-     (cons -1 (positions test s)))))
+    (alet (p . ps) (cons -1 (positions test s))
+      (if ps
+          (do (a (cut s (+ p 1) (car ps)))
+              (self ps))
+          (a (cut s (+ p 1)))))))
 
 ; > (require (lib "uri-codec.ss" "net"))
 ;> (form-urlencoded-decode "x%ce%bbx")
@@ -122,11 +121,10 @@
 
 (def headmatch (pat seq (o start 0))
   (let p (len pat)
-    ((afn (i)
-       (or (is i p)
-           (and (is (pat i) (seq (+ i start)))
-                (self (+ i 1)))))
-     0)))
+    (alet i 0
+      (or (is i p)
+          (and (is (pat i) (seq (+ i start)))
+               (self (+ i 1)))))))
 
 (def begins (seq pat (o start 0))
   (unless (len> pat (- (len seq) start))

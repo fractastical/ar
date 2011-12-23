@@ -1668,16 +1668,16 @@
   (racket-call-with-input-file x ac-eval-all))
 
 (ac-def ac-load-all (dir)
-  (ac-load (build-path dir "02 core.arc"))
-  (ac-load (build-path dir "03 ssyntax.arc"))
-  (ac-load (build-path dir "04 arc.arc"))
-  (ac-load (build-path dir "05 import.arc"))
-  (ac-load (build-path dir "06 extra.arc")))
+  (ac-load (racket-build-path dir "02 core.arc"))
+  (ac-load (racket-build-path dir "03 ssyntax.arc"))
+  (ac-load (racket-build-path dir "04 arc.arc"))
+  (ac-load (racket-build-path dir "05 import.arc"))
+  (ac-load (racket-build-path dir "06 extra.arc")))
 
 (ac-def ac-init (dir require) ;arguments
   ;; TODO: should use sref or namespace-set or something
-  (namespace-set-variable-value! 'exec-dir*       dir     #f)
-  (namespace-set-variable-value! 'ac-require-base require #f)
+  (racket-namespace-set-variable-value! (racket-quote exec-dir*)       dir     #f)
+  (racket-namespace-set-variable-value! (racket-quote ac-require-base) require #f)
 
   (ac-load-all exec-dir*) ;dir
 

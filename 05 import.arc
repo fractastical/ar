@@ -2,16 +2,6 @@
 ;  from 06 extra.arc
 ;=============================================================================
 
-(mac rloop (name parms . body)
-  ;; TODO: need a better abstraction for this common pattern
-  ;;       with should use the abstraction too
-  (let p (pair parms)
-    #`((rfn name ,(map1 car p) . body) ,@(map1 cadr p))))
-
-(mac aloop (parms . body)
-  #`(rloop 'self parms ,@body))
-
-
 (def maplast (f xs)
   (if (no cdr.xs)
         (f car.xs)
@@ -75,8 +65,8 @@
 
 (def joinpath args
   (string:apply racket-build-path
-    (aloop (x   args
-            acc nil)
+    (awith (x    args
+            acc  nil)
       (if (no x)
             nrev.acc
           (let c (expandpath car.x)
@@ -141,7 +131,7 @@
 ;; TODO: should use object.arc
 ;; TODO: extend should work with keyword args
 (defcall namespace (x k (o d))
-  ;; TODO: use afn or aloop
+  ;; TODO: use alet
   (let self nil ;(% )
     (= self (fn (x)
               (if x ((car x) ;(% )
@@ -262,7 +252,7 @@
 
 #|(def load-file-dir (x)
   ;; this is just (find [file-exists:joinpath _ x] load-paths*)
-  (aloop (xs load-paths*)
+  (alet xs load-paths*
     (if (no xs)
           ;; TODO: should this be nil?
           nil

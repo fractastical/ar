@@ -1,3 +1,15 @@
+(def partition (f xs)
+  (awith (x  xs
+          l  nil
+          r  nil)
+        ;; TODO: should use cons? rather than no
+    (if (no x)
+          (list l r)
+        (f car.x)
+          (self cdr.x (cons car.x l) r)
+        (self cdr.x l (cons car.x r)))))
+
+
 (def zip args
   ;; TODO: how fast is map applied to multiple lists?
   (apply map list args))
@@ -8,12 +20,17 @@
 (= (cdr nils) nils)
 
 
+;; TODO: name is good, but not ideal
+;;       aletwhen is accurate but too long
+;;       alet is misleading because afnlet does a null check
+;;       what about aletif ...? no, because it uses when, not if
 (mac afnlet (parms x . body)
   (w/uniq u
-    #`((afn (u)
-         (whenlet parms u
-           ,@body))
-       x)))
+    #`(alet u x
+        (whenlet parms u . body))))
+
+#|(mac afnlet2 (parms x . body)
+  #`(alet parms x (when parms . body)))|#
 
 
 (mac catcherr (expr)

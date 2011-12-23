@@ -82,23 +82,22 @@
 
 
 (def map (f . seqs)
+      ;; TODO: make this better
   (if (some [isa _ 'string] seqs)
-       (withs (n   (apply min (map len seqs))
-               new (newstring n))
-         ((afn (i)
+        (withs (n    (apply min (map len seqs))
+                new  (newstring n))
+          (alet i 0
             (if (is i n)
-                new
+                  new
                 (do (sref new (apply f (map [_ i] seqs)) i)
-                    (self (+ i 1)))))
-          0))
+                    (self (+ i 1))))))
       (no (cdr seqs))
-       (map1 f (car seqs))
-      ((afn (seqs)
+        (map1 f (car seqs))
+      (alet seqs seqs
         (if (some no seqs)
-            nil
+              nil
             (cons (apply f (map1 car seqs))
-                  (self (map1 cdr seqs)))))
-       seqs)))
+                  (self (map1 cdr seqs)))))))
 
 (def mappend (f . args)
   (apply join (apply map f args)))
@@ -331,18 +330,16 @@
 #|(ac-prn (macex-all '(mac loop (start test update . body)
   (w/uniq (gfn gparm)
     #`(do start
-          ((rfn gfn (gparm)
-             (if gparm
-               (do ,@body update (gfn test))))
-           test))))))|#
+          (rwith gfn (gparm test)
+            (if gparm
+              (do ,@body update (gfn test)))))))))|#
 
 (mac loop (start test update . body)
   (w/uniq (gfn gparm)
     #`(do start
-          ((rfn gfn (gparm)
-             (if gparm
-               (do ,@body update (gfn test))))
-           test))))
+          (rwith gfn (gparm test)
+            (if gparm
+              (do ,@body update (gfn test)))))))
 
 (mac for (v init max . body)
   (w/uniq (gi gm)
@@ -362,11 +359,10 @@
 
 (def eachfn (f x)
   (if list?.x
-        ((afn (x)
-           (when cons?.x
-             (f car.x)
-             (self cdr.x)))
-         x)
+        (alet x x
+          (when cons?.x
+            (f car.x)
+            (self cdr.x)))
       table?.x
         (maptable (fn args f.args) x)
       (for y 0 (- len.x 1)
@@ -396,21 +392,19 @@
 
 (def last (xs)
   (if (cons? xs)
-        ((afn (x)
-           (if (cdr x)
-                 (self (cdr x))
-               (car x)))
-         xs)
+        (alet x xs
+          (if (cdr x)
+                (self (cdr x))
+              (car x)))
       (xs (- (len xs) 1))))
 
 (def rem (test seq)
   (let f (testify test)
     (if (list? seq)
-          ((afn (s)
-             (if (no s)       nil
-                 (f (car s))  (self (cdr s))
-                              (cons (car s) (self (cdr s)))))
-            seq)
+          (alet s seq
+            (if (no s)       nil
+                (f (car s))  (self (cdr s))
+                             (cons (car s) (self (cdr s)))))
         (coerce (rem test (coerce seq 'cons)) 'string))))
 
 ; Seems like keep doesn't need to testify-- would be better to
@@ -663,12 +657,12 @@
 (def carif  (x)   (if (atom x) x (car x)))
 (def consif (x y) (if x (cons x y) y))
 
-(def flat x
-  ((afn (x acc)
-     (if (no x)   acc
-         (atom x) (cons x acc)
-                  (self (car x) (self (cdr x) acc))))
-   x nil))
+(def flat args
+  (awith (x    args
+          acc  nil)
+    (if (no x)    acc
+        (atom x)  (cons x acc)
+                  (self (car x) (self (cdr x) acc)))))
 
 (mac check (x test (o alt))
   (w/uniq gx
@@ -678,14 +672,13 @@
 (def pos (test seq (o start 0))
   (let f (testify test)
     (if (list? seq)
-          ((afn (seq n)
-             (if (no seq)
+          (awith (seq  (nthcdr start seq)
+                  n    start)
+            (if (no seq)
                   nil
-                 (f (car seq))
+                (f (car seq))
                   n
-                 (self (cdr seq) (+ n 1))))
-           (nthcdr start seq)
-           start)
+                (self (cdr seq) (+ n 1))))
         (recstring [if (f (seq _)) _] seq start))))
 
 
@@ -719,12 +712,13 @@
 (def readfile1 (name) (w/infile s name (read s)))
 
 (def readall (src (o eof nil))
-  ((afn (i)
+  (alet i (if (isa src 'string)
+                (instring src)
+              src)
     (let x (read i eof)
       (if (is x eof)
-          nil
-          (cons x (self i)))))
-   (if (isa src 'string) (instring src) src)))
+            nil
+          (cons x (self i))))))
 
 (def allchars (str)
   (tostring (whiler c (readc str nil) no
@@ -914,32 +908,29 @@
     (and (isnt x "") x)))|#
 
 #|(def readline ((o str stdin))
-  ;; TODO: aloop
-  ((afn (acc)
-     (iflet c (readc str)
-       (if (is c #\newline)
-             (string:nrev acc)
-           (and (is c #\return)
-                (is peekc.str #\newline))
-             (do (readc str)
-                 (string:nrev acc))
-           (self (cons c acc)))
-       (string:nrev acc)))
-   nil))|#
+  (alet acc nil
+    (iflet c (readc str)
+      (if (is c #\newline)
+            (string:nrev acc)
+          (and (is c #\return)
+               (is peekc.str #\newline))
+            (do (readc str)
+                (string:nrev acc))
+          (self (cons c acc)))
+      (string:nrev acc))))|#
 
 #|(def readline ((o s stdin))
   (awhen readc.s
-                 ;; TODO: aloop
                  ;; TODO: maybe a accum-style afn macro...?
-    (string:nrev ((afn (c acc)
-                    (if (in c #\newline nil)
-                          acc
-                        (and (is c #\return)
-                             (is peekc.s #\newline))
-                          ;; TODO: ew
-                          (do (readc s) acc)
-                        (self (readc s) (cons c acc))))
-                  it nil))))|#
+    (string:nrev (awith (c    it
+                         acc  nil)
+                   (if (in c #\newline nil)
+                         acc
+                       (and (is c #\return)
+                            (is peekc.s #\newline))
+                         ;; TODO: ew
+                         (do (readc s) acc)
+                       (self (readc s) (cons c acc)))))))|#
 
 
 ; Don't currently use this but suspect some code could.
@@ -1091,29 +1082,27 @@
         ;       (and (not (less? (car next) last))
         ;            (loop (car next) (cdr next)))))
         ; lst
-        ((afn (n)
-           (if (> n 2)
+        (alet n n
+          (if (> n 2)
                 ; needs to evaluate L->R
                 (withs (j (/ (if (even n) n (- n 1)) 2) ; faster than round
                         a (self j)
                         b (self (- n j)))
                   (merge less? a b))
-               ; the following case just inlines the length 2 case,
-               ; it can be removed (and use the above case for n>1)
-               ; and the code still works, except a little slower
-               (is n 2)
+              ; the following case just inlines the length 2 case,
+              ; it can be removed (and use the above case for n>1)
+              ; and the code still works, except a little slower
+              (is n 2)
                 (with (x (car lst) y (cadr lst) p lst)
                   (= lst (cddr lst))
                   (when (less? y x) (scar p y) (scar (cdr p) x))
                   (scdr (cdr p) nil)
                   p)
-               (is n 1)
+              (is n 1)
                 (with (p lst)
                   (= lst (cdr lst))
                   (scdr p nil)
-                  p)
-               nil))
-         n))))
+                  p))))))
 
 ; Also by Eli.
 
@@ -1286,17 +1275,15 @@
 
 (def orf fns
   (fn args
-    ((afn (fs)
-       (and fs (or (apply (car fs) args) (self (cdr fs)))))
-     fns)))
+    (alet fs fns
+      (and fs (or (apply (car fs) args) (self (cdr fs)))))))
 
 (def andf fns
   (fn args
-    ((afn (fs)
-       (if (no fs)       t
-           (no (cdr fs)) (apply (car fs) args)
-                         (and (apply (car fs) args) (self (cdr fs)))))
-     fns)))
+    (alet fs fns
+      (if (no fs)        t
+          (no (cdr fs))  (apply (car fs) args)
+                         (and (apply (car fs) args) (self (cdr fs)))))))
 
 
 (def atend (i s)
@@ -1484,10 +1471,9 @@
 
 (mac trav (x . fs)
   (w/uniq g
-    #`((afn (g)
-         (when g
-           ,@(map [list _ g] fs)))
-       x)))
+    #`(alet g x
+        (when g
+          ,@(map [list _ g] fs)))))
 
 
 (mac out (expr)

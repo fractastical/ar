@@ -30,14 +30,12 @@
   (racket-regexp-replace* regexp.pattern in replace))
 
 (mac re-multi-replace (x . args)
-  ;; TODO: can this use afnlet?
-  ((afn (((from to (o g)) . rest))
-     (list (if g racket-regexp-replace*
-                 racket-regexp-replace)
-           (regexp:string from)
-           (if rest self.rest x)
-           (if sym?.to string.to to)))
-   (nrev args)))
+  (alet ((from to (o g)) . rest) nrev.args
+    (list (if g racket-regexp-replace*
+                racket-regexp-replace)
+          (regexp:string from)
+          (if rest self.rest x)
+          (if sym?.to string.to to))))
 
 
 (def re-split (x y)

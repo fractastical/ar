@@ -30,11 +30,11 @@
       (writeuntil str x))))
 
 (def readuntil (str x)
-  (tostring ((afn ()
-               (writeuntil str #\newline)
-               (iflet c peekc.str
-                 (unless (is c x)
-                   (self)))))))
+  (tostring (awith ()
+              (writeuntil str #\newline)
+              (iflet c peekc.str
+                (unless (is c x)
+                  (self))))))
 
 
 (def parse-string (in)

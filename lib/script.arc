@@ -24,13 +24,12 @@
 ;; TODO: should maybe be elsewhere?
 (def dirall ((o x) (o f))
   (w/cwd x
-    ((afn (d)
-       (mappend (fn (x)
-                  (if (dirname x) ;; dirname
-                        (self (string d x))
-                      (list (string d x))))
-                (dir d f)))
-     nil)))
+    (alet d nil
+      (mappend (fn (x)
+                 (if (dirname x) ;; dirname
+                       (self (string d x))
+                     (list (string d x))))
+               (dir d f)))))
 
 
 ;; TODO: this is documentation for joinpath, not todir

@@ -31,19 +31,23 @@
 (parameterize ((current-namespace (make-base-empty-namespace)))
   (ac-require-base)
 
-  (namespace-set-variable-value! 'exec-dir*       exec-dir        #f)
-  (namespace-set-variable-value! 'ac-require-base ac-require-base #f)
+  ;(namespace-set-variable-value! 'exec-dir*       exec-dir        #f)
+  ;(namespace-set-variable-value! 'ac-require-base ac-require-base #f)
 
   (load/use-compiled (build-path exec-dir "01 compiler.arc"))
 
-  (let ((ac-load (namespace-variable-value 'ac-load #f)))
+  (eval `(ac-init ,exec-dir ,ac-require-base))
+  (eval '(importfn1 "time"))
+
+
+  #|(let ((ac-load (namespace-variable-value 'ac-load #f)))
     (ac-load "02 core.arc")
     (ac-load "03 ssyntax.arc")
     ;(ac-load "compat.arc")
     (ac-load "04 arc.arc")
     (ac-load "05 import.arc")
     (ac-load "06 extra.arc")
-    (ac-load "lib/time.arc"))
+    (ac-load "lib/time.arc"))|#
 
   (let ((read     (namespace-variable-value 'read #f))
         (compile  (namespace-variable-value 'ac-compile #f)))
