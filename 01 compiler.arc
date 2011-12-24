@@ -149,7 +149,9 @@
   (racket-if x t nil))
 
 (ac-def ac-no (x)
-  (racket-eq? x nil))
+  (racket-null? x)
+  ;(racket-eq? x nil)
+  )
 
 (ac-def ac-nil (x)
   (racket-if (ac-no x) #f x))
@@ -368,11 +370,11 @@
   (racket-cond
     ((ac-no x)
       (racket-display "nil" port))
-    ((ac-caris x ac-quote)
+    #|((ac-caris x ac-quote)
       (racket-display "#<quoted>" port)
       ;(print primitive (cadr x) port)
       ;(print-w/list primitive (cdr x) port)
-      )
+      )|#
     ((racket-pair? x)
       (racket-display "(" port)
       (print-w/list primitive x port))
@@ -412,13 +414,21 @@
 
 
 (ac-def car (x)
-  (racket-if (ac-no x)
-               nil
+  (racket-if (racket-null? x) ;(ac-no x)
+               x ;nil
+             #;(racket-if (racket-pair? x)
+               (racket-unsafe-car x)
+               ;(racket-unsafe-set-mcar! x val)
+               (racket-raise-type-error (racket-quote car) "pair" x))
              (racket-car x)))
 
 (ac-def cdr (x)
-  (racket-if (ac-no x)
-               nil
+  (racket-if (racket-null? x) ;(ac-no x)
+               x ;nil
+             #;(racket-if (racket-pair? x)
+               (racket-unsafe-cdr x)
+               ;(racket-unsafe-set-mcar! x val)
+               (racket-raise-type-error (racket-quote cdr) "pair" x))
              (racket-cdr x)))
 
 
@@ -450,7 +460,7 @@
 (ac-def list* args
   (racket-cond
     ((ac-no args)
-      nil)
+      args)
     ((ac-no (racket-cdr args))
      (racket-car args))
     ((ac-no (racket-cddr args))
@@ -732,8 +742,8 @@
 (ac-def ac-decompose (fns args)
   (racket-cond
     ((ac-no fns)
-      ;; TODO
-      nil);`((fn vals (car vals)) ,@args)
+      ;; TODO ;`((fn vals (car vals)) ,@args)
+      fns)
     ((ac-no (cdr fns))
       (cons (car fns) args))
     (racket-else
@@ -934,7 +944,7 @@
 
 (ac-def ac-assignn (x)
   (racket-if (ac-no x)
-               nil
+               x
              ;; TODO: why does Arc 3.1 call ac-macex here?
              (cons (ac-assign1 (car x) (cadr x))
                               ;; TODO: ew
@@ -995,7 +1005,7 @@
     (racket-let self ((x x))
       (racket-cond
         ((ac-no x)                            ;; end of the argument list
-          nil)
+          x)
         ((racket-symbol? x)                   ;; dotted rest args
           (ac-add-to ac-local-env x)
           (list (list x u)))
@@ -1066,6 +1076,7 @@
 (ac-def ac-fn-required-args (x)
   (racket-if (ac-fn-required-args?)
                x
+                     ;; TODO: can I remove this racket-quote...?
              (list x (racket-quote nil))))
 
 (ac-def ac-fn-end-of-args (x)
@@ -1108,12 +1119,14 @@
                                                                      n
                                                                      d)))
                                            (ac-fn-let*))))
+                                           ;; TODO: can I remove this racket-quote...?
                        (join (list (list n (racket-quote nil)))
                              (ac-fn-normal-args (cdr x))))
                      (join (ac-fn-optional-args n d)
                            (ac-fn-normal-args (cdr x))))
               ))
     ((racket-keyword? (car x))            ;; keyword args
+                                        ;; TODO: can I remove this racket-quote...?
       (join (ac-fn-keyword-args (car x) (racket-quote nil))
             (ac-fn-normal-args (cdr x))))
     ((racket-pair? (car x))               ;; destructuring args
@@ -1158,6 +1171,7 @@
   ;(ac-prn parms (racket-when (racket-pair? parms) (len parms)))
   (cons (racket-quote racket-lambda)
         (racket-parameterize ((ac-fn-body (racket-if (ac-no body)
+                                                             ;; TODO: can I remove this racket-quote...?
                                                        (list (racket-quote nil))
                                                      body)))
           (cons (racket-parameterize ((ac-local-env (ac-local-env)))
@@ -1190,8 +1204,8 @@
 ;  quote
 ;=============================================================================
 
-(ac-def ac-quote (x)
-  x)
+#|(ac-def ac-quote (x)
+  x)|#
 
 (ac-mac quote (x)
   ;; TODO: not sure about the % part: is it
@@ -1199,14 +1213,17 @@
   ;(list % (list (racket-lambda () x)))
 
   ;; TODO: can I make due without ac-quote...?
-  (list ac-quote
+  ;(list ac-quote
+                   ;; TODO: a little hacky
         (racket-if (racket-eq? x (racket-quote nil))
                      nil ;x
                    (list (racket-lambda () x)
                          #|(racket-procedure-rename
 
                            (racket-quote quoted))|#
-                         ))))
+                         ))
+        ;)
+  )
 
 
 ;=============================================================================
@@ -1608,7 +1625,7 @@
   ;(ac-prn x)
   (racket-cond
     ((ac-no x)
-      (racket-quote nil))
+      (list (racket-quote racket-quote) x))
     #|((ac-caris x ac-fn)
       (ac-fn (cadr x) (cddr x)))
     ((ac-caris x ac-if)
@@ -1662,7 +1679,7 @@
 (ac-def ac-eval-all (in)
   (racket-let ((x (sread in)))
     (racket-if (ac-no x)
-                 nil
+                 x
                (racket-begin (eval x)
                              (ac-eval-all in)))))
 

@@ -6,8 +6,8 @@
 
 (define show-compile (make-parameter #f))
 (define same-timeit  (make-parameter #t))
-(define time         (make-parameter 1000))
-(define iter         (make-parameter 10))
+(define time         (make-parameter 100))
+(define iter         (make-parameter 50))
 (define phase        (make-parameter "runtime"))
 
 
@@ -56,6 +56,7 @@
 
           "(list 1 2)"
           "(car nil)"
+          "(car ())"
           "(car '())"
 
           "(let a (list 1 2) (car a))"
@@ -73,6 +74,7 @@
           "(list 1 2 3 4 5)"
           "(apply list 1 2 3 4 (list 5))"
           ;===================================================================
+          "()"
           "nil"
           "(list)"
 
@@ -279,8 +281,10 @@
                     (let ((expr (eval expr space)))
                       (loop (- x 1) (cons expr acc)))
                                                ;racket-exact->inexact
+
+                                                  ;(map median (apply zip (n-of 50 (timeit1 x 100))))
                   ;; TODO: this whole thing is hacky
-                  (let ((n (nu-eval `(let (a b c) (map round:avg (apply zip ',acc))
+                  (let ((n (nu-eval `(let (a b c) (map median (apply zip ',acc)) ;round:avg
                                        (prn "iter: "    (commafy a)
                                             "  gc: "    b
                                             "  mem: "   c
@@ -288,7 +292,7 @@
                                             "  diff: "  (if (is ,(prev-iter) 0)
                                                               0
                                                                      ;; TODO: write a function for this
-                                                            (commafy (* (- (/ ,(prev-iter) a) 1) -100))) "%")
+                                                            (commafy (percent ,(prev-iter) a))) "%")
                                        a))))
                     (when (eq? (first-iter) #t)
                       (first-iter #f)

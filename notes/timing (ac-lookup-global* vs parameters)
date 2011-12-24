@@ -1,0 +1,159 @@
+Global:
+
+    > (ac-compile '(let rev nil
+               (= rev (fn (xs)
+                 (awith (xs   xs
+                         acc  (% nil))
+                   (if ((% no) xs)
+                         acc
+                       (self ((% cdr) xs) ((% cons) ((% car) xs) acc))))))
+               (timeit (rev '(1 2 3 4 5)))))
+    iter: 1,579,609  gc: 48  mem: 10910504
+
+Global + ac-lookup:
+
+    > (eval '(let rev nil
+               (= rev (fn (xs)
+                 (awith (xs   xs
+                         acc  nil)
+                   (if (no xs)
+                         acc
+                       (self (cdr xs) (cons (car xs) acc))))))
+               (timeit (rev '(1 2 3 4 5)))))
+    iter: 868,028  gc: 28  mem: -1367600
+    iter: 886,541  gc: 16  mem: -10391336
+    iter: 961,805  gc: 36  mem: -12660816
+
+Global + thunks:
+
+    > (do (def tnil  () %eval.nil)
+          (def tno   () %eval.no)
+          (def tcdr  () %eval.cdr)
+          (def tcar  () %eval.car)
+          (def tcons () %eval.cons)
+          (eval '(let rev nil
+                   (= rev (fn (xs)
+                     (awith (xs   xs
+                             acc  (% (tnil)))
+                       (if ((% (tno)) xs)
+                             acc
+                           (self ((% (tcdr)) xs) ((% (tcons)) ((% (tcar)) xs) acc))))))
+                   (timeit (rev '(1 2 3 4 5))))))
+    iter: 1,537,259  gc: 48  mem: -14048112
+    iter: 1,473,022  gc: 40  mem: -1019784
+    iter: 1,563,231  gc: 48  mem: -8448624
+
+    ;; Fluke (*** creating new namespace to avoid redefining tnil)
+    iter: 1,489,460  gc: 60  mem: 7407088
+
+Global + annotated thunks:
+
+    > (do (= tnil  (annotate 'foo (fn () %eval.nil)))
+          (= tno   (annotate 'foo (fn () %eval.no)))
+          (= tcdr  (annotate 'foo (fn () %eval.cdr)))
+          (= tcar  (annotate 'foo (fn () %eval.car)))
+          (= tcons (annotate 'foo (fn () %eval.cons)))
+          (eval '(let rev nil
+                   (= rev (fn (xs)
+                     (awith (xs   xs
+                             acc  (% ((rep tnil))))
+                       (if ((% ((rep tno))) xs)
+                             acc
+                           (self ((% ((rep tcdr))) xs) ((% ((rep tcons))) ((% ((rep tcar))) xs) acc))))))
+                   (timeit (rev '(1 2 3 4 5))))))
+    iter: 1,342,841  gc: 36  mem: 4127768
+    iter: 1,372,628  gc: 28  mem: -2458040
+    iter: 1,383,894  gc: 24  mem: 346488
+
+Lexical:
+
+    > (eval '(with (rev   nil
+                    nil   nil
+                    no    no
+                    cdr   cdr
+                    car   car
+                    cons  cons)
+               (= rev (fn (xs)
+                 (awith (xs   xs
+                         acc  nil)
+                   (if (no xs)
+                         acc
+                       (self (cdr xs) (cons (car xs) acc))))))
+               (timeit (rev '(1 2 3 4 5)))))
+    iter: 1,495,436  gc: 44  mem: -1806976
+    iter: 1,471,492  gc: 44  mem: 1872200
+    iter: 1,600,803  gc: 36  mem: 7785568
+
+Lexical + ac-lookup:
+
+    > (eval `(with (rev   nil
+                    ,(sym "nil")   nil
+                    no    no
+                    cdr   cdr
+                    car   car
+                    cons  cons)
+               (= rev (fn (xs)
+                 (awith (xs   xs
+                         acc  (,ac-lookup-global-arg ,(sym "nil")))
+                   (if ((,ac-lookup-global no) xs)
+                         acc
+                       (self ((,ac-lookup-global cdr) xs) ((,ac-lookup-global cons) ((,ac-lookup-global car) xs) acc))))))
+               (timeit (rev '(1 2 3 4 5)))))
+    iter: 879,260  gc: 24  mem: -8689008
+    iter: 829,391  gc: 16  mem: -2105304
+    iter: 963,349  gc: 28  mem: -4324512
+
+Lexical + parameters:
+
+    > (eval '(with (rev   nil
+                    nil   (racket-make-parameter nil)
+                    no    (racket-make-parameter no)
+                    cdr   (racket-make-parameter cdr)
+                    car   (racket-make-parameter car)
+                    cons  (racket-make-parameter cons))
+               (= rev (fn (xs)
+                 (awith (xs   xs
+                         acc  (% (nil)))
+                   (if ((% (no)) xs)
+                         acc
+                       (self ((% (cdr)) xs) ((% (cons)) ((% (car)) xs) acc))))))
+               (timeit (rev '(1 2 3 4 5)))))
+    iter: 734,614  gc: 20  mem: 3513552
+    iter: 824,428  gc: 36  mem: -2338544
+    iter: 825,228  gc: 20  mem: -1955712
+
+Lexical + thunks:
+
+    > (eval '(with (rev   nil
+                    nil   (fn () %eval.nil)
+                    no    (fn () %eval.no)
+                    cdr   (fn () %eval.cdr)
+                    car   (fn () %eval.car)
+                    cons  (fn () %eval.cons))
+               (= rev (fn (xs)
+                 (awith (xs   xs
+                         acc  (% (nil)))
+                   (if ((% (no)) xs)
+                         acc
+                       (self ((% (cdr)) xs) ((% (cons)) ((% (car)) xs) acc))))))
+               (timeit (rev '(1 2 3 4 5)))))
+    iter: 1,294,601  gc: 48  mem: -3115016
+    iter: 1,401,826  gc: 36  mem: 1698640
+    iter: 1,494,509  gc: 40  mem: 7695056
+
+
+Compilations:
+
+(racket-begin (racket-set! rev (racket-lambda (xs) (#<fn:ac-funcall2> ((racket-lambda (self) (racket-begin (racket-set! self (racket-lambda (xs acc) (racket-if (#<fn:ac-true> (#<fn:ac-funcall1> no xs)) acc (#<fn:ac-funcall2> self (#<fn:ac-funcall1> cdr xs) (#<fn:ac-funcall2> cons (#<fn:ac-funcall1> car xs) acc))))) self)) (racket-quote nil)) xs nil))) rev)
+
+(racket-begin (racket-set! rev (racket-lambda (xs) (#<fn:ac-funcall2> ((racket-lambda (self) (racket-begin (racket-set! self (racket-lambda (xs acc) (racket-if (#<fn:ac-true> (#<fn:ac-funcall1> (#<fn:ac-lookup-global> no) xs)) acc (#<fn:ac-funcall2> self (#<fn:ac-funcall1> (#<fn:ac-lookup-global> cdr) xs) (#<fn:ac-funcall2> (#<fn:ac-lookup-global> cons) (#<fn:ac-funcall1> (#<fn:ac-lookup-global> car) xs) acc))))) self)) (racket-quote nil)) xs (#<fn:ac-lookup-global-arg> nil)))) rev)
+
+(racket-begin (racket-set! rev (racket-lambda (xs) (#<fn:ac-funcall2> ((racket-lambda (self) (racket-begin (racket-set! self (racket-lambda (xs acc) (racket-if (#<fn:ac-true> (#<fn:ac-funcall1> (tno) xs)) acc (#<fn:ac-funcall2> self (#<fn:ac-funcall1> (tcdr) xs) (#<fn:ac-funcall2> (tcons) (#<fn:ac-funcall1> (tcar) xs) acc))))) self)) (racket-quote nil)) xs (tnil)))) rev)
+
+(racket-begin (racket-set! rev (racket-lambda (xs) (#<fn:ac-funcall2> ((racket-lambda (self) (racket-begin (racket-set! self (racket-lambda (xs acc) (racket-if (#<fn:ac-true> (#<fn:ac-funcall1> no xs)) acc (#<fn:ac-funcall2> self (#<fn:ac-funcall1> cdr xs) (#<fn:ac-funcall2> cons (#<fn:ac-funcall1> car xs) acc))))) self)) (racket-quote nil)) xs (racket-quote nil)))) rev)
+
+(racket-begin (racket-set! rev (racket-lambda (xs) (#<fn:ac-funcall2> ((racket-lambda (self) (racket-begin (racket-set! self (racket-lambda (xs acc) (racket-if (#<fn:ac-true> (#<fn:ac-funcall1> (#<fn:ac-lookup-global> no) xs)) acc (#<fn:ac-funcall2> self (#<fn:ac-funcall1> (#<fn:ac-lookup-global> cdr) xs) (#<fn:ac-funcall2> (#<fn:ac-lookup-global> cons) (#<fn:ac-funcall1> (#<fn:ac-lookup-global> car) xs) acc))))) self)) (racket-quote nil)) xs (#<fn:ac-lookup-global-arg> nil)))) rev)
+
+(racket-begin (racket-set! rev (racket-lambda (xs) (#<fn:ac-funcall2> ((racket-lambda (self) (racket-begin (racket-set! self (racket-lambda (xs acc) (racket-if (#<fn:ac-true> (#<fn:ac-funcall1> (#<fn:ac-funcall0> no) xs)) acc (#<fn:ac-funcall2> self (#<fn:ac-funcall1> (#<fn:ac-funcall0> cdr) xs) (#<fn:ac-funcall2> (#<fn:ac-funcall0> cons) (#<fn:ac-funcall1> (#<fn:ac-funcall0> car) xs) acc))))) self)) (racket-quote nil)) xs (#<fn:ac-funcall0> nil)))) rev)
+
+(racket-begin (racket-set! rev (racket-lambda (xs) (#<fn:ac-funcall2> ((racket-lambda (self) (racket-begin (racket-set! self (racket-lambda (xs acc) (racket-if (#<fn:ac-true> (#<fn:ac-funcall1> (#<fn:ac-funcall0> no) xs)) acc (#<fn:ac-funcall2> self (#<fn:ac-funcall1> (#<fn:ac-funcall0> cdr) xs) (#<fn:ac-funcall2> (#<fn:ac-funcall0> cons) (#<fn:ac-funcall1> (#<fn:ac-funcall0> car) xs) acc))))) self)) (racket-quote nil)) xs (#<fn:ac-funcall0> nil)))) rev)

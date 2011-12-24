@@ -99,10 +99,11 @@
   #`(w/namespace (new-namespace x) ,@body))
 
 
-#|(def empty-namespace ()
+(def empty-namespace ()
   (%get.racket-make-empty-namespace))
 
-(def namespace-copy1 ((o x   (%get.racket-current-namespace))
+
+#|(def namespace-copy1 ((o x   (%get.racket-current-namespace))
                       (o new (empty-namespace)))
   (each n (%get.racket-namespace-mapped-symbols x) ;(racket-list->mlist )
     ;; TODO; use = and remove namespace-get...?

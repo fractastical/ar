@@ -15,6 +15,14 @@
   (apply map list args))
 
 
+;; (percent 100 200) -> 100
+;; (percent 100 150) -> 50
+;; (percent 100 50)  -> -50
+;; (percent 100 25)  -> -75
+(def percent (x y)
+  (- (* (/ y x) 100) 100))
+
+
 ;; Infinite nil generator, courtesy of akkartik (rocketnia reminded me)
 (= nils list.nil)
 (= (cdr nils) nils)
@@ -127,12 +135,6 @@
 (def call-w/stdin (port thunk)
                 ;; TODO: %get
   (parameterize (racket-current-input-port port) (thunk)))
-
-(def tablist (h)
-  (coerce x 'cons))
-
-(def listtab (x)
-  (coerce x 'table))
 
 
 ;=============================================================================

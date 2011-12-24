@@ -6,35 +6,46 @@ nil
 > namespace
 #<namespace (len 2)>
 
-> (w/arc3 (timeit-range (+ 1 2)  1450000
+> (w/arc3 (timeit-range (+ 1 2)  1650000
+                                ;1450000
                                 ;390000
                                 ;3097468
                                 ))
 t
 
-> (timeit-range (+ 1 2) 65500 #|638625|#)
+> (timeit-range (+ 1 2)  83000
+                        ;65500
+                        ;638625
+                        )
 t
 
 
-> (timeit-range 'foo  2500000
+> (timeit-range 'foo  3350000
+                     ;2500000
                      ;680000
                      )
 t
 
 
-> (timeit-range (apply idfn (list 'x)) 22000)
+> (timeit-range (apply idfn (list 'x))  28000
+                                       ;22000
+                                       )
 t
 
-> (timeit-range (idfn 'x) 66000)
+> (timeit-range (idfn 'x)  83000
+                          ;66000
+                          )
 t
 
 
-> (timeit-range (do 1 2 3)  2250000
+> (timeit-range (do 1 2 3)  3550000
+                           ;2250000
                            ;690000
                            )
 t
 
-> (timeit-range (< 1 2)  61000
+> (timeit-range (< 1 2)  84000
+                        ;61000
                         ;2750000
                         )
 t

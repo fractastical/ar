@@ -321,9 +321,19 @@
 (def keyword? (x) (isa x 'keyword))
 (def keyword  (x) (coerce x 'keyword))
 
+
+(def tablist (x)
+  ;; TODO: accum
+  (let a nil (maptable (fn args (= a (cons args a))) x) (nrev a)))
+
+(def listtab (x)
+  (let h (%inline (racket-make-hash))
+    (map1 (fn ((k v)) (sref h v k)) x)
+    h))
+
 (def table?     (x)  (isa x 'table))
 (def table      (x)  (coerce x 'table))
-(def make-table args (table (pair args)))
+(def make-table args (listtab (pair args)))
 
 (def int? (x) (isa x 'int))
 (def int  (x (o base 10))
@@ -434,7 +444,7 @@
 (def defcoercefn (type to f)
   (aif (alref coerce-list* type)
          (sref it f to)
-       (let u (%inline (racket-make-hash)) ;(make-table)
+       (let u (make-table)
          ;; TODO: push
          (= coerce-list* (cons (list type u) coerce-list*))
          (sref u f to))))
@@ -485,14 +495,12 @@
 
 (defcoerces table? (x)
   ;'cons (accum a (maptable (fn args (a args)) x))
-  'cons (let a nil (maptable (fn args (= a (cons args a))) x) (nrev a))
+  'cons (tablist x)
   )
 
 (defcoerces cons? (x)
   'string (apply string x)
-  'table  (let h (make-table)
-            (map (fn ((k v)) (sref h v k)) x)
-            h))
+  'table  (listtab x))
 
 (defcoerces string? (x)
   'keyword (%inline (racket-string->keyword x))
@@ -525,7 +533,7 @@
   'keyword (%inline (racket-string->keyword ""))
   'string  ""
   ;; TODO: not sure about this
-  'table   (%inline (racket-make-hash)) ;(make-table)
+  'table   (make-table)
   'cons    nil)
 
 
@@ -903,13 +911,13 @@
 
 (parameter debug-mode* nil)
 
-(dynamic debug (fn args
+#|(dynamic debug (fn args
                  (when debug-mode*
-                   (apply prn (intersperse " " args)))))
+                   (apply prn (intersperse " " args)))))|#
 
-#|(def debug args
+(def debug args
   (when debug-mode*
-    (apply prn (intersperse " " args))))|#
+    (apply prn (intersperse " " args))))
 
 
 ;=============================================================================
@@ -1202,8 +1210,9 @@
                (map macex-all (cdr (cddr x))))
       (caris x ac-lookup-global-arg)
         (cadr x)
-      (caris x ac-quote)
-        (list 'quote (macex-all ((car (cadr x)))))
+      ;; TODO: replacement for ac-quote
+      #|(caris x ac-quote)
+        (list 'quote (macex-all ((car (cadr x)))))|#
       (caris x ac-nocompile)
         (macex-all (cdr x))
       #|(caris x ac-quote)
@@ -1214,7 +1223,8 @@
               (if (cons? y)
                     (map macex-all y)
                   (and macex-rename*
-                       (isnt y ac-quote)
+                       ;; TODO: replacement for ac-quote
+                       ;(isnt y ac-quote)
                        (or (fn? y)
                            (mac? y)))
                     (or (name y) y)
