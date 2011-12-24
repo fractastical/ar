@@ -4,17 +4,17 @@
   ;; This causes Ctrl+C to return to the REPL, rather than aborting.
   ;; Technique was taken from Racket's (read-eval-print-loop) which
   ;; I found in /usr/lib/plt/collects/scheme/private/misc.ss
-  (racket-call-with-continuation-prompt
+  (%get.racket-call-with-continuation-prompt
     (fn ()
       (on-err (fn (c)
                 (prn "error: " (details c))
                 (repl))
               (fn ()
                 (let expr ;; This is to make GNU readline work
-                          ((racket-current-prompt-read))
-                  (if (is expr racket-eof)
+                          ((%get.racket-current-prompt-read))
+                  (if (is expr %get.racket-eof)
                         (prn)
-                      (let expr (racket-syntax->datum expr) ;(ac-deep-toarc )
+                      (let expr (%get.racket-syntax->datum expr) ;(ac-deep-toarc )
                         ;; > (readline) ;Fee fi fo fum
                         ;; " ;Fee fi fo fum"
                         (readline)
@@ -25,7 +25,7 @@
                           (sref namespace val  'that)
                           (sref namespace expr 'thatexpr)
                           (repl))))))))
-    (racket-default-continuation-prompt-tag)
+    (%get.racket-default-continuation-prompt-tag)
     (fn args (repl))))
 
 (repl)

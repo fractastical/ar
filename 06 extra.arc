@@ -87,7 +87,7 @@
 
 
 ;=============================================================================
-;  %splice / %eval
+;  %splice
 ;=============================================================================
 
 #|(def ac-nocompile (x)
@@ -112,9 +112,6 @@
 (mac %splice args
   #`(% (ac-splice . args)))
 
-(mac %eval body
-  (maplast eval body))
-
 
 ;=============================================================================
 ;  compat.arc
@@ -124,9 +121,11 @@
 (alias alist list?)
 
 (def call-w/stdout (port thunk)
+                ;; TODO: %get
   (parameterize (racket-current-output-port port) (thunk)))
 
 (def call-w/stdin (port thunk)
+                ;; TODO: %get
   (parameterize (racket-current-input-port port) (thunk)))
 
 (def tablist (h)
@@ -146,7 +145,8 @@
 
 (def mv (old new)
   ;; only difference with mvfile is this one uses #f
-  (racket-rename-file-or-directory old new #f)
+  ;; TODO: should probably be an argument instead
+  (%inline:racket-rename-file-or-directory old new #f)
   nil)
 
 

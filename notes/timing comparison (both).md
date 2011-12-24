@@ -2,373 +2,373 @@
 
 > (+ 1 2)
  arc3 eval: 3
-iter: 17,880  gc: 12  mem: 448457  diff: 0%
+iter: 17,851  gc: 19  mem: 2085397  diff: 0%
 
    ar eval: 3
-iter: 7,598  gc: 21  mem: 1019031  diff: -135.33%
+iter: 7,098  gc: 21  mem: -122270  diff: -151.49%
 
    nu eval: 3
-iter: 8,191  gc: 14  mem: -1023345  diff: -118.29%
+iter: 9,178  gc: 16  mem: 508550  diff: -94.5%
 
 ==============================================================================
 
 > (< 1 2)
  arc3 eval: t
-iter: 17,647  gc: 22  mem: 93570  diff: -1.32%
+iter: 17,740  gc: 16  mem: 916530  diff: -0.63%
 
    ar eval: t
-iter: 6,471  gc: 20  mem: -251786  diff: -172.71%
+iter: 5,969  gc: 21  mem: -96172  diff: -197.2%
 
    nu eval: t
-iter: 8,176  gc: 13  mem: 641267  diff: -115.84%
+iter: 9,165  gc: 12  mem: 342657  diff: -93.56%
 
 ==============================================================================
 
 > (> 1 2)
  arc3 eval: nil
-iter: 17,669  gc: 18  mem: 283400  diff: 0.12%
+iter: 17,713  gc: 9  mem: 679834  diff: -0.15%
 
    ar eval: nil
-iter: 6,476  gc: 22  mem: -97990  diff: -172.84%
+iter: 5,972  gc: 24  mem: 18222  diff: -196.6%
 
    nu eval: ()
-iter: 8,165  gc: 16  mem: -1412594  diff: -116.4%
+iter: 9,156  gc: 13  mem: -1750951  diff: -93.46%
 
 ==============================================================================
 
 > (let a 5 a)
  arc3 eval: 5
-iter: 16,290  gc: 21  mem: 1128489  diff: -8.47%
+iter: 16,307  gc: 20  mem: -139830  diff: -8.62%
 
    ar eval: 5
-iter: 3,024  gc: 22  mem: -338096  diff: -438.69%
+iter: 2,957  gc: 18  mem: 855559  diff: -451.47%
 
    nu eval: 5
-iter: 4,278  gc: 56  mem: -31366  diff: -280.79%
+iter: 5,009  gc: 29  mem: 91982  diff: -225.55%
 
 ==============================================================================
 
 > (list 1 2)
  arc3 eval: (1 2 . nil)
-iter: 17,172  gc: 14  mem: 1429010  diff: 5.14%
+iter: 16,512  gc: 49  mem: 188333  diff: 1.24%
 
    ar eval: {1 2 . nil}
-iter: 5,902  gc: 18  mem: 1997178  diff: -190.95%
+iter: 5,470  gc: 24  mem: -733597  diff: -201.86%
 
    nu eval: (1 2)
-iter: 7,104  gc: 10  mem: -1127708  diff: -141.72%
+iter: 8,068  gc: 10  mem: 65344  diff: -104.66%
 
 ==============================================================================
 
 > (car nil)
  arc3 eval: nil
-iter: 32,372  gc: 13  mem: 12155  diff: 46.95%
+iter: 32,742  gc: 15  mem: 232672  diff: 49.57%
 
    ar eval: nil
-iter: 6,661  gc: 20  mem: -1298893  diff: -385.99%
+iter: 6,246  gc: 21  mem: -101250  diff: -424.21%
 
    nu eval: ()
-iter: 5,065  gc: 11  mem: 1772438  diff: -539.13%
+iter: 5,937  gc: 11  mem: -1355774  diff: -451.49%
 
 ==============================================================================
 
 > (car '())
  arc3 eval: nil
-iter: 31,698  gc: 14  mem: -1315458  diff: -2.13%
+iter: 32,443  gc: 14  mem: 1134597  diff: -0.92%
 
    ar eval: nil
-iter: 5,886  gc: 13  mem: 3481188  diff: -438.53%
+iter: 5,577  gc: 20  mem: -1647982  diff: -481.73%
 
    nu eval: ()
-iter: 4,868  gc: 16  mem: -2056674  diff: -551.15%
+iter: 5,635  gc: 15  mem: -223718  diff: -475.74%
 
 ==============================================================================
 
 > (let a (list 1 2) (car a))
  arc3 eval: 1
-iter: 8,687  gc: 16  mem: -258374  diff: -264.89%
+iter: 8,645  gc: 20  mem: 1100798  diff: -275.28%
 
    ar eval: 1
-iter: 1,529  gc: 27  mem: 1991912  diff: -468.15%
+iter: 1,524  gc: 32  mem: -247275  diff: -467.26%
 
    nu eval: 1
-iter: 1,802  gc: 44  mem: 1648618  diff: -382.08%
+iter: 2,101  gc: 44  mem: 2213137  diff: -311.47%
 
 ==============================================================================
 
 > (let (a b) (list 1 2) a)
  arc3 eval: 1
-iter: 5,215  gc: 29  mem: -1946793  diff: -66.58%
+iter: 5,174  gc: 48  mem: -3476989  diff: -67.09%
 
    ar eval: 1
-iter: 436  gc: 37  mem: 2097733  diff: -1,096.1%
+iter: 431  gc: 40  mem: 239188  diff: -1,100.46%
 
    nu eval: 1
-iter: 1,529  gc: 70  mem: -5502131  diff: -241.07%
+iter: 1,765  gc: 30  mem: 1916463  diff: -193.14%
 
 ==============================================================================
 
 > (let (a b) (list 1 2) b)
  arc3 eval: 2
-iter: 5,142  gc: 36  mem: 1957406  diff: -1.42%
+iter: 5,192  gc: 32  mem: -1595918  diff: 0.35%
 
    ar eval: 2
-iter: 439  gc: 34  mem: 1646682  diff: -1,071.3%
+iter: 435  gc: 26  mem: 1079822  diff: -1,093.56%
 
    nu eval: 2
-iter: 1,569  gc: 43  mem: -826657  diff: -227.72%
+iter: 1,724  gc: 43  mem: 2210058  diff: -201.16%
 
 ==============================================================================
 
 > (let a '(1 2) (car a))
  arc3 eval: 1
-iter: 13,349  gc: 22  mem: 4454430  diff: 61.48%
+iter: 13,525  gc: 18  mem: -2363246  diff: 61.61%
 
    ar eval: 1
-iter: 1,843  gc: 32  mem: 492546  diff: -624.31%
+iter: 1,839  gc: 26  mem: 1479826  diff: -635.45%
 
    nu eval: 1
-iter: 1,984  gc: 50  mem: -1462457  diff: -572.83%
+iter: 2,213  gc: 78  mem: -2883636  diff: -511.16%
 
 ==============================================================================
 
 > (let (a b) '(1 2) a)
  arc3 eval: 1
-iter: 6,921  gc: 28  mem: 1306005  diff: -92.88%
+iter: 6,834  gc: 40  mem: -365394  diff: -97.91%
 
    ar eval: 1
-iter: 460  gc: 36  mem: 1934340  diff: -1,404.57%
+iter: 456  gc: 32  mem: 918134  diff: -1,398.68%
 
    nu eval: 1
-iter: 1,705  gc: 76  mem: -2073405  diff: -305.92%
+iter: 1,950  gc: 35  mem: 995462  diff: -250.46%
 
 ==============================================================================
 
 > (let (a b) '(1 2) b)
  arc3 eval: 2
-iter: 6,842  gc: 38  mem: 1152897  diff: -1.15%
+iter: 6,887  gc: 33  mem: -1381231  diff: 0.77%
 
    ar eval: 2
-iter: 460  gc: 34  mem: -1134015  diff: -1,387.39%
+iter: 455  gc: 26  mem: 1690842  diff: -1,413.63%
 
    nu eval: 2
-iter: 1,754  gc: 45  mem: 2532040  diff: -290.08%
+iter: 1,920  gc: 46  mem: 1383374  diff: -258.7%
 
 ==============================================================================
 
 > (idfn 'x)
  arc3 eval: x
-iter: 31,886  gc: 14  mem: -1477770  diff: 78.54%
+iter: 32,492  gc: 14  mem: -919406  diff: 78.8%
 
    ar eval: x
-iter: 5,722  gc: 18  mem: -17218  diff: -457.25%
+iter: 5,459  gc: 15  mem: 3751986  diff: -495.2%
 
    nu eval: x
-iter: 4,732  gc: 11  mem: 377119  diff: -573.84%
+iter: 5,495  gc: 10  mem: -865202  diff: -491.3%
 
 ==============================================================================
 
 > (apply idfn '(x))
  arc3 eval: x
-iter: 27,871  gc: 16  mem: -1548434  diff: -14.41%
+iter: 28,451  gc: 11  mem: -1229067  diff: -14.2%
 
    ar eval: x
-iter: 4,474  gc: 21  mem: -312931  diff: -522.95%
+iter: 4,226  gc: 17  mem: 2837125  diff: -573.24%
 
    nu eval: x
-iter: 3,370  gc: 9  mem: 1154938  diff: -727.03%
+iter: 3,942  gc: 10  mem: -3379762  diff: -621.74%
 
 ==============================================================================
 
 > '(1 2 3 4 5)
  arc3 eval: (1 2 3 4 5 . nil)
-iter: 64,391  gc: 17  mem: -445995  diff: 56.72%
+iter: 69,192  gc: 19  mem: 1508451  diff: 58.88%
 
    ar eval: {1 2 3 4 5 . nil}
-iter: 14,329  gc: 17  mem: -189738  diff: -349.38%
+iter: 14,006  gc: 13  mem: 328074  diff: -394.02%
 
    nu eval: (1 2 3 4 5)
-iter: 11,106  gc: 12  mem: -785984  diff: -479.79%
+iter: 12,619  gc: 12  mem: -22783  diff: -448.32%
 
 ==============================================================================
 
 > (list 1 2 3 4 5)
  arc3 eval: (1 2 3 4 5 . nil)
-iter: 9,322  gc: 16  mem: -136302  diff: -590.74%
+iter: 9,307  gc: 14  mem: 842546  diff: -643.44%
 
    ar eval: {1 2 3 4 5 . nil}
-iter: 4,155  gc: 19  mem: 270848  diff: -124.36%
+iter: 3,919  gc: 15  mem: -33196  diff: -137.48%
 
    nu eval: (1 2 3 4 5)
-iter: 6,359  gc: 45  mem: -824753  diff: -46.6%
+iter: 7,534  gc: 12  mem: -18398  diff: -23.53%
 
 ==============================================================================
 
 > (apply list 1 2 3 4 (list 5))
  arc3 eval: (1 2 3 4 5 . nil)
-iter: 7,755  gc: 16  mem: -546278  diff: -20.21%
+iter: 7,487  gc: 51  mem: -5006649  diff: -24.31%
 
    ar eval: {1 2 3 4 5 . nil}
-iter: 2,487  gc: 27  mem: 45794  diff: -211.82%
+iter: 2,364  gc: 25  mem: -37455  diff: -216.71%
 
    nu eval: (1 2 3 4 5)
-iter: 2,810  gc: 14  mem: -949072  diff: -175.98%
+iter: 3,284  gc: 16  mem: -1160795  diff: -127.98%
 
 ==============================================================================
 
 > nil
  arc3 eval: nil
-iter: 85,154  gc: 21  mem: 612071  diff: 90.89%
+iter: 91,790  gc: 22  mem: 855892  diff: 91.84%
 
    ar eval: nil
-iter: 20,442  gc: 22  mem: 390  diff: -316.56%
+iter: 19,429  gc: 21  mem: -1225138  diff: -372.44%
 
    nu eval: ()
-iter: 72,952  gc: 16  mem: -855598  diff: -16.73%
+iter: 75,375  gc: 22  mem: 289082  diff: -21.78%
 
 ==============================================================================
 
 > (list)
  arc3 eval: nil
-iter: 35,510  gc: 14  mem: 634346  diff: -139.8%
+iter: 36,150  gc: 14  mem: -109021  diff: -153.91%
 
    ar eval: nil
-iter: 8,400  gc: 21  mem: -548262  diff: -322.74%
+iter: 7,944  gc: 21  mem: 1013913  diff: -355.06%
 
    nu eval: ()
-iter: 7,600  gc: 12  mem: 590309  diff: -367.24%
+iter: 8,792  gc: 13  mem: 574749  diff: -311.17%
 
 ==============================================================================
 
 > '(foo bar qux)
  arc3 eval: (foo bar qux . nil)
-iter: 68,485  gc: 20  mem: -193583  diff: 48.15%
+iter: 72,623  gc: 21  mem: 601186  diff: 50.22%
 
    ar eval: {foo bar qux . nil}
-iter: 13,726  gc: 54  mem: -485014  diff: -398.94%
+iter: 13,504  gc: 53  mem: -578551  diff: -437.79%
 
    nu eval: (foo bar qux)
-iter: 11,074  gc: 14  mem: -151373  diff: -518.43%
+iter: 12,554  gc: 15  mem: -497379  diff: -478.48%
 
 ==============================================================================
 
 > `(foo bar qux)
  arc3 eval: (foo bar qux)
-iter: 33,099  gc: 14  mem: 243344  diff: -106.91%
+iter: 33,625  gc: 15  mem: 762450  diff: -115.98%
 
    ar eval: {foo bar qux . nil}
-iter: 1,670  gc: 25  mem: 685506  diff: -1,881.98%
+iter: 1,583  gc: 27  mem: 112136  diff: -2,024.13%
 
    nu eval: (foo bar qux)
-iter: 3,086  gc: 16  mem: 65616  diff: -972.55%
+iter: 3,415  gc: 16  mem: -1622835  diff: -884.63%
 
 ==============================================================================
 
 > (list 'foo 'bar 'qux)
  arc3 eval: (foo bar qux . nil)
-iter: 24,958  gc: 19  mem: -543398  diff: -32.62%
+iter: 25,314  gc: 15  mem: 124223  diff: -32.83%
 
    ar eval: {foo bar qux . nil}
-iter: 3,522  gc: 23  mem: 183570  diff: -608.63%
+iter: 3,378  gc: 20  mem: -517607  diff: -649.38%
 
    nu eval: (foo bar qux)
-iter: 2,726  gc: 16  mem: -948322  diff: -815.55%
+iter: 3,140  gc: 14  mem: 1501502  diff: -706.18%
 
 ==============================================================================
 
 > (obj foo 5)
  arc3 eval: #hash((foo . 5))
-iter: 10,264  gc: 16  mem: 1202197  diff: -143.16%
+iter: 10,319  gc: 19  mem: 35820  diff: -145.31%
 
    ar eval: #hash((foo . 5))
-iter: 1,951  gc: 24  mem: -1027178  diff: -426.09%
+iter: 1,909  gc: 26  mem: -1582222  diff: -440.54%
 
    nu eval: #hash((foo . 5))
-iter: 4,332  gc: 12  mem: 1096253  diff: -136.93%
+iter: 4,879  gc: 11  mem: 1393822  diff: -111.5%
 
 ==============================================================================
 
 > (let name (obj foo 5) name!foo)
  arc3 eval: 5
-iter: 5,268  gc: 14  mem: 80314  diff: -94.84%
+iter: 5,351  gc: 20  mem: -1458350  diff: -92.84%
 
    ar eval: 5
-iter: 778  gc: 67  mem: 1308719  diff: -577.12%
+iter: 766  gc: 63  mem: 89374  diff: -598.56%
 
    nu eval: 5
-iter: 738  gc: 23  mem: -169237  diff: -613.82%
+iter: 848  gc: 20  mem: -169190  diff: -531.01%
 
 ==============================================================================
 
 > (do1 10 20)
  arc3 eval: 10
-iter: 11,586  gc: 40  mem: 856633  diff: 54.53%
+iter: 11,640  gc: 38  mem: 1637373  diff: 54.03%
 
    ar eval: 10
-iter: 2,346  gc: 20  mem: -569374  diff: -393.86%
+iter: 2,334  gc: 22  mem: -1773478  diff: -398.71%
 
    nu eval: 10
-iter: 3,129  gc: 22  mem: 508034  diff: -270.28%
+iter: 3,724  gc: 23  mem: 961950  diff: -212.57%
 
 ==============================================================================
 
 > (after 10 20)
  arc3 eval: 10
-iter: 8,991  gc: 175  mem: -151763  diff: -28.86%
+iter: 9,160  gc: 164  mem: 3293932  diff: -27.07%
 
    ar eval: 10
-iter: 1,960  gc: 63  mem: 1376155  diff: -358.72%
+iter: 1,917  gc: 55  mem: 573044  diff: -377.83%
 
    nu eval: 10
-iter: 5,179  gc: 135  mem: -800462  diff: -73.6%
+iter: 5,772  gc: 140  mem: -1551700  diff: -58.7%
 
 ==============================================================================
 
 > (rev (list 1 2 3 4 5))
  arc3 eval: (5 4 3 2 1 . nil)
-iter: 8,070  gc: 15  mem: 1689509  diff: -11.41%
+iter: 7,766  gc: 55  mem: -2839846  diff: -17.95%
 
    ar eval: {5 4 3 2 1 . nil}
-iter: 2,882  gc: 18  mem: -87592  diff: -180.01%
+iter: 2,737  gc: 25  mem: -551150  diff: -183.74%
 
    nu eval: (5 4 3 2 1)
-iter: 3,611  gc: 12  mem: 39944  diff: -123.48%
+iter: 4,108  gc: 11  mem: -1022872  diff: -89.05%
 
 ==============================================================================
 
 > (join '(1 2) '(3 4))
  arc3 eval: (1 2 3 4 . nil)
-iter: 22,924  gc: 14  mem: 945382  diff: 64.8%
+iter: 23,210  gc: 20  mem: 775758  diff: 66.54%
 
    ar eval: {1 2 3 4 . nil}
-iter: 4,360  gc: 17  mem: -169040  diff: -425.78%
+iter: 4,118  gc: 21  mem: -167586  diff: -463.62%
 
    nu eval: (1 2 3 4)
-iter: 3,454  gc: 12  mem: -1138913  diff: -563.69%
+iter: 3,968  gc: 12  mem: 481994  diff: -484.93%
 
 ==============================================================================
 
 > (join (list 1 2) (list 3 4))
  arc3 eval: (1 2 3 4 . nil)
-iter: 8,486  gc: 14  mem: -1270453  diff: -170.14%
+iter: 8,478  gc: 16  mem: 1004498  diff: -173.77%
 
    ar eval: {1 2 3 4 . nil}
-iter: 2,362  gc: 18  mem: -1052350  diff: -259.27%
+iter: 2,208  gc: 20  mem: 197669  diff: -283.97%
 
    nu eval: (1 2 3 4)
-iter: 2,611  gc: 9  mem: 2702478  diff: -225.01%
+iter: 3,019  gc: 14  mem: -594012  diff: -180.82%
 
 ==============================================================================
 
 > (rand 50)
- arc3 eval: 22
-iter: 22,707  gc: 12  mem: -2100876  diff: 62.63%
+ arc3 eval: 31
+iter: 22,872  gc: 14  mem: -201237  diff: 62.93%
 
-   ar eval: 9
-iter: 6,888  gc: 17  mem: 1027374  diff: -229.66%
+   ar eval: 18
+iter: 6,436  gc: 22  mem: 281680  diff: -255.38%
 
-   nu eval: 48
-iter: 7,255  gc: 10  mem: -1511908  diff: -212.98%
+   nu eval: 10
+iter: 8,354  gc: 11  mem: 129733  diff: -173.79%
 
 ==============================================================================
 

@@ -114,16 +114,16 @@
          (w/uniq (u n time gc mem)
            `(with (,n     0
                    ,time  (msec)
-                   ,gc    (gc-msec)
-                   ,mem   (memory))
+                   ,gc    (,current-gc-milliseconds)
+                   ,mem   (,current-memory-use))
               ((rfn ,u ()
                  ,x
                  (++ ,n)
                  (when (< (- (msec) ,time) ,limit)
                    (,u))))
              (list ,n
-                    (- (gc-msec) ,gc)
-                    (- (memory)  ,mem)))))
+                    (- (,current-gc-milliseconds) ,gc)
+                    (- (,current-memory-use)  ,mem)))))
 
        #|(mac timeit (x (o limit 10000))
          (w/uniq (a b c)
@@ -148,9 +148,12 @@
         (else
           ;(displayln `(ac ',(make-timeit) '()))
           (eval '(aload "strings.arc"))
-          (eval `(_eval '(= gc-msec      current-gc-milliseconds
-                            process-msec current-process-milliseconds)))
-          (eval `(_eval ',(make-timeit)))))
+          #|(eval `(_eval '(= gc-msec      current-gc-milliseconds
+                            process-msec current-process-milliseconds)))|#
+          (eval `(_eval ',(make-timeit ;current-gc-milliseconds
+                                       ;current-process-milliseconds
+                                       ;memory
+                                       )))))
   ;((namespace-variable-value 'use-bracket-readtable))
   ;((namespace-variable-value 'aload) "arc.arc")
   )
@@ -165,10 +168,10 @@
   (unless (same-timeit)
     (eval '(use-apply "strings"))
     ;((namespace-variable-value 'use-apply) "arc")
-    (eval `(eval (ar-toarc (racket-quote
+    #|(eval `(eval (ar-toarc (racket-quote
              (= gc-msec      racket-current-gc-milliseconds
                 process-msec racket-current-process-milliseconds
-                memory       racket-current-memory-use)))))
+                memory       racket-current-memory-use)))))|#
     (eval `(eval (ar-toarc (racket-quote ,(make-timeit)))))))
 
 

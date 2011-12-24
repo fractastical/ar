@@ -18,6 +18,8 @@
 (racket-namespace-require/copy (racket-quote (prefix racket- racket/unsafe/ops)))
 (racket-namespace-require/copy (racket-quote (prefix racket- racket/path)))
 (racket-namespace-require/copy (racket-quote (prefix racket- racket/system)))
+(racket-namespace-require/copy (racket-quote (prefix racket- racket/tcp)))
+(racket-namespace-require/copy (racket-quote (prefix racket- racket/port)))
 
 ;(racket-require (racket-prefix-in racket- racket/mpair))
 ;(racket-require (racket-prefix-in racket- racket/path))

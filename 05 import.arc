@@ -2,13 +2,6 @@
 ;  from 06 extra.arc
 ;=============================================================================
 
-(def maplast (f xs)
-  (if (no cdr.xs)
-        (f car.xs)
-      (do (f car.xs)
-          (maplast f cdr.xs))))
-
-
 ;; TODO: should probably be in core.arc, under Types
 (def listify (x)
   (if (cons? x) x (list x)))
@@ -44,27 +37,27 @@
   (racket-make-derived-parameter racket-current-directory
     (fn (v) (zap string v)
             (if empty.v
-                  (racket-current-directory)
-                (racket-expand-user-path v)))
+                  (%get.racket-current-directory)
+                (%get.racket-expand-user-path v)))
     (fn (v) (string v))))
 
 (def extension (x)
-  (let x (racket-filename-extension string.x)
-    (if (is x #f)
-          nil
-        (string x))))
+  (let x (%get.racket-filename-extension string.x)
+    (%if x (string x))))
 
 (def expandpath (x)
   (zap string x)
   (if empty.x
         x
-      (string:racket-expand-user-path x)))
+      ;; TODO: different ssyntax priorities
+      (string (%get.racket-expand-user-path x))))
 
 (def abspath ((o x))
-  (string:racket-path->complete-path expandpath.x))
+  ;; TODO: different ssyntax priorities
+  (string (%get.racket-path->complete-path expandpath.x)))
 
 (def joinpath args
-  (string:apply racket-build-path
+  (string:apply %get.racket-build-path
     (awith (x    args
             acc  nil)
       (if (no x)
@@ -83,8 +76,9 @@
       (when ac-tnil.x
         (string x)))))
 
-(= dirname  (make-path->string racket-path-only:expandpath))
-(= basename (make-path->string racket-file-name-from-path:expandpath))
+                               ;; TODO: different ssyntax priorities
+(= dirname  (make-path->string (compose %get.racket-path-only           expandpath)))
+(= basename (make-path->string (compose %get.racket-file-name-from-path expandpath)))
 
 
 ;=============================================================================
@@ -106,27 +100,28 @@
 
 
 #|(def empty-namespace ()
-  (racket-make-empty-namespace))
+  (%get.racket-make-empty-namespace))
 
-(def namespace-copy1 ((o x   (racket-current-namespace))
+(def namespace-copy1 ((o x   (%get.racket-current-namespace))
                       (o new (empty-namespace)))
-  (each n (racket-namespace-mapped-symbols x) ;(racket-list->mlist )
+  (each n (%get.racket-namespace-mapped-symbols x) ;(racket-list->mlist )
     ;; TODO; use = and remove namespace-get...?
     (namespace-set new n (namespace-get x n)))
   new)
 
 (def namespace-copy args
-  (let new (empty-namespace) ;(racket-make-base-empty-namespace)
-    ;(prn (racket-namespace-mapped-symbols new))
+  (let new (empty-namespace) ;(%get.racket-make-base-empty-namespace)
+    ;(prn (%get.racket-namespace-mapped-symbols new))
     (each x nrev.args
       (namespace-copy1 x new))
-    (parameterize (racket-current-namespace new)
+                  ;; TODO: not sure about this
+    (parameterize (%get.racket-current-namespace new)
       (ac-require-base))
     new))|#
 
 
 (def namespace-inherit args
-  (annotate 'namespace (cons (racket-make-empty-namespace) args)))
+  (annotate 'namespace (cons (empty-namespace) args))) ;(%get.racket-make-empty-namespace)
 
 ;; TODO: should use object.arc
 ;; TODO: extend should work with keyword args
@@ -159,10 +154,10 @@
     ;; TODO: a little hacky
     inherit (if x (= namespace x)
                   (zap new-namespace namespace))
-    copy    (if x (do (racket-current-namespace x)
+    copy    (if x (do (%get.racket-current-namespace x)
                       (= namespace x))
                   (let new (apply namespace-copy (listify rep.namespace))
-                    (racket-current-namespace new)
+                    (%get.racket-current-namespace new)
                     (= namespace new)
                     new))
             (err "unknown namespace load type:" namespace-load-type*)))|#
@@ -232,13 +227,16 @@
 
 
 (parameter load-paths*
-  (list cwd ;(string:racket-current-directory)
+            ;; TODO: different ssyntax priorities
+  (list cwd ;(string (%get.racket-current-directory))
         exec-dir*
         (joinpath exec-dir* "lib")
         ;(joinpath exec-dir* "apps")
         (joinpath exec-dir* "lang")
-        ;(string:racket-build-path exec-dir* "lib")
-        ;(string:racket-build-path exec-dir* "lang")
+        ;; TODO: different ssyntax priorities
+        ;(string (%get.racket-build-path exec-dir* "lib"))
+        ;; TODO: different ssyntax priorities
+        ;(string (%get.racket-build-path exec-dir* "lang"))
         ))
 
 (parameter load-suffix* ".arc")
@@ -256,7 +254,7 @@
     (if (no xs)
           ;; TODO: should this be nil?
           nil
-        (racket-file-exists? (racket-build-path (car xs) x))
+        (%get.racket-file-exists? (%get.racket-build-path (car xs) x))
           (car xs)
         (self (cdr xs)))))|#
 
@@ -266,6 +264,7 @@
       (string x load-suffix*)))
 
 (def call-w/find-file (x f)
+                ;; TODO: %get.racket-port-count-lines-enabled
   (parameterize (racket-port-count-lines-enabled #t)
     (let y (load-normalize-path x)
       (iflet it (load-file-dir y)

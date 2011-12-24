@@ -27,7 +27,7 @@
 (require syntax-color/scheme-lexer)
 
 (def lex (in)
-  (values (str type br start end) (racket-scheme-lexer in)
+  (values (str type br start end) (%inline:racket-scheme-lexer in)
     (list str type)))
 
 (def find-comments (input)

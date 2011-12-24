@@ -122,6 +122,30 @@ nilu
 
 
 ;=============================================================================
+;  %if / %fncase / %get / %inline
+;=============================================================================
+
+> (ac-compile '(let a 5 (%fncase a racket-number? 1 racket-pair? 2 racket-symbol? 3)))
+((racket-lambda (a) (racket-if (#<fn:number?> a) 1 (racket-if (#<fn:pair?> a) 2 (racket-if (#<fn:symbol?> a) 3 nil)))) 5)u
+
+> (ac-compile '(%if (racket-number? a) 1 (racket-pair? a) 2 (racket-symbol? a) 3))
+(racket-if (racket-number? a) 1 (racket-if (racket-pair? a) 2 (racket-if (racket-symbol? a) 3 nil)))u
+
+> (ac-compile '(with (c nil eof nil) (%if (%inline (racket-eof-object? c)) eof c)))
+((racket-lambda (c eof) (racket-if (#<fn:eof-object?> c) eof c)) (#<fn:ac-lookup-global-arg> nil) (#<fn:ac-lookup-global-arg> nil))u
+
+
+> (ac-compile '(%inline (compose prn +)))
+u
+
+> (%inline (compose prn +))
+u
+
+> (ac-compile '(%inline (racket-open-output-file filename #:mode 'text #:exists flag)))
+u
+
+
+;=============================================================================
 ;  quasisyntax
 ;=============================================================================
 
