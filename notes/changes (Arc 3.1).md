@@ -98,7 +98,7 @@ Other
     `fn`, `if`, and `quote` are implemented as macros. This makes Arc much
     simpler and easier to reason about, without any cost in code maintenance.
 
-  * All binary operators (`is`, `+`, `<`, etc.) are implemented in terms of
+  * All binary operators (`is`, `+`, `<`, and `>`) are implemented in terms of
     `case-lambda` for increased speed, [as suggested by waterhouse](https://sites.google.com/site/arclanguagewiki/arc-3_1/optimizations)
 
   * `(coerce 2 'num)` returns `2.0` rather than `2`
@@ -173,3 +173,21 @@ Other
 
         > (commafy 0.5)
         "0.5"
+
+  * `uniq` returns actual gensyms rather than interned symbols
+
+  * `ref` can be used as a way to call fns and non-fns:
+
+        > (ref "foo" 0)
+        #\f
+
+    The above is exactly equivalent to `("foo" 0)` except that now Arc code
+    can extend the `ref` function to give custom behavior for data types:
+
+        (extend ref (x . args) (isa x 'foo)
+          ...)
+
+    Using the above, you can define custom call behavior for anything with a
+    type of `'foo`. Basically, it's like `defcall`, but using `extend` rather
+    than a convenient macro (it's possible to define `defcall` by extending
+    `ref`)

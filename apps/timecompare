@@ -18,9 +18,10 @@
 (define exec-dir
   (path->string (path-only (normalize-path (find-system-path 'run-file)))))
 
-(define arc3-dir (make-parameter (path exec-dir "../../../3.1.orig")))
-(define ar-dir   (make-parameter (path exec-dir "../../master")))
-(define nu-dir   (make-parameter (path exec-dir "../")))
+(define arc3-dir     (make-parameter (path exec-dir "../../../3.1.orig")))
+(define ar-dir       (make-parameter (path exec-dir "../../master")))
+(define nu-dir       (make-parameter (path exec-dir "../")))
+(define lite-nu-dir  (make-parameter (path exec-dir "../../lite nu/")))
 
 
 (define arguments
@@ -43,63 +44,81 @@
                                (ar-dir str)]
     [("--nu-dir")          str "Directory where nu is located"
                                (nu-dir str)]
+    [("--lite-nu-dir")     str "Directory where lite nu is located"
+                               (lite-nu-dir str)]
     #:args args
     args))
 
 (when (null? arguments)
   (set! arguments
-    (list "(+ 1 2)"
-          "(< 1 2)"
-          "(> 1 2)"
-          ;===================================================================
-          "(let a 5 a)"
+    '(("(+ 1 2)")
+      ("(< 1 2)")
+      ("(> 1 2)")
+      ;===================================================================
+      ("'(1 2)")
+      ("(list 1 2)")
+      ;===================================================================
+      "(car nil)"
+      "(car ())"
+      "(car '())"
+      ;===================================================================
+      ("(no '(1 2 3))"
+       "(null? '(1 2 3))")
+      ;===================================================================
+      ("(let a 5 a)"
+       "(let ((a 5)) a)")
 
-          "(list 1 2)"
-          "(car nil)"
-          "(car ())"
-          "(car '())"
+      ("(let a (list 1 2) (car a))"
+       "(let ((a (list 1 2))) (car a))")
+      "(let (a b) (list 1 2) a)"
+      "(let (a b) (list 1 2) b)"
 
-          "(let a (list 1 2) (car a))"
-          "(let (a b) (list 1 2) a)"
-          "(let (a b) (list 1 2) b)"
+      ("(let a '(1 2) (car a))"
+       "(let ((a '(1 2))) (car a))")
+      "(let (a b) '(1 2) a)"
+      "(let (a b) '(1 2) b)"
+      ;===================================================================
+      "(idfn 'x)"
+      "(apply idfn '(x))"
 
-          "(let a '(1 2) (car a))"
-          "(let (a b) '(1 2) a)"
-          "(let (a b) '(1 2) b)"
-          ;===================================================================
-          "(idfn 'x)"
-          "(apply idfn '(x))"
-
-          "'(1 2 3 4 5)"
-          "(list 1 2 3 4 5)"
-          "(apply list 1 2 3 4 (list 5))"
-          ;===================================================================
-          "()"
-          "nil"
-          "(list)"
-
-          "'(foo bar qux)"
-          "`(foo bar qux)"
-          ;"#`('foo 'bar 'qux)"
-          "(list 'foo 'bar 'qux)"
-          ;===================================================================
-          "(obj foo 5)"
-          "(let name (obj foo 5) name!foo)"
-          ;===================================================================
-          "(do1 10 20)"
-          "(after 10 20)"
-          ;===================================================================
-          "(rev (list 1 2 3 4 5))"
-
-          "(join '(1 2) '(3 4))"
-          "(join (list 1 2) (list 3 4))"
-          ;===================================================================
+      ("'(1 2 3 4 5)")
+      ("(list 1 2 3 4 5)")
+      ("(apply list 1 2 3 4 (list 5))")
+      ;===================================================================
+      ("()")
+      ("nil" "null")
+      ("(list)")
+      ;===================================================================
+      ("'(foo bar qux)")
+      ("`(foo bar qux)")
+      ;"#`('foo 'bar 'qux)"
+      ("(list 'foo 'bar 'qux)")
+      ;===================================================================
+      ("(obj foo 5)"
+       "(make-hash 'foo 5)")
+      ("(let name (obj foo 5) name!foo)"
+       "(let ((name (make-hash 'foo 5))) (hash-ref name 'foo))")
+      ;===================================================================
+      "(do1 10 20)"
+      "(after 10 20)"
+      ;===================================================================
+      ("(rev '(1 2 3 4 5))"
+       "(reverse '(1 2 3 4 5))")
+      ("(rev (list 1 2 3 4 5))"
+       "(reverse (list 1 2 3 4 5))")
+      ;===================================================================
+      ("(join '(1 2) '(3 4))"
+       "(append '(1 2) '(3 4))")
+      ("(join (list 1 2) (list 3 4))"
+       "(append (list 1 2) (list 3 4))")
+      ;===================================================================
 ;;TODO: fix this "(let bb (n-of 1000 (rand 50)) (bestn 100 > bb) nil)"
 ;;TODO: fix this "(let td (n-of 10000 (rand 100)) (sort < td) nil)"
 
-          "(rand 50)"
+      ("(rand 50)"
+       "(random 50)")
 ;;TODO: fix this "(bestn 11 > '(1 2 3 4 5 6 7 8 9 10))"
-          )))
+      )))
 
 
 (define-syntax-rule (w/ dir name space body ...)
@@ -109,7 +128,7 @@
                         (current-readtable (current-readtable)))
            body ... (void))))
 
-;; TODO: maybe use different code for ar, like unquoting the macros/fns...?
+#|;; TODO: maybe use different code for ar, like unquoting the macros/fns...?
 (define (make-timeit)
   ;; TODO: get rid of this 'do
   '(do (mac timeit1 (x limit)
@@ -134,8 +153,27 @@
                    "  gc: "   b
                    "  mem: "  c)
               nil)))|#
-       ))
+       ))|#
 
+#|(define (make-timeit)
+  (eval `(define-syntax-rule (time-timeit1 x limit)
+           (let ((n     0)
+                 (time  (,current-milliseconds))
+                 (gc    (,current-gc-milliseconds))
+                 (mem   (,current-memory-use)))
+             (let loop ()
+               x
+               (set! n (+ n 1))
+               (when (< (- (,current-milliseconds) time) limit)
+                 (loop)))
+             (list n
+                   (- (current-gc-milliseconds) gc)
+                   (- (current-memory-use)      mem))))))|#
+
+
+(w/ current-directory racket-namespace (make-base-namespace)
+  ;(make-timeit)
+  )
 
 (w/ arc3-dir arc3-namespace (make-base-empty-namespace)
   (namespace-require 'mzscheme)
@@ -144,9 +182,13 @@
   (eval '(use-bracket-readtable))
   (eval '(aload "arc.arc"))
 
-  (cond ((same-timeit)
+  ;(make-timeit)
+  ;(namespace-require '(prefix timecompare- racket/base))
+
+  ;(cond ((same-timeit)
           (namespace-require '(prefix racket- racket/base))
-          (eval '(define nil _nil)))
+          (eval '(define nil _nil))
+  #|        )
         (else
           ;(displayln `(ac ',(make-timeit) '()))
           (eval '(aload "strings.arc"))
@@ -155,7 +197,7 @@
           (eval `(_eval ',(make-timeit ;current-gc-milliseconds
                                        ;current-process-milliseconds
                                        ;memory
-                                       )))))
+                                       )))))|#
   ;((namespace-variable-value 'use-bracket-readtable))
   ;((namespace-variable-value 'aload) "arc.arc")
   )
@@ -167,14 +209,19 @@
                                 (mcons (ar-dir) 'nil)))
   (eval '(use-apply "arc"))
 
-  (unless (same-timeit)
+  ;(namespace-require 'racket/base)
+  ;(make-timeit)
+  ;(namespace-require '(prefix timecompare- racket/base))
+
+  #|(unless (same-timeit)
     (eval '(use-apply "strings"))
     ;((namespace-variable-value 'use-apply) "arc")
     #|(eval `(eval (ar-toarc (racket-quote
              (= gc-msec      racket-current-gc-milliseconds
                 process-msec racket-current-process-milliseconds
                 memory       racket-current-memory-use)))))|#
-    (eval `(eval (ar-toarc (racket-quote ,(make-timeit)))))))
+    (eval `(eval (ar-toarc (racket-quote ,(make-timeit))))))|#
+  )
 
 
 ;; TODO: this whole blob should be a *lot* shorter, like by importing the
@@ -193,7 +240,13 @@
   (load/use-compiled "01 compiler.arc")
 
   (eval `(ac-init ,(nu-dir) ,ac-require-base))
+  ;(eval '(importfn1 "strings")) ;; TODO
   (eval '(importfn1 "time"))
+
+  ;(namespace-require 'racket/base)
+  ;(make-timeit)
+
+  ;(namespace-require '(prefix timecompare- racket/base))
 
   #|(eval '(racket-begin (ac-load "02 core.arc")
                        (ac-load "03 ssyntax.arc")
@@ -212,6 +265,31 @@
   )
 
 
+(w/ lite-nu-dir lite-nu-namespace (make-base-empty-namespace)
+  (namespace-require '(file "01 nu.rkt"))
+  (eval `(init ,(lite-nu-dir)))
+
+  ;(make-timeit)
+
+  ;(namespace-require '(prefix timecompare- racket/base))
+  (namespace-require '(prefix racket- racket/base))
+  )
+
+
+(define (percent x y)
+  (* (/ (- y x) x) 100)
+  ;(* -100 (/ (- x y) y))
+  #|(if (< x y)
+      (* 10 (/ y x))
+      (* -10 (/ x y)))|#
+  ;(- (* (/ y x) 100) 100)
+  )
+
+;(displayln (eval '(syntax->datum (expand `(time-timeit1 ,(ac '(+ 1 2)) 10000))) lite-nu-namespace))
+
+;(exit)
+
+
 (define (nu-compile x)
   (eval `(ac-compile (racket-quote ,x)) nu-namespace))
 
@@ -223,6 +301,8 @@
 (define prev-iter  (make-parameter 0))
 
 (define (timeit-args x)
+  (first-iter #t)
+  (prev-iter 0)
   (lambda (xs)
     ;; TODO: some sorta matching code
     (let ((prompt   (car xs))
@@ -238,20 +318,24 @@
              (expr  (cond
                       ((equal? (phase) "runtime")
                         (set! val (eval val space))
+                        ;`(time-timeit1 ,val ,(time))
                         (if (same-timeit)
                               (nu-compile `(timeit1 (% ,val) ,(time)))
                             (eval ;(compile (read (string-append "(timeit1 " x " " (time) ")")))
                                   ;(compile `(timeit1 ,(read x) ,(time)))
                                   (compile `(timeit1 ,expr ,(time)))
                                   ;(f (string-append "(timeit1 " x " " (time) ")"))
-                                  space)))
+                                  space))
+                        )
                       ((equal? (phase) "compile")
+                        ;`(time-timeit1 ,val ,(time))
                         ;(set! val (compile (read x)))
                         (if (same-timeit)
                               (nu-compile `(timeit1 (% ,val) ,(time)))
                             (eval (compile `(timeit1 ,val ,(time)))
                                   ;(f (string-append "(timeit1 " val " " (time) ")"))
-                                  space)))
+                                  space))
+                        )
                       ((equal? (phase) "both")
                         ;(write )
                         ;(newline)
@@ -260,11 +344,14 @@
                                         ;(compile (read x) `(eval (,quoter ,expr)))
                                         ;(f (string-append "(eval (quote " x "))"))
                                         space))
+                        ;`(time-timeit1 ,val ,(time))
                         (if (same-timeit)
                               (nu-compile `(timeit1 (% ,val) ,(time)))
                             (eval (compile `(timeit1 ,val ,(time)))
                                   ;(f (string-append "(timeit1 " val " " (time) ")"))
-                                  space))))))
+                                  space))
+                        ))))
+
         (display prompt)
         (display "eval: ")
         (write (eval val space))
@@ -296,7 +383,9 @@
                                        a))))
                     (when (eq? (first-iter) #t)
                       (first-iter #f)
-                      (prev-iter n))
+                      (prev-iter n)
+                      ;(prev-iter 0)
+                      )
                       #|(displayln (apply map (lambda args
                                     (displayln args)
                                    (eval `(avg (racket-quote ,args)) nu-namespace))
@@ -314,29 +403,36 @@
   ;; TODO: ew code duplication
   (displayln (make-string 78 #\=))
   (newline)
-  (parameterize ((prev-iter 0))
+  (parameterize ((first-iter  #t)
+                 (prev-iter   0))
     (for-each (lambda (x)
                 (unless (equal? x "")
+                  (when (pair? x)
+                    (set! x (car x)))
                   (display "> " )
                   (displayln x)
-                  (parameterize ((first-iter #t))
-                    (for-each (timeit-args x) args))
+                  ;(parameterize () )
+                  (for-each (timeit-args x) args)
                   (displayln (make-string 78 #\=))
                   (newline)))
               arguments)))
 
-(timeit (list " arc3 " (lambda (x) `(_read ,x))
-                       (lambda (x) `(ac ',x '()))
-                       ;'quote
-                       arc3-namespace)
-        (list "   ar " (lambda (x) `(read ,x))
-                       (lambda (x) `(ar-deep-fromarc (ac (racket-quote ,x) (racket-quote nil))))
-                       ;'racket-quote
-                       ar-namespace)
-        (list "   nu " (lambda (x) `(read ,x))
-                       (lambda (x) `(ac-compile (racket-quote ,x)))
-                       ;'racket-quote
-                       nu-namespace))
+(timeit (list "   arc3 " (lambda (x) `(_read ,x))
+                         (lambda (x) `(ac ',x '()))
+                         ;'quote
+                         arc3-namespace)
+        (list "     ar " (lambda (x) `(read ,x))
+                         (lambda (x) `(ar-deep-fromarc (ac (racket-quote ,x) (racket-quote nil))))
+                         ;'racket-quote
+                         ar-namespace)
+        (list " old nu " (lambda (x) `(read ,x))
+                         (lambda (x) `(ac-compile (racket-quote ,x)))
+                         ;'racket-quote
+                         nu-namespace)
+        (list " new nu " (lambda (x) `((var 'read) ,x))
+                         (lambda (x) `(ac ',x))
+                         ;'racket-quote
+                         lite-nu-namespace))
 
 ;; This is to prevent () from being printed when the REPL exits
 ;(void)
@@ -361,7 +457,7 @@ echo "(+ 1 2)
 
 
 #|
-./apps/timecompare --phase runtime > "notes/timing comparison.md" &&
-./apps/timecompare --phase compile > "notes/timing comparison (compile).md" &&
-./apps/timecompare --phase both    > "notes/timing comparison (both).md"
+./apps/timecompare --phase runtime > "timing/timing comparison.md" &&
+./apps/timecompare --phase compile > "timing/timing comparison (compile).md" &&
+./apps/timecompare --phase both    > "timing/timing comparison (both).md"
 |#

@@ -117,3 +117,9 @@ Other
 
         > (plref '(b 10 a 5 c 15) 'a)
         5
+
+  * A `uniq-counter` parameter in Arc that determines what the number should
+    be for uniq variables:
+
+        > (w/uniq-counter 5 (uniq))
+        g5

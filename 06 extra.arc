@@ -20,7 +20,13 @@
 ;; (percent 100 50)  -> -50
 ;; (percent 100 25)  -> -75
 (def percent (x y)
-  (- (* (/ y x) 100) 100))
+  (* (/ (- y x) x) 100)
+  ;(* -100 (/ (- x y) y))
+  #|(if (< x y)
+      (* 10 (/ y x))
+      (* -10 (/ x y)))|#
+  ;(- (* (/ y x) 100) 100)
+  )
 
 
 ;; Infinite nil generator, courtesy of akkartik (rocketnia reminded me)

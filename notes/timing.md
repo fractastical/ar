@@ -1,6 +1,11 @@
 Timing notes
 ============
 
+  * Arc 3.1 starts up quite fast:
+
+        Total cpu time observed: 826ms (out of 884ms)
+        Number of samples taken: 22 (once every 38ms)
+
   * fexprs are shockingly costly:
 
         > (do (def foo (a b) (list a b))
