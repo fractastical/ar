@@ -457,7 +457,7 @@ echo "(+ 1 2)
 
 
 #|
-./apps/timecompare --phase runtime > "timing/timing comparison.md" &&
-./apps/timecompare --phase compile > "timing/timing comparison (compile).md" &&
-./apps/timecompare --phase both    > "timing/timing comparison (both).md"
+./apps/timecompare --phase runtime > "timing/timing comparison" &&
+./apps/timecompare --phase compile > "timing/timing comparison (compile)" &&
+./apps/timecompare --phase both    > "timing/timing comparison (both)"
 |#

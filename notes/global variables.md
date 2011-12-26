@@ -170,24 +170,24 @@ free*.
 Okay, and in the Nu compiler you use `set` to define a global variable in
 Arc's namespace:
 
-  (set 'foo (lambda () ...))
+    (set 'foo (lambda () ...))
 
 But what I can do is provide a different form, like `mdef`, which will
 essentially make the Arc compiler mutable. Here's how it works:
 
-  (mdef ac ac)
+    (mdef ac ac)
 
 That will compile into this:
 
-  (set 'ac (case-lambda
-             (()  ac)
-             ((x) (set! ac x))))
+    (set 'ac (case-lambda
+               (()  ac)
+               ((x) (set! ac x))))
 
 Okay, so now in the Arc namespace there's a global variable called `ac` which
 when evaluated will return the value of `ac` *in the compiler*. And when you
 assign to the variable `ac` in Arc, it will then set the value of `ac` *in the
 compiler*. This works because [as explained in the Racket docs](http://pre.racket-lang.org/docs/html/guide/module-set.html),
-it's possible to use `set!` inside of a module, but not outside of it. But the
+it's possible to use `set!` inside of a module, but not outside of it. And the
 `mdef` macro expands inside the module, so it's fine.
 
 Thus, not only does this technique give us aliases for free, has perfect
@@ -294,7 +294,7 @@ to call `apply`, and it doesn't need to cons the argument list. And within
 is faster than Arc 3.1.
 
 In any case, this demonstrates that the thunk technique is *very comparable*
-in speed to raw global variables: which is great news since it means Nu gets
+in speed to raw global variables; which is great news since it means Nu gets
 all the nice shiny goodies *and* speed along with it.
 
 If you'd like to see all the timing tests, [go here](../timing). I frequently
