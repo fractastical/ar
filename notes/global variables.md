@@ -197,10 +197,10 @@ mutable from within Arc, thereby gaining *all* of the benefits of ar, while
 still maintaining the clean isolation and speed of Racket modules!
 
 And in addition to all of that, it was trivial to add the technique once I got
-the Nu compiler up and running (just a few lines of code needed to be
-changed). And it's a very simple and elegant idea as well: all global
-variables are functions that can be called to get and set their values. That's
-it! Yet that simple idea has such huge consequences.
+the Nu compiler up and running (just 9 lines of code needed to be changed).
+And it's a very simple and elegant idea as well: all global variables are
+functions that can be called to get and set their values. That's it! Yet that
+simple idea has such huge consequences.
 
 
 How fast is it?
