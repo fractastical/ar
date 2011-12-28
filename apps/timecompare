@@ -36,7 +36,7 @@
                                (iter (string->number int))]
     [("-t" "--time")       int "Time spent on each iteration, in milliseconds"
                                (time (string->number int))]
-    [("--phase")           str "Whether to test runtime/compile/both time speed"
+    [("--phase")           str "Whether to test runtime/compile/eval time speed"
                                (phase str)]
     [("--arc3-dir")        str "Directory where Arc 3.1 is located"
                                (arc3-dir str)]
@@ -52,8 +52,32 @@
 (when (null? arguments)
   (set! arguments
     '(("(+ 1 2)")
+      ("(apply + '(1 2))")
+      ("(apply + (list 1 2))")
+
+      ("(+ 1 2 3 4 5 6)")
+      ("(apply + '(1 2 3 4 5 6))")
+      ("(apply + (list 1 2 3 4 5 6))")
+
       ("(< 1 2)")
       ("(> 1 2)")
+
+      ("(< 1 2 3)")
+      ("(> 1 2 3)")
+
+      ("(< 1 2 3 4)")
+      ("(> 1 2 3 4)")
+
+      ("(is 1 1)"
+       "(eq? 1 1)")
+      ("(is 1 2)"
+       "(eq? 1 2)")
+
+      "(is 1 1 1)"
+      "(is 1 1 2)"
+
+      "(is 1 1 1 1)"
+      "(is 1 1 1 2)"
       ;===================================================================
       ("'(1 2)")
       ("(list 1 2)")
@@ -62,6 +86,18 @@
       "(car ())"
       "(car '())"
       ;===================================================================
+      ("(no 1)"
+       "(null? 1)")
+
+      ("(no ())"
+       "(null? ())")
+
+      ("(no '())"
+       "(null? '())")
+
+      ("(no nil)"
+       "(null? nil)")
+
       ("(no '(1 2 3))"
        "(null? '(1 2 3))")
       ;===================================================================
@@ -75,11 +111,16 @@
 
       ("(let a '(1 2) (car a))"
        "(let ((a '(1 2))) (car a))")
+
       "(let (a b) '(1 2) a)"
       "(let (a b) '(1 2) b)"
+
+      "(let (a (o b 5)) '(1 2) b)"
+      "(let (a (o b 5)) '(1) b)"
       ;===================================================================
       "(idfn 'x)"
       "(apply idfn '(x))"
+      ;"(apply idfn 'x nil)"
 
       ("'(1 2 3 4 5)")
       ("(list 1 2 3 4 5)")
@@ -107,6 +148,11 @@
       ("(rev (list 1 2 3 4 5))"
        "(reverse (list 1 2 3 4 5))")
       ;===================================================================
+      ("(+ '(1 2) '(3 4))"
+       "(append '(1 2) '(3 4))")
+      ("(+ (list 1 2) (list 3 4))"
+       "(append (list 1 2) (list 3 4))")
+
       ("(join '(1 2) '(3 4))"
        "(append '(1 2) '(3 4))")
       ("(join (list 1 2) (list 3 4))"
@@ -336,7 +382,7 @@
                                   ;(f (string-append "(timeit1 " val " " (time) ")"))
                                   space))
                         )
-                      ((equal? (phase) "both")
+                      ((equal? (phase) "eval")
                         ;(write )
                         ;(newline)
                         (set! val (eval (compile (eval (read (string-append "(eval (quote " x "))")) space))
@@ -459,5 +505,5 @@ echo "(+ 1 2)
 #|
 ./apps/timecompare --phase runtime > "timing/timing comparison" &&
 ./apps/timecompare --phase compile > "timing/timing comparison (compile)" &&
-./apps/timecompare --phase both    > "timing/timing comparison (both)"
+./apps/timecompare --phase eval    > "timing/timing comparison (eval)"
 |#

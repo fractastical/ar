@@ -15,7 +15,7 @@ what I consider to be the best:
 
 This is the old approach Nu used for a long time. It is trivial to implement
 and also fully supports parameters and aliases, but unfortunately it's *very*
-slow: about 66% slower than raw globals.
+slow: about 100% slower than raw globals.
 
      >> (%eval (if (parameter? (ac-var 'bar)) `(bar) `bar))                N/A
     + supports parameters and aliases
@@ -230,17 +230,17 @@ Okay, now let's look at a simple function, `idfn`:
     iter: 318,038  gc: 0  mem: 1792  diff: 0%
 
          ar eval: x
-    iter: 314,168  gc: 0  mem: 1472  diff: -1.22%
+    iter: 314,168  gc: 0  mem: 1472  diff: -1.23%
 
      old nu eval: x
-    iter: 189,093  gc: 0  mem: 832  diff: -40.54%
+    iter: 189,093  gc: 0  mem: 832  diff: -68.19%
 
      new nu eval: x
-    iter: 293,689  gc: 0  mem: 832  diff: -7.66%
+    iter: 293,689  gc: 0  mem: 832  diff: -8.29%
 
 This shows quite clearly how slow `ac-lookup-global` is: the old version of Nu
-is 40.54% slower than Arc 3.1, *solely* because of `ac-lookup-global`! On the
-other hand, the new Nu is only 7.66% slower, even though *all* Arc globals are
+is 68.19% slower than Arc 3.1, *solely* because of `ac-lookup-global`! On the
+other hand, the new Nu is only 8.29% slower, even though *all* Arc globals are
 thunks. This is *extremely* good speed, given all the benefits of the
 technique.
 
@@ -249,32 +249,32 @@ technique.
     iter: 350,597  gc: 0  mem: 984  diff: 0%
 
          ar eval: nil
-    iter: 345,870  gc: 0  mem: 992  diff: -1.35%
+    iter: 345,870  gc: 0  mem: 992  diff: -1.37%
 
      old nu eval: ()
-    iter: 171,596  gc: 0  mem: 992  diff: -51.06%
+    iter: 171,596  gc: 0  mem: 992  diff: -104.32%
 
      new nu eval: ()
-    iter: 325,785  gc: 0  mem: 1632  diff: -7.08%
+    iter: 325,785  gc: 0  mem: 1632  diff: -7.62%
 
 And again, the old Nu is terribly slow because of `ac-lookup-global`, and the
-new Nu is only 7.08% slower: this is consistent with `idfn`.
+new Nu is only 7.62% slower: this is consistent with `idfn`.
 
     > (rev '(1 2 3 4 5))
        arc3 eval: (5 4 3 2 1 . nil)
     iter: 45,603  gc: 4  mem: 4302616  diff: 0%
 
          ar eval: {5 4 3 2 1 . nil}
-    iter: 39,060  gc: 4  mem: 375928  diff: -14.35%
+    iter: 39,060  gc: 4  mem: 375928  diff: -16.75%
 
      old nu eval: (5 4 3 2 1)
-    iter: 9,560  gc: 0  mem: 2066040  diff: -79.04%
+    iter: 9,560  gc: 0  mem: 2066040  diff: -377.02%
 
      new nu eval: (5 4 3 2 1)
     iter: 48,211  gc: 0  mem: 10416768  diff: 5.72%
 
 I use `rev` as a good timing benchmark because it's simple and calls 4 global
-variables in a tight loop: and as you can see the old Nu takes a huge hit
+variables in a tight loop: and as you can see the old Nu takes a **huge** hit
 because of that.
 
 Meanwhile, even though it has to unwrap 4 global variables on every iteration
@@ -285,7 +285,7 @@ All four implementations used the *exact same* algorithm from arc.arc, so
 there's no special fancy-pants sneaky stuff that Nu does that the rest don't.
 
 One explanation for this discrepancy is that Nu uses [waterhouse's idea](https://sites.google.com/site/arclanguagewiki/arc-3_1/optimizations)
-for implementing `+`, `<`, `>`, and `is`, with `case-lambda` for the common
+for implementing `+`, `<`, `>`, and `is` with `case-lambda` for the common
 two-argument case.
 
 This has similar benefits as using the `funcall*` functions: it doesn't need
@@ -295,22 +295,22 @@ is faster than Arc 3.1.
 
 In any case, this demonstrates that the thunk technique is *very comparable*
 in speed to raw global variables; which is great news since it means Nu gets
-all the nice shiny goodies *and* speed along with it.
+all the nice shiny goodies *and* great speed along with it.
 
 If you'd like to see all the timing tests, [go here](../timing). I frequently
-run a full suite of tests to see what I can improve with Nu. If you go there,
-you'll find some interesting bits of information, such as that Nu is actually
-faster at destructuring than calling `car` yourself:
+run suites of tests to see what I can improve with Nu. If you go there, you'll
+find some interesting bits of information, such as that Nu is actually faster
+at destructuring than calling `car` yourself:
 
     > (let (a b) '(1 2) a)
        arc3 eval: 1
     iter: 287,511  gc: 0  mem: 8954072  diff: 0%
 
          ar eval: 1
-    iter: 202,205  gc: 0  mem: -13059120  diff: -29.67%
+    iter: 202,205  gc: 0  mem: -13059120  diff: -42.19%
 
      old nu eval: 1
-    iter: 210,825  gc: 0  mem: 664  diff: -26.67%
+    iter: 210,825  gc: 0  mem: 664  diff: -36.37%
 
      new nu eval: 1
     iter: 330,730  gc: 0  mem: 1624  diff: 15.03%
@@ -322,13 +322,13 @@ faster at destructuring than calling `car` yourself:
     iter: 318,026  gc: 0  mem: 1792  diff: 0%
 
          ar eval: 1
-    iter: 303,670  gc: 0  mem: 1632  diff: -4.51%
+    iter: 303,670  gc: 0  mem: 1632  diff: -4.73%
 
      old nu eval: 1
-    iter: 174,756  gc: 0  mem: 512  diff: -45.05%
+    iter: 174,756  gc: 0  mem: 512  diff: -81.98%
 
      new nu eval: 1
-    iter: 287,469  gc: 0  mem: 1792  diff: -9.61%
+    iter: 287,469  gc: 0  mem: 1792  diff: -10.63%
 
 Or that Nu's implementation of `+` is 44.12% faster than Arc 3.1's
 implementation:
@@ -338,10 +338,10 @@ implementation:
     iter: 182,952  gc: 0  mem: 11275936  diff: 0%
 
          ar eval: 3
-    iter: 175,642  gc: 0  mem: 10604320  diff: -4%
+    iter: 175,642  gc: 0  mem: 10604320  diff: -4.16%
 
      old nu eval: 3
-    iter: 179,321  gc: 0  mem: 1472  diff: -1.98%
+    iter: 179,321  gc: 0  mem: 1472  diff: -2.02%
 
      new nu eval: 3
     iter: 263,679  gc: 0  mem: 1792  diff: 44.12%

@@ -1,6 +1,42 @@
 Timing notes
 ============
 
+  * `case-lambda` is apparently *very* well optimized by Racket:
+
+    Without case-lambda:
+
+        > (timeit (% (+ 1 2)))
+        iter: 56,493,974  gc: 0  mem: 1092440
+        iter: 56,495,150  gc: 0  mem: 1090712
+        iter: 58,070,514  gc: 0  mem: 1080320
+        iter: 55,595,266  gc: 0  mem: 1376088
+
+        > (timeit (% (funcall2 + 1 2)))
+        iter: 42,817,990  gc: 0  mem: 441600
+
+        > (timeit (% (ac-apply + 1 2)))
+        iter: 28,181,418  gc: 180  mem: 852840
+
+    With case-lambda:
+
+        > (timeit (% (funcall2 + 1 2)))
+        iter: 34,084,418  gc: 0  mem: 457576
+        iter: 40,831,379  gc: 0  mem: 528288
+        iter: 40,903,391  gc: 0  mem: 837168
+        iter: 34,407,247  gc: 0  mem: 984000
+
+        > (timeit (% (ac-apply + 1 2)))
+        iter: 36,719,754  gc: 0  mem: 457992
+        iter: 37,774,311  gc: 0  mem: 490848
+        iter: 40,621,750  gc: 8  mem: -9415784
+        iter: 40,851,357  gc: 0  mem: 1776656
+
+        > (timeit (% (ref + 1 2)))
+        iter: 41,219,548  gc: 0  mem: 725800
+        iter: 41,538,329  gc: 0  mem: 821944
+        iter: 34,506,164  gc: 0  mem: 841968
+        iter: 40,648,110  gc: 0  mem: 1198848
+
   * Arc 3.1 starts up quite fast:
 
         Total cpu time observed: 826ms (out of 884ms)

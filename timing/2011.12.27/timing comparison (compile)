@@ -1,0 +1,857 @@
+==============================================================================
+
+> (+ 1 2)
+   arc3 eval: (ar-funcall2 _+ 1 2)
+iter: 28,504  gc: 0  mem: -10545408  diff: 0%
+
+     ar eval: (#<procedure:ar-funcall2> + 1 2)
+iter: 982  gc: 0  mem: -2634816  diff: -2,802.65%
+
+ old nu eval: (#<procedure:ac-funcall2> (#<procedure:ac-lookup-global> +) 1 2)
+iter: 2,000  gc: 0  mem: 7106520  diff: -1,325.2%
+
+ new nu eval: (ref (_+) 1 2)
+iter: 34,921  gc: 0  mem: -9224512  diff: 22.51%
+
+==============================================================================
+
+> (apply + '(1 2))
+   arc3 eval: (ar-funcall2 _apply _+ (quote (1 2 . nil)))
+iter: 18,194  gc: 0  mem: -7639216  diff: 0%
+
+     ar eval: (#<procedure:ar-funcall2> apply + ((racket-quote #<procedure>)))
+iter: 631  gc: 4  mem: -2163952  diff: -2,783.36%
+
+ old nu eval: (#<procedure:ac-funcall2> (#<procedure:ac-lookup-global> apply) (#<procedure:ac-lookup-global-arg> +) (#<procedure:.../01 compiler.arc:1230:25>))
+iter: 843  gc: 0  mem: 6571056  diff: -2,058.24%
+
+ new nu eval: (ref (_apply) (_+) (#<procedure:...ite nu/01 nu.rkt:1524:44>))
+iter: 15,828  gc: 0  mem: -9640280  diff: -14.95%
+
+==============================================================================
+
+> (apply + (list 1 2))
+   arc3 eval: (ar-funcall2 _apply _+ (ar-funcall2 _list 1 2))
+iter: 11,428  gc: 0  mem: -8976504  diff: 0%
+
+     ar eval: (#<procedure:ar-funcall2> apply + (#<procedure:ar-funcall2> list 1 2))
+iter: 376  gc: 4  mem: -3354392  diff: -2,939.36%
+
+ old nu eval: (#<procedure:ac-funcall2> (#<procedure:ac-lookup-global> apply) (#<procedure:ac-lookup-global-arg> +) (#<procedure:ac-funcall2> (#<procedure:ac-lookup-global> list) 1 2))
+iter: 634  gc: 0  mem: 5976696  diff: -1,702.52%
+
+ new nu eval: (ref (_apply) (_+) (ref (_list) 1 2))
+iter: 13,747  gc: 0  mem: -8260464  diff: 20.29%
+
+==============================================================================
+
+> (+ 1 2 3 4 5 6)
+   arc3 eval: (ar-apply _+ (list 1 2 3 4 5 6))
+iter: 24,631  gc: 0  mem: -8798312  diff: 0%
+
+     ar eval: (#<procedure:ar-apply> + 1 2 3 4 5 6)
+iter: 488  gc: 4  mem: -3171752  diff: -4,947.34%
+
+ old nu eval: (#<procedure:...t/private/kw.rkt:188:14> (#<procedure:ac-lookup-global> +) 1 2 3 4 5 6)
+iter: 1,865  gc: 0  mem: 7106376  diff: -1,220.7%
+
+ new nu eval: (ref (_+) 1 2 3 4 5 6)
+iter: 31,203  gc: 0  mem: -6909776  diff: 26.68%
+
+==============================================================================
+
+> (apply + '(1 2 3 4 5 6))
+   arc3 eval: (ar-funcall2 _apply _+ (quote (1 2 3 4 5 6 . nil)))
+iter: 17,415  gc: 4  mem: -6174968  diff: 0%
+
+     ar eval: (#<procedure:ar-funcall2> apply + ((racket-quote #<procedure>)))
+iter: 628  gc: 4  mem: -2272984  diff: -2,673.09%
+
+ old nu eval: (#<procedure:ac-funcall2> (#<procedure:ac-lookup-global> apply) (#<procedure:ac-lookup-global-arg> +) (#<procedure:.../01 compiler.arc:1230:25>))
+iter: 843  gc: 0  mem: 6572152  diff: -1,965.84%
+
+ new nu eval: (ref (_apply) (_+) (#<procedure:...ite nu/01 nu.rkt:1524:44>))
+iter: 15,898  gc: 0  mem: -9571000  diff: -9.54%
+
+==============================================================================
+
+> (apply + (list 1 2 3 4 5 6))
+   arc3 eval: (ar-funcall2 _apply _+ (ar-apply _list (list 1 2 3 4 5 6)))
+iter: 10,709  gc: 0  mem: -8982000  diff: 0%
+
+     ar eval: (#<procedure:ar-funcall2> apply + (#<procedure:ar-apply> list 1 2 3 4 5 6))
+iter: 270  gc: 4  mem: -4397640  diff: -3,866.3%
+
+ old nu eval: (#<procedure:ac-funcall2> (#<procedure:ac-lookup-global> apply) (#<procedure:ac-lookup-global-arg> +) (#<procedure:...t/private/kw.rkt:188:14> (#<procedure:ac-lookup-global> list) 1 2 3 4 5 6))
+iter: 619  gc: 0  mem: 5993344  diff: -1,630.05%
+
+ new nu eval: (ref (_apply) (_+) (ref (_list) 1 2 3 4 5 6))
+iter: 13,050  gc: 0  mem: -8480232  diff: 21.86%
+
+==============================================================================
+
+> (< 1 2)
+   arc3 eval: (ar-funcall2 _< 1 2)
+iter: 24,906  gc: 0  mem: -11947624  diff: 0%
+
+     ar eval: (#<procedure:ar-funcall2> < 1 2)
+iter: 785  gc: 4  mem: -4970304  diff: -3,072.74%
+
+ old nu eval: (#<procedure:ac-funcall2> (#<procedure:ac-lookup-global> <) 1 2)
+iter: 1,992  gc: 0  mem: 7078224  diff: -1,150.3%
+
+ new nu eval: (ref (_<) 1 2)
+iter: 35,009  gc: 0  mem: -10163640  diff: 40.56%
+
+==============================================================================
+
+> (> 1 2)
+   arc3 eval: (ar-funcall2 _> 1 2)
+iter: 24,921  gc: 0  mem: -11915000  diff: 0%
+
+     ar eval: (#<procedure:ar-funcall2> > 1 2)
+iter: 781  gc: 4  mem: -5074936  diff: -3,090.91%
+
+ old nu eval: (#<procedure:ac-funcall2> (#<procedure:ac-lookup-global> >) 1 2)
+iter: 1,990  gc: 0  mem: 7071056  diff: -1,152.31%
+
+ new nu eval: (ref (_>) 1 2)
+iter: 34,959  gc: 0  mem: -10270904  diff: 40.28%
+
+==============================================================================
+
+> (< 1 2 3)
+   arc3 eval: (ar-funcall3 _< 1 2 3)
+iter: 24,137  gc: 0  mem: -11545752  diff: 0%
+
+     ar eval: (#<procedure:ar-funcall3> < 1 2 3)
+iter: 669  gc: 0  mem: -93184  diff: -3,507.92%
+
+ old nu eval: (#<procedure:ac-funcall3> (#<procedure:ac-lookup-global> <) 1 2 3)
+iter: 1,950  gc: 0  mem: 7053816  diff: -1,137.79%
+
+ new nu eval: (ref (_<) 1 2 3)
+iter: 34,392  gc: 0  mem: -5315064  diff: 42.49%
+
+==============================================================================
+
+> (> 1 2 3)
+   arc3 eval: (ar-funcall3 _> 1 2 3)
+iter: 24,132  gc: 0  mem: -7334288  diff: 0%
+
+     ar eval: (#<procedure:ar-funcall3> > 1 2 3)
+iter: 652  gc: 4  mem: -1636000  diff: -3,601.23%
+
+ old nu eval: (#<procedure:ac-funcall3> (#<procedure:ac-lookup-global> >) 1 2 3)
+iter: 1,944  gc: 0  mem: 7032000  diff: -1,141.36%
+
+ new nu eval: (ref (_>) 1 2 3)
+iter: 34,721  gc: 0  mem: -6262768  diff: 43.88%
+
+==============================================================================
+
+> (< 1 2 3 4)
+   arc3 eval: (ar-funcall4 _< 1 2 3 4)
+iter: 22,753  gc: 0  mem: -8567880  diff: 0%
+
+     ar eval: (#<procedure:ar-funcall4> < 1 2 3 4)
+iter: 552  gc: 4  mem: -1835016  diff: -4,021.92%
+
+ old nu eval: (#<procedure:ac-funcall4> (#<procedure:ac-lookup-global> <) 1 2 3 4)
+iter: 1,911  gc: 0  mem: 7036208  diff: -1,090.63%
+
+ new nu eval: (ref (_<) 1 2 3 4)
+iter: 31,717  gc: 0  mem: -6632840  diff: 39.4%
+
+==============================================================================
+
+> (> 1 2 3 4)
+   arc3 eval: (ar-funcall4 _> 1 2 3 4)
+iter: 22,661  gc: 0  mem: -8654064  diff: 0%
+
+     ar eval: (#<procedure:ar-funcall4> > 1 2 3 4)
+iter: 552  gc: 4  mem: -1836544  diff: -4,005.25%
+
+ old nu eval: (#<procedure:ac-funcall4> (#<procedure:ac-lookup-global> >) 1 2 3 4)
+iter: 1,907  gc: 0  mem: 7021232  diff: -1,088.31%
+
+ new nu eval: (ref (_>) 1 2 3 4)
+iter: 32,455  gc: 0  mem: -6305968  diff: 43.22%
+
+==============================================================================
+
+> (is 1 1)
+   arc3 eval: (ar-funcall2 _is 1 1)
+iter: 24,101  gc: 0  mem: -8585400  diff: 0%
+
+     ar eval: (#<procedure:ar-funcall2> is 1 1)
+iter: 747  gc: 4  mem: -1869560  diff: -3,126.37%
+
+ old nu eval: (#<procedure:ac-funcall2> (#<procedure:ac-lookup-global> is) 1 1)
+iter: 1,815  gc: 0  mem: 6828832  diff: -1,227.88%
+
+ new nu eval: (ref (_is) 1 1)
+iter: 33,222  gc: 4  mem: -7185840  diff: 37.84%
+
+==============================================================================
+
+> (is 1 2)
+   arc3 eval: (ar-funcall2 _is 1 2)
+iter: 24,229  gc: 0  mem: -8417256  diff: 0%
+
+     ar eval: (#<procedure:ar-funcall2> is 1 2)
+iter: 751  gc: 4  mem: -1756488  diff: -3,126.23%
+
+ old nu eval: (#<procedure:ac-funcall2> (#<procedure:ac-lookup-global> is) 1 2)
+iter: 1,819  gc: 0  mem: 6842752  diff: -1,232%
+
+ new nu eval: (ref (_is) 1 2)
+iter: 33,221  gc: 0  mem: -7135528  diff: 37.11%
+
+==============================================================================
+
+> (is 1 1 1)
+   arc3 eval: (ar-funcall3 _is 1 1 1)
+iter: 23,664  gc: 0  mem: -8132256  diff: 0%
+
+     ar eval: (#<procedure:ar-funcall3> is 1 1 1)
+iter: 622  gc: 4  mem: -2914624  diff: -3,704.5%
+
+ old nu eval: (#<procedure:ac-funcall3> (#<procedure:ac-lookup-global> is) 1 1 1)
+iter: 1,800  gc: 0  mem: 6885480  diff: -1,214.67%
+
+ new nu eval: (ref (_is) 1 1 1)
+iter: 32,213  gc: 0  mem: -7815936  diff: 36.13%
+
+==============================================================================
+
+> (is 1 1 2)
+   arc3 eval: (ar-funcall3 _is 1 1 2)
+iter: 23,376  gc: 0  mem: -9312960  diff: 0%
+
+     ar eval: (#<procedure:ar-funcall3> is 1 1 2)
+iter: 620  gc: 4  mem: -2988144  diff: -3,670.32%
+
+ old nu eval: (#<procedure:ac-funcall3> (#<procedure:ac-lookup-global> is) 1 1 2)
+iter: 1,799  gc: 0  mem: 6881624  diff: -1,199.39%
+
+ new nu eval: (ref (_is) 1 1 2)
+iter: 32,118  gc: 4  mem: -7692600  diff: 37.4%
+
+==============================================================================
+
+> (is 1 1 1 1)
+   arc3 eval: (ar-funcall4 _is 1 1 1 1)
+iter: 22,114  gc: 0  mem: -8390096  diff: 0%
+
+     ar eval: (#<procedure:ar-funcall4> is 1 1 1 1)
+iter: 538  gc: 4  mem: -1671216  diff: -4,010.41%
+
+ old nu eval: (#<procedure:ac-funcall4> (#<procedure:ac-lookup-global> is) 1 1 1 1)
+iter: 1,767  gc: 0  mem: 6871560  diff: -1,151.5%
+
+ new nu eval: (ref (_is) 1 1 1 1)
+iter: 30,148  gc: 0  mem: -6632104  diff: 36.33%
+
+==============================================================================
+
+> (is 1 1 1 2)
+   arc3 eval: (ar-funcall4 _is 1 1 1 2)
+iter: 22,113  gc: 0  mem: -8303096  diff: 0%
+
+     ar eval: (#<procedure:ar-funcall4> is 1 1 1 2)
+iter: 541  gc: 0  mem: -1550120  diff: -3,987.43%
+
+ old nu eval: (#<procedure:ac-funcall4> (#<procedure:ac-lookup-global> is) 1 1 1 2)
+iter: 1,763  gc: 0  mem: 6856208  diff: -1,154.28%
+
+ new nu eval: (ref (_is) 1 1 1 2)
+iter: 30,272  gc: 0  mem: -6705064  diff: 36.9%
+
+==============================================================================
+
+> '(1 2)
+   arc3 eval: (quote (1 2 . nil))
+iter: 134,475  gc: 4  mem: 2777288  diff: 0%
+
+     ar eval: ((racket-quote #<procedure>))
+iter: 2,509  gc: 4  mem: 532600  diff: -5,259.71%
+
+ old nu eval: (#<procedure:.../01 compiler.arc:1230:25>)
+iter: 4,384  gc: 0  mem: -11967408  diff: -2,967.4%
+
+ new nu eval: (#<procedure:...ite nu/01 nu.rkt:1524:44>)
+iter: 42,308  gc: 0  mem: 10703488  diff: -217.85%
+
+==============================================================================
+
+> (list 1 2)
+   arc3 eval: (ar-funcall2 _list 1 2)
+iter: 22,478  gc: 0  mem: -9465504  diff: 0%
+
+     ar eval: (#<procedure:ar-funcall2> list 1 2)
+iter: 687  gc: 4  mem: -2841424  diff: -3,171.91%
+
+ old nu eval: (#<procedure:ac-funcall2> (#<procedure:ac-lookup-global> list) 1 2)
+iter: 1,576  gc: 0  mem: 6558032  diff: -1,326.27%
+
+ new nu eval: (ref (_list) 1 2)
+iter: 29,115  gc: 0  mem: -9027864  diff: 29.53%
+
+==============================================================================
+
+> (car nil)
+   arc3 eval: (ar-funcall1 _car (quote nil))
+iter: 23,621  gc: 0  mem: -8747168  diff: 0%
+
+     ar eval: (#<procedure:ar-funcall1> car nil)
+iter: 840  gc: 4  mem: -2245072  diff: -2,712.02%
+
+ old nu eval: (#<procedure:ac-funcall1> (#<procedure:ac-lookup-global> car) (#<procedure:ac-lookup-global-arg> nil))
+iter: 1,043  gc: 0  mem: 6010480  diff: -2,164.72%
+
+ new nu eval: (ref (_car) (_nil))
+iter: 24,280  gc: 0  mem: -7921240  diff: 2.79%
+
+==============================================================================
+
+> (car ())
+   arc3 eval: (ar-funcall1 _car ())
+iter: 23,727  gc: 0  mem: -10205992  diff: 0%
+
+     ar eval: (#<procedure:ar-funcall1> car nil)
+iter: 840  gc: 4  mem: -2245008  diff: -2,724.64%
+
+ old nu eval: (#<procedure:ac-funcall1> (#<procedure:ac-lookup-global> car) (racket-quote ()))
+iter: 1,739  gc: 0  mem: 6877296  diff: -1,264.4%
+
+ new nu eval: (ref (_car) (quote ()))
+iter: 29,431  gc: 0  mem: -8573056  diff: 24.04%
+
+==============================================================================
+
+> (car '())
+   arc3 eval: (ar-funcall1 _car (quote nil))
+iter: 21,251  gc: 0  mem: -8977128  diff: 0%
+
+     ar eval: (#<procedure:ar-funcall1> car ((racket-quote #<procedure>)))
+iter: 810  gc: 4  mem: -1656472  diff: -2,523.58%
+
+ old nu eval: (#<procedure:ac-funcall1> (#<procedure:ac-lookup-global> car) (#<procedure:.../01 compiler.arc:1230:25>))
+iter: 1,264  gc: 0  mem: 7403592  diff: -1,581.25%
+
+ new nu eval: (ref (_car) (#<procedure:...ite nu/01 nu.rkt:1524:44>))
+iter: 19,458  gc: 0  mem: -10041680  diff: -9.21%
+
+==============================================================================
+
+> (no 1)
+   arc3 eval: (ar-funcall1 _no 1)
+iter: 24,548  gc: 0  mem: -10164464  diff: 0%
+
+     ar eval: (#<procedure:ar-funcall1> no 1)
+iter: 914  gc: 4  mem: -3392224  diff: -2,585.78%
+
+ old nu eval: (#<procedure:ac-funcall1> (#<procedure:ac-lookup-global> no) 1)
+iter: 1,873  gc: 0  mem: 6925384  diff: -1,210.62%
+
+ new nu eval: (ref (_no) 1)
+iter: 33,336  gc: 0  mem: -9115184  diff: 35.8%
+
+==============================================================================
+
+> (no ())
+   arc3 eval: (ar-funcall1 _no ())
+iter: 24,836  gc: 0  mem: -8891520  diff: 0%
+
+     ar eval: (#<procedure:ar-funcall1> no nil)
+iter: 887  gc: 4  mem: -1084632  diff: -2,700%
+
+ old nu eval: (#<procedure:ac-funcall1> (#<procedure:ac-lookup-global> no) (racket-quote ()))
+iter: 1,877  gc: 0  mem: 7062096  diff: -1,223.18%
+
+ new nu eval: (ref (_no) (quote ()))
+iter: 31,110  gc: 0  mem: -7095584  diff: 25.26%
+
+==============================================================================
+
+> (no '())
+   arc3 eval: (ar-funcall1 _no (quote nil))
+iter: 22,302  gc: 0  mem: -7498208  diff: 0%
+
+     ar eval: (#<procedure:ar-funcall1> no ((racket-quote #<procedure>)))
+iter: 852  gc: 4  mem: -532656  diff: -2,517.61%
+
+ old nu eval: (#<procedure:ac-funcall1> (#<procedure:ac-lookup-global> no) (#<procedure:.../01 compiler.arc:1230:25>))
+iter: 1,341  gc: 0  mem: 7597736  diff: -1,563.09%
+
+ new nu eval: (ref (_no) (#<procedure:...ite nu/01 nu.rkt:1524:44>))
+iter: 20,455  gc: 0  mem: -8560440  diff: -9.03%
+
+==============================================================================
+
+> (no nil)
+   arc3 eval: (ar-funcall1 _no (quote nil))
+iter: 24,673  gc: 0  mem: -7437368  diff: 0%
+
+     ar eval: (#<procedure:ar-funcall1> no nil)
+iter: 886  gc: 4  mem: -1232720  diff: -2,684.76%
+
+ old nu eval: (#<procedure:ac-funcall1> (#<procedure:ac-lookup-global> no) (#<procedure:ac-lookup-global-arg> nil))
+iter: 1,094  gc: 0  mem: 6094240  diff: -2,155.3%
+
+ new nu eval: (ref (_no) (_nil))
+iter: 24,633  gc: 0  mem: -8047608  diff: -0.16%
+
+==============================================================================
+
+> (no '(1 2 3))
+   arc3 eval: (ar-funcall1 _no (quote (1 2 3 . nil)))
+iter: 20,655  gc: 0  mem: -7703696  diff: 0%
+
+     ar eval: (#<procedure:ar-funcall1> no ((racket-quote #<procedure>)))
+iter: 842  gc: 4  mem: -1844776  diff: -2,353.09%
+
+ old nu eval: (#<procedure:ac-funcall1> (#<procedure:ac-lookup-global> no) (#<procedure:.../01 compiler.arc:1230:25>))
+iter: 1,331  gc: 0  mem: 7541080  diff: -1,451.84%
+
+ new nu eval: (ref (_no) (#<procedure:...ite nu/01 nu.rkt:1524:44>))
+iter: 20,157  gc: 0  mem: -9844176  diff: -2.47%
+
+==============================================================================
+
+> (let a 5 a)
+   arc3 eval: ((lambda (a) a) 5)
+iter: 6,114  gc: 4  mem: -2202440  diff: 0%
+
+     ar eval: ((racket-lambda (a) a) 5)
+iter: 374  gc: 4  mem: -1573456  diff: -1,534.76%
+
+ old nu eval: ((racket-lambda (a) a) 5)
+iter: 785  gc: 0  mem: 6514736  diff: -678.85%
+
+ new nu eval: ((lambda (a) a) 5)
+iter: 5,600  gc: 0  mem: 14392048  diff: -9.18%
+
+==============================================================================
+
+> (let a (list 1 2) (car a))
+   arc3 eval: ((lambda (a) (ar-funcall1 _car a)) (ar-funcall2 _list 1 2))
+iter: 4,061  gc: 0  mem: -11373336  diff: 0%
+
+     ar eval: ((racket-lambda (a) (#<procedure:ar-funcall1> car a)) (#<procedure:ar-funcall2> list 1 2))
+iter: 213  gc: 0  mem: -11389608  diff: -1,806.57%
+
+ old nu eval: ((racket-lambda (a) (#<procedure:ac-funcall1> (#<procedure:ac-lookup-global> car) a)) (#<procedure:ac-funcall2> (#<procedure:ac-lookup-global> list) 1 2))
+iter: 401  gc: 0  mem: 6082040  diff: -912.72%
+
+ new nu eval: ((lambda (a) (ref (_car) a)) (ref (_list) 1 2))
+iter: 4,153  gc: 0  mem: 13836336  diff: 2.27%
+
+==============================================================================
+
+> (let (a b) (list 1 2) a)
+   arc3 eval: ((lambda gs478 (let* ((a (ar-xcar (car gs478))) (b (ar-xcar (ar-xcdr (car gs478))))) a)) (ar-funcall2 _list 1 2))
+iter: 4,028  gc: 4  mem: -9060144  diff: 0%
+
+     ar eval: ((racket-lambda g1570 (racket-let ((g1569 (#<procedure:ar-r/list-toarc> g1570))) ((racket-lambda (a) ((racket-lambda (b) ((racket-lambda () a))) (#<procedure:ar-funcall1> car (#<procedure:ar-funcall1> cdr (#<procedure:ar-funcall1> car g1569))))) (#<procedure:ar-funcall1> car (#<procedure:ar-funcall1> car g1569))))) (#<procedure:ar-funcall2> list 1 2))
+iter: 57  gc: 4  mem: -11198504  diff: -6,966.67%
+
+ old nu eval: ((racket-lambda (g7330) (racket-let* ((a (#<procedure:car> g7330)) (g7330 (#<procedure:cdr> g7330)) (b (#<procedure:car> g7330))) a)) (#<procedure:ac-funcall2> (#<procedure:ac-lookup-global> list) 1 2))
+iter: 434  gc: 0  mem: 6452560  diff: -828.11%
+
+ new nu eval: ((lambda (g28346) (let* ((a (#<procedure:car> g28346)) (g28346 (#<procedure:cdr> g28346)) (b (#<procedure:car> g28346))) a)) (ref (_list) 1 2))
+iter: 3,955  gc: 0  mem: 11926296  diff: -1.85%
+
+==============================================================================
+
+> (let (a b) (list 1 2) b)
+   arc3 eval: ((lambda gs202324 (let* ((a (ar-xcar (car gs202324))) (b (ar-xcar (ar-xcdr (car gs202324))))) b)) (ar-funcall2 _list 1 2))
+iter: 4,042  gc: 4  mem: -1649440  diff: 0%
+
+     ar eval: ((racket-lambda g209667 (racket-let ((g209666 (#<procedure:ar-r/list-toarc> g209667))) ((racket-lambda (a) ((racket-lambda (b) ((racket-lambda () b))) (#<procedure:ar-funcall1> car (#<procedure:ar-funcall1> cdr (#<procedure:ar-funcall1> car g209666))))) (#<procedure:ar-funcall1> car (#<procedure:ar-funcall1> car g209666))))) (#<procedure:ar-funcall2> list 1 2))
+iter: 57  gc: 4  mem: -4763728  diff: -6,991.23%
+
+ old nu eval: ((racket-lambda (g215405) (racket-let* ((a (#<procedure:car> g215405)) (g215405 (#<procedure:cdr> g215405)) (b (#<procedure:car> g215405))) b)) (#<procedure:ac-funcall2> (#<procedure:ac-lookup-global> list) 1 2))
+iter: 433  gc: 0  mem: 6437680  diff: -833.49%
+
+ new nu eval: ((lambda (g236285) (let* ((a (#<procedure:car> g236285)) (g236285 (#<procedure:cdr> g236285)) (b (#<procedure:car> g236285))) b)) (ref (_list) 1 2))
+iter: 3,965  gc: 0  mem: 14011960  diff: -1.94%
+
+==============================================================================
+
+> (let a '(1 2) (car a))
+   arc3 eval: ((lambda (a) (ar-funcall1 _car a)) (quote (1 2 . nil)))
+iter: 4,677  gc: 4  mem: -9547432  diff: 0%
+
+     ar eval: ((racket-lambda (a) (#<procedure:ar-funcall1> car a)) ((racket-quote #<procedure>)))
+iter: 274  gc: 4  mem: -10947784  diff: -1,606.93%
+
+ old nu eval: ((racket-lambda (a) (#<procedure:ac-funcall1> (#<procedure:ac-lookup-global> car) a)) (#<procedure:.../01 compiler.arc:1230:25>))
+iter: 486  gc: 0  mem: 6577544  diff: -862.35%
+
+ new nu eval: ((lambda (a) (ref (_car) a)) (#<procedure:...ite nu/01 nu.rkt:1524:44>))
+iter: 4,374  gc: 0  mem: 14248264  diff: -6.93%
+
+==============================================================================
+
+> (let (a b) '(1 2) a)
+   arc3 eval: ((lambda gs404357 (let* ((a (ar-xcar (car gs404357))) (b (ar-xcar (ar-xcdr (car gs404357))))) a)) (quote (1 2 . nil)))
+iter: 4,633  gc: 8  mem: -6843928  diff: 0%
+
+     ar eval: ((racket-lambda g418426 (racket-let ((g418425 (#<procedure:ar-r/list-toarc> g418426))) ((racket-lambda (a) ((racket-lambda (b) ((racket-lambda () a))) (#<procedure:ar-funcall1> car (#<procedure:ar-funcall1> cdr (#<procedure:ar-funcall1> car g418425))))) (#<procedure:ar-funcall1> car (#<procedure:ar-funcall1> car g418425))))) ((racket-quote #<procedure>)))
+iter: 62  gc: 4  mem: -10413856  diff: -7,372.58%
+
+ old nu eval: ((racket-lambda (g424606) (racket-let* ((a (#<procedure:car> g424606)) (g424606 (#<procedure:cdr> g424606)) (b (#<procedure:car> g424606))) a)) (#<procedure:.../01 compiler.arc:1230:25>))
+iter: 531  gc: 0  mem: 7028200  diff: -772.5%
+
+ new nu eval: ((lambda (g450239) (let* ((a (#<procedure:car> g450239)) (g450239 (#<procedure:cdr> g450239)) (b (#<procedure:car> g450239))) a)) (#<procedure:...ite nu/01 nu.rkt:1524:44>))
+iter: 4,151  gc: 0  mem: 13920288  diff: -11.61%
+
+==============================================================================
+
+> (let (a b) '(1 2) b)
+   arc3 eval: ((lambda gs636387 (let* ((a (ar-xcar (car gs636387))) (b (ar-xcar (ar-xcdr (car gs636387))))) b)) (quote (1 2 . nil)))
+iter: 4,664  gc: 8  mem: -6186096  diff: 0%
+
+     ar eval: ((racket-lambda g639809 (racket-let ((g639808 (#<procedure:ar-r/list-toarc> g639809))) ((racket-lambda (a) ((racket-lambda (b) ((racket-lambda () b))) (#<procedure:ar-funcall1> car (#<procedure:ar-funcall1> cdr (#<procedure:ar-funcall1> car g639808))))) (#<procedure:ar-funcall1> car (#<procedure:ar-funcall1> car g639808))))) ((racket-quote #<procedure>)))
+iter: 62  gc: 0  mem: -10417856  diff: -7,422.58%
+
+ old nu eval: ((racket-lambda (g646037) (racket-let* ((a (#<procedure:car> g646037)) (g646037 (#<procedure:cdr> g646037)) (b (#<procedure:car> g646037))) b)) (#<procedure:.../01 compiler.arc:1230:25>))
+iter: 534  gc: 0  mem: 7067248  diff: -773.41%
+
+ new nu eval: ((lambda (g671663) (let* ((a (#<procedure:car> g671663)) (g671663 (#<procedure:cdr> g671663)) (b (#<procedure:car> g671663))) b)) (#<procedure:...ite nu/01 nu.rkt:1524:44>))
+iter: 4,193  gc: 0  mem: 14805216  diff: -11.23%
+
+==============================================================================
+
+> (idfn 'x)
+   arc3 eval: (ar-funcall1 _idfn (quote x))
+iter: 20,903  gc: 0  mem: -8528728  diff: 0%
+
+     ar eval: (#<procedure:ar-funcall1> idfn ((racket-quote #<procedure>)))
+iter: 786  gc: 4  mem: -1286144  diff: -2,559.41%
+
+ old nu eval: (#<procedure:ac-funcall1> (#<procedure:ac-lookup-global> idfn) (#<procedure:.../01 compiler.arc:1230:25>))
+iter: 1,203  gc: 0  mem: 7299976  diff: -1,637.57%
+
+ new nu eval: (ref (_idfn) (#<procedure:...ite nu/01 nu.rkt:1524:44>))
+iter: 18,801  gc: 0  mem: -10026160  diff: -11.18%
+
+==============================================================================
+
+> (apply idfn '(x))
+   arc3 eval: (ar-funcall2 _apply _idfn (quote (x . nil)))
+iter: 17,240  gc: 0  mem: -6575152  diff: 0%
+
+     ar eval: (#<procedure:ar-funcall2> apply idfn ((racket-quote #<procedure>)))
+iter: 564  gc: 4  mem: -1110304  diff: -2,956.74%
+
+ old nu eval: (#<procedure:ac-funcall2> (#<procedure:ac-lookup-global> apply) (#<procedure:ac-lookup-global-arg> idfn) (#<procedure:.../01 compiler.arc:1230:25>))
+iter: 758  gc: 0  mem: 6369120  diff: -2,174.41%
+
+ new nu eval: (ref (_apply) (_idfn) (#<procedure:...ite nu/01 nu.rkt:1524:44>))
+iter: 14,815  gc: 0  mem: -9020624  diff: -16.37%
+
+==============================================================================
+
+> '(1 2 3 4 5)
+   arc3 eval: (quote (1 2 3 4 5 . nil))
+iter: 121,587  gc: 4  mem: 8459272  diff: 0%
+
+     ar eval: ((racket-quote #<procedure>))
+iter: 2,520  gc: 4  mem: -396744  diff: -4,724.88%
+
+ old nu eval: (#<procedure:.../01 compiler.arc:1230:25>)
+iter: 4,435  gc: 0  mem: 11216960  diff: -2,641.53%
+
+ new nu eval: (#<procedure:...ite nu/01 nu.rkt:1524:44>)
+iter: 42,533  gc: 0  mem: 11133000  diff: -185.87%
+
+==============================================================================
+
+> (list 1 2 3 4 5)
+   arc3 eval: (ar-apply _list (list 1 2 3 4 5))
+iter: 20,368  gc: 0  mem: -7646224  diff: 0%
+
+     ar eval: (#<procedure:ar-apply> list 1 2 3 4 5)
+iter: 450  gc: 4  mem: -2487864  diff: -4,426.22%
+
+ old nu eval: (#<procedure:...t/private/kw.rkt:188:14> (#<procedure:ac-lookup-global> list) 1 2 3 4 5)
+iter: 1,508  gc: 0  mem: 6565816  diff: -1,250.66%
+
+ new nu eval: (ref (_list) 1 2 3 4 5)
+iter: 27,165  gc: 0  mem: -7525680  diff: 33.37%
+
+==============================================================================
+
+> (apply list 1 2 3 4 (list 5))
+   arc3 eval: (ar-apply _apply (list _list 1 2 3 4 (ar-funcall1 _list 5)))
+iter: 10,288  gc: 0  mem: -6985248  diff: 0%
+
+     ar eval: (#<procedure:ar-apply> apply list 1 2 3 4 (#<procedure:ar-funcall1> list 5))
+iter: 274  gc: 4  mem: -2349032  diff: -3,654.74%
+
+ old nu eval: (#<procedure:...t/private/kw.rkt:188:14> (#<procedure:ac-lookup-global> apply) (#<procedure:ac-lookup-global-arg> list) 1 2 3 4 (#<procedure:ac-funcall1> (#<procedure:ac-lookup-global> list) 5))
+iter: 575  gc: 0  mem: 5887488  diff: -1,689.22%
+
+ new nu eval: (ref (_apply) (_list) 1 2 3 4 (ref (_list) 5))
+iter: 12,413  gc: 4  mem: -7292176  diff: 20.66%
+
+==============================================================================
+
+> ()
+   arc3 eval: ()
+iter: 343,289  gc: 0  mem: 992  diff: 0%
+
+     ar eval: nil
+iter: 2,857  gc: 4  mem: -3035072  diff: -11,915.72%
+
+ old nu eval: (racket-quote ())
+iter: 215,157  gc: 0  mem: -10733824  diff: -59.55%
+
+ new nu eval: (quote ())
+iter: 333,357  gc: 4  mem: -3754112  diff: -2.98%
+
+==============================================================================
+
+> nil
+   arc3 eval: (quote nil)
+iter: 320,416  gc: 4  mem: -4528472  diff: 0%
+
+     ar eval: nil
+iter: 2,806  gc: 4  mem: -3468416  diff: -11,318.96%
+
+ old nu eval: (#<procedure:ac-lookup-global-arg> nil)
+iter: 2,588  gc: 0  mem: 4846176  diff: -12,280.83%
+
+ new nu eval: (_nil)
+iter: 69,973  gc: 0  mem: -10342064  diff: -357.91%
+
+==============================================================================
+
+> (list)
+   arc3 eval: (ar-funcall0 _list)
+iter: 23,603  gc: 0  mem: -11322304  diff: 0%
+
+     ar eval: (#<procedure:ar-funcall0> list)
+iter: 1,113  gc: 4  mem: -3382648  diff: -2,020.66%
+
+ old nu eval: (#<procedure:ac-funcall0> (#<procedure:ac-lookup-global> list))
+iter: 1,666  gc: 0  mem: 6719256  diff: -1,316.75%
+
+ new nu eval: (ref (_list))
+iter: 29,536  gc: 0  mem: -10466784  diff: 25.14%
+
+==============================================================================
+
+> '(foo bar qux)
+   arc3 eval: (quote (foo bar qux . nil))
+iter: 130,613  gc: 4  mem: 5029480  diff: 0%
+
+     ar eval: ((racket-quote #<procedure>))
+iter: 2,547  gc: 4  mem: -141232  diff: -5,028.11%
+
+ old nu eval: (#<procedure:.../01 compiler.arc:1230:25>)
+iter: 4,384  gc: 0  mem: 11089000  diff: -2,879.31%
+
+ new nu eval: (#<procedure:...ite nu/01 nu.rkt:1524:44>)
+iter: 40,324  gc: 0  mem: 10471248  diff: -223.91%
+
+==============================================================================
+
+> `(foo bar qux)
+   arc3 eval: (quasiquote (foo bar qux))
+iter: 91,013  gc: 4  mem: 2870744  diff: 0%
+
+     ar eval: (#<procedure:ar-funcall2> join ((racket-quote #<procedure>)) (#<procedure:ar-funcall2> join ((racket-quote #<procedure>)) (#<procedure:ar-funcall2> join ((racket-quote #<procedure>)) ((racket-quote #<procedure>)))))
+iter: 215  gc: 4  mem: -317448  diff: -42,231.63%
+
+ old nu eval: (#<procedure:cons> (#<procedure:.../01 compiler.arc:1230:25>) (#<procedure:cons> (#<procedure:.../01 compiler.arc:1230:25>) (#<procedure:cons> (#<procedure:.../01 compiler.arc:1230:25>) (racket-quote ()))))
+iter: 1,145  gc: 0  mem: 10279552  diff: -7,848.73%
+
+ new nu eval: (#<procedure:cons> (#<procedure:...ite nu/01 nu.rkt:1524:44>) (#<procedure:cons> (#<procedure:...ite nu/01 nu.rkt:1524:44>) (#<procedure:cons> (#<procedure:...ite nu/01 nu.rkt:1524:44>) (quote ()))))
+iter: 21,182  gc: 4  mem: 3903208  diff: -329.67%
+
+==============================================================================
+
+> (list 'foo 'bar 'qux)
+   arc3 eval: (ar-funcall3 _list (quote foo) (quote bar) (quote qux))
+iter: 17,597  gc: 4  mem: -5360896  diff: 0%
+
+     ar eval: (#<procedure:ar-funcall3> list ((racket-quote #<procedure>)) ((racket-quote #<procedure>)) ((racket-quote #<procedure>)))
+iter: 495  gc: 4  mem: -357168  diff: -3,454.95%
+
+ old nu eval: (#<procedure:ac-funcall3> (#<procedure:ac-lookup-global> list) (#<procedure:.../01 compiler.arc:1230:25>) (#<procedure:.../01 compiler.arc:1230:25>) (#<procedure:.../01 compiler.arc:1230:25>))
+iter: 778  gc: 0  mem: 7883160  diff: -2,161.83%
+
+ new nu eval: (ref (_list) (#<procedure:...ite nu/01 nu.rkt:1524:44>) (#<procedure:...ite nu/01 nu.rkt:1524:44>) (#<procedure:...ite nu/01 nu.rkt:1524:44>))
+iter: 10,934  gc: 0  mem: -9473368  diff: -60.94%
+
+==============================================================================
+
+> (obj foo 5)
+   arc3 eval: (ar-funcall1 _listtab (ar-funcall1 _list (ar-funcall2 _list (quote foo) 5)))
+iter: 4,247  gc: 4  mem: -5559456  diff: 0%
+
+     ar eval: (#<procedure:ar-funcall1> listtab (#<procedure:ar-funcall1> list (#<procedure:ar-funcall2> list ((racket-quote #<procedure>)) 5)))
+iter: 249  gc: 4  mem: -1541264  diff: -1,605.62%
+
+ old nu eval: (#<procedure> (#<procedure:.../01 compiler.arc:1230:25>) 5)
+iter: 1,540  gc: 0  mem: 7837312  diff: -175.78%
+
+ new nu eval: (ref (_listtab) (ref (_list) (ref (_list) (#<procedure:...ite nu/01 nu.rkt:1524:44>) 5)))
+iter: 5,424  gc: 0  mem: -10386608  diff: 27.71%
+
+==============================================================================
+
+> (let name (obj foo 5) name!foo)
+   arc3 eval: ((lambda (name) (ar-funcall1 name (quote foo))) (ar-funcall1 _listtab (ar-funcall1 _list (ar-funcall2 _list (quote foo) 5))))
+iter: 1,644  gc: 4  mem: -3375704  diff: 0%
+
+     ar eval: ((racket-lambda (name) (#<procedure:ar-funcall1> name ((racket-quote #<procedure>)))) (#<procedure:ar-funcall1> listtab (#<procedure:ar-funcall1> list (#<procedure:ar-funcall2> list ((racket-quote #<procedure>)) 5))))
+iter: 111  gc: 4  mem: -2368672  diff: -1,381.08%
+
+ old nu eval: ((racket-lambda (name) (#<procedure:ac-funcall1> name (#<procedure:.../01 compiler.arc:1230:25>))) (#<procedure> (#<procedure:.../01 compiler.arc:1230:25>) 5))
+iter: 136  gc: 0  mem: 5073448  diff: -1,108.82%
+
+ new nu eval: ((lambda (name) (ref name (#<procedure:...ite nu/01 nu.rkt:1524:44>))) (ref (_listtab) (ref (_list) (ref (_list) (#<procedure:...ite nu/01 nu.rkt:1524:44>) 5))))
+iter: 1,642  gc: 12  mem: -10552320  diff: -0.12%
+
+==============================================================================
+
+> (do1 10 20)
+   arc3 eval: ((lambda (gs868635) 20 gs868635) 10)
+iter: 4,210  gc: 8  mem: -13131792  diff: 0%
+
+     ar eval: ((racket-lambda (g862034) 20 g862034) 10)
+iter: 284  gc: 4  mem: -10340712  diff: -1,382.39%
+
+ old nu eval: ((racket-lambda (g1236) 20 g1236) 10)
+iter: 544  gc: 0  mem: 6290288  diff: -673.9%
+
+ new nu eval: ((lambda (g428) 20 g428) 10)
+iter: 4,054  gc: 0  mem: 13136296  diff: -3.85%
+
+==============================================================================
+
+> (after 10 20)
+   arc3 eval: (ar-funcall2 _protect (lambda () 10) (lambda () 20))
+iter: 9,684  gc: 4  mem: -12288248  diff: 0%
+
+     ar eval: (#<procedure:ar-funcall2> protect (racket-lambda () 10) (racket-lambda () 20))
+iter: 274  gc: 4  mem: -10069864  diff: -3,434.31%
+
+ old nu eval: (#<procedure> (racket-lambda () 10) (racket-lambda () 20))
+iter: 1,740  gc: 0  mem: 11999784  diff: -456.55%
+
+ new nu eval: (ref (_protect) (lambda () 10) (lambda () 20))
+iter: 4,435  gc: 24  mem: -9705352  diff: -118.35%
+
+==============================================================================
+
+> (rev '(1 2 3 4 5))
+   arc3 eval: (ar-funcall1 _rev (quote (1 2 3 4 5 . nil)))
+iter: 19,949  gc: 0  mem: -12893904  diff: 0%
+
+     ar eval: (#<procedure:ar-funcall1> rev ((racket-quote #<procedure>)))
+iter: 860  gc: 4  mem: -7608320  diff: -2,219.65%
+
+ old nu eval: (#<procedure:ac-funcall1> (#<procedure:ac-lookup-global> rev) (#<procedure:.../01 compiler.arc:1230:25>))
+iter: 1,261  gc: 0  mem: 7386128  diff: -1,482%
+
+ new nu eval: (ref (_rev) (#<procedure:...ite nu/01 nu.rkt:1524:44>))
+iter: 20,413  gc: 0  mem: 14701608  diff: 2.33%
+
+==============================================================================
+
+> (rev (list 1 2 3 4 5))
+   arc3 eval: (ar-funcall1 _rev (ar-apply _list (list 1 2 3 4 5)))
+iter: 11,765  gc: 0  mem: -15068952  diff: 0%
+
+     ar eval: (#<procedure:ar-funcall1> rev (#<procedure:ar-apply> list 1 2 3 4 5))
+iter: 341  gc: 4  mem: -8818408  diff: -3,350.15%
+
+ old nu eval: (#<procedure:ac-funcall1> (#<procedure:ac-lookup-global> rev) (#<procedure:...t/private/kw.rkt:188:14> (#<procedure:ac-lookup-global> list) 1 2 3 4 5))
+iter: 820  gc: 0  mem: 6300280  diff: -1,334.76%
+
+ new nu eval: (ref (_rev) (ref (_list) 1 2 3 4 5))
+iter: 15,927  gc: 0  mem: -14441920  diff: 35.38%
+
+==============================================================================
+
+> (+ '(1 2) '(3 4))
+   arc3 eval: (ar-funcall2 _+ (quote (1 2 . nil)) (quote (3 4 . nil)))
+iter: 21,518  gc: 0  mem: -13020064  diff: 0%
+
+     ar eval: (#<procedure:ar-funcall2> + ((racket-quote #<procedure>)) ((racket-quote #<procedure>)))
+iter: 821  gc: 4  mem: -6979096  diff: -2,520.95%
+
+ old nu eval: (#<procedure:ac-funcall2> (#<procedure:ac-lookup-global> +) (#<procedure:.../01 compiler.arc:1230:25>) (#<procedure:.../01 compiler.arc:1230:25>))
+iter: 1,068  gc: 0  mem: 7999464  diff: -1,914.79%
+
+ new nu eval: (ref (_+) (#<procedure:...ite nu/01 nu.rkt:1524:44>) (#<procedure:...ite nu/01 nu.rkt:1524:44>))
+iter: 15,181  gc: 0  mem: 14761072  diff: -41.74%
+
+==============================================================================
+
+> (+ (list 1 2) (list 3 4))
+   arc3 eval: (ar-funcall2 _+ (ar-funcall2 _list 1 2) (ar-funcall2 _list 3 4))
+iter: 8,978  gc: 0  mem: -15574528  diff: 0%
+
+     ar eval: (#<procedure:ar-funcall2> + (#<procedure:ar-funcall2> list 1 2) (#<procedure:ar-funcall2> list 3 4))
+iter: 309  gc: 0  mem: -8921056  diff: -2,805.5%
+
+ old nu eval: (#<procedure:ac-funcall2> (#<procedure:ac-lookup-global> +) (#<procedure:ac-funcall2> (#<procedure:ac-lookup-global> list) 1 2) (#<procedure:ac-funcall2> (#<procedure:ac-lookup-global> list) 3 4))
+iter: 576  gc: 0  mem: 6195552  diff: -1,458.68%
+
+ new nu eval: (ref (_+) (ref (_list) 1 2) (ref (_list) 3 4))
+iter: 11,626  gc: 0  mem: -14262224  diff: 29.49%
+
+==============================================================================
+
+> (join '(1 2) '(3 4))
+   arc3 eval: (ar-funcall2 _join (quote (1 2 . nil)) (quote (3 4 . nil)))
+iter: 18,568  gc: 0  mem: -12267936  diff: 0%
+
+     ar eval: (#<procedure:ar-funcall2> join ((racket-quote #<procedure>)) ((racket-quote #<procedure>)))
+iter: 633  gc: 4  mem: -7070864  diff: -2,833.33%
+
+ old nu eval: (#<procedure:ac-funcall2> (#<procedure:ac-lookup-global> join) (#<procedure:.../01 compiler.arc:1230:25>) (#<procedure:.../01 compiler.arc:1230:25>))
+iter: 943  gc: 0  mem: 7636544  diff: -1,869.03%
+
+ new nu eval: (ref (_join) (#<procedure:...ite nu/01 nu.rkt:1524:44>) (#<procedure:...ite nu/01 nu.rkt:1524:44>))
+iter: 14,038  gc: 0  mem: 14502936  diff: -32.27%
+
+==============================================================================
+
+> (join (list 1 2) (list 3 4))
+   arc3 eval: (ar-funcall2 _join (ar-funcall2 _list 1 2) (ar-funcall2 _list 3 4))
+iter: 8,466  gc: 0  mem: -14988496  diff: 0%
+
+     ar eval: (#<procedure:ar-funcall2> join (#<procedure:ar-funcall2> list 1 2) (#<procedure:ar-funcall2> list 3 4))
+iter: 279  gc: 4  mem: -8681024  diff: -2,934.41%
+
+ old nu eval: (#<procedure:ac-funcall2> (#<procedure:ac-lookup-global> join) (#<procedure:ac-funcall2> (#<procedure:ac-lookup-global> list) 1 2) (#<procedure:ac-funcall2> (#<procedure:ac-lookup-global> list) 3 4))
+iter: 538  gc: 0  mem: 6113680  diff: -1,473.61%
+
+ new nu eval: (ref (_join) (ref (_list) 1 2) (ref (_list) 3 4))
+iter: 11,106  gc: 0  mem: -14322880  diff: 31.18%
+
+==============================================================================
+
+> (rand 50)
+   arc3 eval: (ar-funcall1 _rand 50)
+iter: 22,843  gc: 0  mem: 14077824  diff: 0%
+
+     ar eval: (#<procedure:ar-funcall1> rand 50)
+iter: 875  gc: 0  mem: -9274144  diff: -2,510.63%
+
+ old nu eval: (#<procedure:ac-funcall1> (#<procedure:ac-lookup-global> rand) 50)
+iter: 1,610  gc: 0  mem: 6594912  diff: -1,318.82%
+
+ new nu eval: (ref (_rand) 50)
+iter: 29,048  gc: 0  mem: 13826384  diff: 27.16%
+
+==============================================================================
+

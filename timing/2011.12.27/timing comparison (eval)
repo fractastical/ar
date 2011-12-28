@@ -1,0 +1,857 @@
+==============================================================================
+
+> (+ 1 2)
+   arc3 eval: 3
+iter: 1,783  gc: 0  mem: -8450608  diff: 0%
+
+     ar eval: 3
+iter: 701  gc: 0  mem: -5044128  diff: -154.35%
+
+ old nu eval: 3
+iter: 934  gc: 0  mem: 11321456  diff: -90.9%
+
+ new nu eval: 3
+iter: 1,711  gc: 0  mem: -10811504  diff: -4.21%
+
+==============================================================================
+
+> (apply + '(1 2))
+   arc3 eval: 3
+iter: 2,730  gc: 0  mem: -9279808  diff: 0%
+
+     ar eval: 3
+iter: 447  gc: 4  mem: -4743216  diff: -510.74%
+
+ old nu eval: 3
+iter: 477  gc: 0  mem: 10271232  diff: -472.33%
+
+ new nu eval: 3
+iter: 1,086  gc: 0  mem: -11015320  diff: -151.38%
+
+==============================================================================
+
+> (apply + (list 1 2))
+   arc3 eval: 3
+iter: 1,316  gc: 0  mem: -10099672  diff: 0%
+
+     ar eval: 3
+iter: 300  gc: 4  mem: -4634712  diff: -338.67%
+
+ old nu eval: 3
+iter: 361  gc: 0  mem: 9972016  diff: -264.54%
+
+ new nu eval: 3
+iter: 828  gc: 0  mem: -10916064  diff: -58.94%
+
+==============================================================================
+
+> (+ 1 2 3 4 5 6)
+   arc3 eval: 21
+iter: 837  gc: 4  mem: -8259672  diff: 0%
+
+     ar eval: 21
+iter: 394  gc: 4  mem: -3933168  diff: -112.44%
+
+ old nu eval: 21
+iter: 762  gc: 0  mem: 11852208  diff: -9.84%
+
+ new nu eval: 21
+iter: 1,476  gc: 0  mem: -10131528  diff: 76.34%
+
+==============================================================================
+
+> (apply + '(1 2 3 4 5 6))
+   arc3 eval: 21
+iter: 2,497  gc: 0  mem: -8562984  diff: 0%
+
+     ar eval: 21
+iter: 446  gc: 4  mem: -5664008  diff: -459.87%
+
+ old nu eval: 21
+iter: 454  gc: 0  mem: 9978664  diff: -450%
+
+ new nu eval: 21
+iter: 1,072  gc: 0  mem: -11899464  diff: -132.93%
+
+==============================================================================
+
+> (apply + (list 1 2 3 4 5 6))
+   arc3 eval: 21
+iter: 699  gc: 0  mem: -9725520  diff: 0%
+
+     ar eval: 21
+iter: 222  gc: 4  mem: -5184000  diff: -214.86%
+
+ old nu eval: 21
+iter: 334  gc: 0  mem: 10468656  diff: -109.28%
+
+ new nu eval: 21
+iter: 760  gc: 0  mem: -10841040  diff: 8.73%
+
+==============================================================================
+
+> (< 1 2)
+   arc3 eval: t
+iter: 1,749  gc: 0  mem: -10673440  diff: 0%
+
+     ar eval: t
+iter: 594  gc: 4  mem: -6310480  diff: -194.44%
+
+ old nu eval: t
+iter: 937  gc: 0  mem: 11359448  diff: -86.66%
+
+ new nu eval: t
+iter: 1,743  gc: 0  mem: -12611456  diff: -0.34%
+
+==============================================================================
+
+> (> 1 2)
+   arc3 eval: nil
+iter: 1,755  gc: 4  mem: -11674304  diff: 0%
+
+     ar eval: nil
+iter: 591  gc: 4  mem: -7462912  diff: -196.95%
+
+ old nu eval: ()
+iter: 935  gc: 0  mem: 11333576  diff: -87.7%
+
+ new nu eval: ()
+iter: 1,702  gc: 0  mem: -12986920  diff: -3.11%
+
+==============================================================================
+
+> (< 1 2 3)
+   arc3 eval: t
+iter: 1,412  gc: 4  mem: -11189608  diff: 0%
+
+     ar eval: t
+iter: 511  gc: 4  mem: -1751752  diff: -176.32%
+
+ old nu eval: t
+iter: 876  gc: 0  mem: -10870664  diff: -61.19%
+
+ new nu eval: t
+iter: 1,650  gc: 0  mem: -7303376  diff: 16.86%
+
+==============================================================================
+
+> (> 1 2 3)
+   arc3 eval: nil
+iter: 1,429  gc: 0  mem: -6805288  diff: 0%
+
+     ar eval: nil
+iter: 511  gc: 4  mem: -2762400  diff: -179.65%
+
+ old nu eval: ()
+iter: 897  gc: 0  mem: 11411360  diff: -59.31%
+
+ new nu eval: ()
+iter: 1,647  gc: 0  mem: -8343232  diff: 15.26%
+
+==============================================================================
+
+> (< 1 2 3 4)
+   arc3 eval: t
+iter: 1,188  gc: 4  mem: -6262968  diff: 0%
+
+     ar eval: t
+iter: 447  gc: 4  mem: -2466344  diff: -165.77%
+
+ old nu eval: t
+iter: 849  gc: 0  mem: -11606672  diff: -39.93%
+
+ new nu eval: t
+iter: 1,581  gc: 0  mem: -7732024  diff: 33.08%
+
+==============================================================================
+
+> (> 1 2 3 4)
+   arc3 eval: nil
+iter: 1,194  gc: 0  mem: -6178408  diff: 0%
+
+     ar eval: nil
+iter: 448  gc: 4  mem: -2423568  diff: -166.52%
+
+ old nu eval: ()
+iter: 856  gc: 0  mem: -11512184  diff: -39.49%
+
+ new nu eval: ()
+iter: 1,585  gc: 0  mem: -7702352  diff: 32.75%
+
+==============================================================================
+
+> (is 1 1)
+   arc3 eval: t
+iter: 1,757  gc: 0  mem: -7483704  diff: 0%
+
+     ar eval: t
+iter: 576  gc: 4  mem: -4058024  diff: -205.03%
+
+ old nu eval: t
+iter: 896  gc: 0  mem: 11049328  diff: -96.09%
+
+ new nu eval: t
+iter: 1,707  gc: 0  mem: -9754712  diff: -2.93%
+
+==============================================================================
+
+> (is 1 2)
+   arc3 eval: nil
+iter: 1,762  gc: 4  mem: -8404816  diff: 0%
+
+     ar eval: nil
+iter: 573  gc: 4  mem: -4161384  diff: -207.5%
+
+ old nu eval: ()
+iter: 891  gc: 0  mem: 10986264  diff: -97.76%
+
+ new nu eval: ()
+iter: 1,700  gc: 0  mem: -9816832  diff: -3.65%
+
+==============================================================================
+
+> (is 1 1 1)
+   arc3 eval: t
+iter: 1,415  gc: 0  mem: -7963384  diff: 0%
+
+     ar eval: t
+iter: 495  gc: 4  mem: -3836960  diff: -185.86%
+
+ old nu eval: t
+iter: 856  gc: 0  mem: 11069320  diff: -65.3%
+
+ new nu eval: t
+iter: 1,617  gc: 4  mem: -9621280  diff: 14.28%
+
+==============================================================================
+
+> (is 1 1 2)
+   arc3 eval: nil
+iter: 1,398  gc: 4  mem: -8161888  diff: 0%
+
+     ar eval: nil
+iter: 488  gc: 4  mem: -4122144  diff: -186.48%
+
+ old nu eval: ()
+iter: 843  gc: 0  mem: 10899888  diff: -65.84%
+
+ new nu eval: ()
+iter: 1,642  gc: 0  mem: -8346264  diff: 17.45%
+
+==============================================================================
+
+> (is 1 1 1 1)
+   arc3 eval: t
+iter: 1,187  gc: 0  mem: -6230096  diff: 0%
+
+     ar eval: t
+iter: 438  gc: 0  mem: -2308080  diff: -171%
+
+ old nu eval: t
+iter: 835  gc: 0  mem: 11425688  diff: -42.16%
+
+ new nu eval: t
+iter: 1,573  gc: 0  mem: -7786216  diff: 32.52%
+
+==============================================================================
+
+> (is 1 1 1 2)
+   arc3 eval: nil
+iter: 1,168  gc: 0  mem: -6513184  diff: 0%
+
+     ar eval: nil
+iter: 435  gc: 0  mem: -2451152  diff: -168.51%
+
+ old nu eval: ()
+iter: 819  gc: 0  mem: 11218792  diff: -42.61%
+
+ new nu eval: ()
+iter: 1,566  gc: 0  mem: -8882904  diff: 34.08%
+
+==============================================================================
+
+> '(1 2)
+   arc3 eval: (1 2 . nil)
+iter: 7,238  gc: 4  mem: -3203912  diff: 0%
+
+     ar eval: {1 2 . nil}
+iter: 1,360  gc: 4  mem: -4208152  diff: -432.21%
+
+ old nu eval: (1 2)
+iter: 1,873  gc: 0  mem: -11298560  diff: -286.44%
+
+ new nu eval: (1 2)
+iter: 3,563  gc: 0  mem: -9085784  diff: -103.14%
+
+==============================================================================
+
+> (list 1 2)
+   arc3 eval: (1 2 . nil)
+iter: 1,703  gc: 0  mem: -8419112  diff: 0%
+
+     ar eval: {1 2 . nil}
+iter: 541  gc: 4  mem: -3843288  diff: -214.79%
+
+ old nu eval: (1 2)
+iter: 830  gc: 0  mem: 10618968  diff: -105.18%
+
+ new nu eval: (1 2)
+iter: 1,699  gc: 0  mem: -9646144  diff: -0.24%
+
+==============================================================================
+
+> (car nil)
+   arc3 eval: nil
+iter: 3,216  gc: 0  mem: -9444488  diff: 0%
+
+     ar eval: nil
+iter: 619  gc: 4  mem: -4298744  diff: -419.55%
+
+ old nu eval: ()
+iter: 586  gc: 0  mem: 9621976  diff: -448.81%
+
+ new nu eval: ()
+iter: 1,335  gc: 0  mem: -10471360  diff: -140.9%
+
+==============================================================================
+
+> (car ())
+   arc3 eval: nil
+iter: 3,180  gc: 4  mem: -9609344  diff: 0%
+
+     ar eval: nil
+iter: 611  gc: 4  mem: -4553408  diff: -420.46%
+
+ old nu eval: ()
+iter: 872  gc: 0  mem: 11019792  diff: -264.68%
+
+ new nu eval: ()
+iter: 1,703  gc: 0  mem: -10525368  diff: -86.73%
+
+==============================================================================
+
+> (car '())
+   arc3 eval: nil
+iter: 3,152  gc: 4  mem: -10382440  diff: 0%
+
+     ar eval: nil
+iter: 549  gc: 4  mem: -5260536  diff: -474.13%
+
+ old nu eval: ()
+iter: 669  gc: 0  mem: 11010792  diff: -371.15%
+
+ new nu eval: ()
+iter: 1,409  gc: 0  mem: -10752144  diff: -123.7%
+
+==============================================================================
+
+> (no 1)
+   arc3 eval: nil
+iter: 2,281  gc: 0  mem: -10506344  diff: 0%
+
+     ar eval: nil
+iter: 685  gc: 4  mem: -3453872  diff: -232.99%
+
+ old nu eval: ()
+iter: 915  gc: 0  mem: 10815712  diff: -149.29%
+
+ new nu eval: ()
+iter: 1,756  gc: 0  mem: -9139840  diff: -29.9%
+
+==============================================================================
+
+> (no ())
+   arc3 eval: t
+iter: 3,255  gc: 0  mem: -8065448  diff: 0%
+
+     ar eval: t
+iter: 639  gc: 0  mem: -3386616  diff: -409.39%
+
+ old nu eval: t
+iter: 903  gc: 0  mem: 11263536  diff: -260.47%
+
+ new nu eval: t
+iter: 1,710  gc: 0  mem: -8411056  diff: -90.35%
+
+==============================================================================
+
+> (no '())
+   arc3 eval: t
+iter: 3,170  gc: 0  mem: -8048072  diff: 0%
+
+     ar eval: t
+iter: 564  gc: 4  mem: -3302456  diff: -462.06%
+
+ old nu eval: t
+iter: 677  gc: 0  mem: 11012512  diff: -368.24%
+
+ new nu eval: t
+iter: 1,381  gc: 0  mem: -8964864  diff: -129.54%
+
+==============================================================================
+
+> (no nil)
+   arc3 eval: t
+iter: 3,242  gc: 0  mem: -8124920  diff: 0%
+
+     ar eval: t
+iter: 635  gc: 0  mem: -4530272  diff: -410.55%
+
+ old nu eval: t
+iter: 602  gc: 0  mem: 9802008  diff: -438.54%
+
+ new nu eval: t
+iter: 1,346  gc: 0  mem: -10381576  diff: -140.86%
+
+==============================================================================
+
+> (no '(1 2 3))
+   arc3 eval: nil
+iter: 2,987  gc: 0  mem: -8051296  diff: 0%
+
+     ar eval: nil
+iter: 562  gc: 4  mem: -4424720  diff: -431.49%
+
+ old nu eval: ()
+iter: 671  gc: 0  mem: 10914840  diff: -345.16%
+
+ new nu eval: ()
+iter: 1,380  gc: 0  mem: -10022160  diff: -116.45%
+
+==============================================================================
+
+> (let a 5 a)
+   arc3 eval: 5
+iter: 1,617  gc: 4  mem: -4768576  diff: 0%
+
+     ar eval: 5
+iter: 292  gc: 4  mem: -3370440  diff: -453.77%
+
+ old nu eval: 5
+iter: 480  gc: 0  mem: 9124184  diff: -236.88%
+
+ new nu eval: 5
+iter: 1,188  gc: 0  mem: 14740744  diff: -36.11%
+
+==============================================================================
+
+> (let a (list 1 2) (car a))
+   arc3 eval: 1
+iter: 821  gc: 0  mem: -16946056  diff: 0%
+
+     ar eval: 1
+iter: 146  gc: 4  mem: -15612952  diff: -462.33%
+
+ old nu eval: 1
+iter: 210  gc: 0  mem: 8379472  diff: -290.95%
+
+ new nu eval: 1
+iter: 530  gc: 0  mem: 13845960  diff: -54.91%
+
+==============================================================================
+
+> (let (a b) (list 1 2) a)
+   arc3 eval: 1
+iter: 506  gc: 0  mem: 15965736  diff: 0%
+
+     ar eval: 1
+iter: 42  gc: 4  mem: -14384344  diff: -1,104.76%
+
+ old nu eval: 1
+iter: 185  gc: 0  mem: 9471056  diff: -173.51%
+
+ new nu eval: 1
+iter: 390  gc: 4  mem: -9467768  diff: -29.74%
+
+==============================================================================
+
+> (let (a b) (list 1 2) b)
+   arc3 eval: 2
+iter: 504  gc: 4  mem: -10854424  diff: 0%
+
+     ar eval: 2
+iter: 43  gc: 4  mem: -7588768  diff: -1,072.09%
+
+ old nu eval: 2
+iter: 183  gc: 0  mem: 9347792  diff: -175.41%
+
+ new nu eval: 2
+iter: 392  gc: 0  mem: 15029720  diff: -28.57%
+
+==============================================================================
+
+> (let a '(1 2) (car a))
+   arc3 eval: 1
+iter: 1,310  gc: 0  mem: -14344712  diff: 0%
+
+     ar eval: 1
+iter: 177  gc: 4  mem: -15733976  diff: -640.11%
+
+ old nu eval: 1
+iter: 245  gc: 0  mem: 8339112  diff: -434.69%
+
+ new nu eval: 1
+iter: 636  gc: 0  mem: 13907880  diff: -105.97%
+
+==============================================================================
+
+> (let (a b) '(1 2) a)
+   arc3 eval: 1
+iter: 652  gc: 4  mem: -16846232  diff: 0%
+
+     ar eval: 1
+iter: 44  gc: 4  mem: -14403544  diff: -1,381.82%
+
+ old nu eval: 1
+iter: 213  gc: 0  mem: 9521944  diff: -206.1%
+
+ new nu eval: 1
+iter: 442  gc: 4  mem: -8914520  diff: -47.51%
+
+==============================================================================
+
+> (let (a b) '(1 2) b)
+   arc3 eval: 2
+iter: 681  gc: 4  mem: -8746152  diff: 0%
+
+     ar eval: 2
+iter: 45  gc: 4  mem: -7638528  diff: -1,413.33%
+
+ old nu eval: 2
+iter: 215  gc: 0  mem: 9643800  diff: -216.74%
+
+ new nu eval: 2
+iter: 462  gc: 0  mem: 15692160  diff: -47.4%
+
+==============================================================================
+
+> (idfn 'x)
+   arc3 eval: x
+iter: 3,237  gc: 0  mem: 15281264  diff: 0%
+
+     ar eval: x
+iter: 544  gc: 4  mem: -13116336  diff: -495.04%
+
+ old nu eval: x
+iter: 650  gc: 0  mem: 10833352  diff: -398%
+
+ new nu eval: x
+iter: 1,392  gc: 0  mem: 14267424  diff: -132.54%
+
+==============================================================================
+
+> (apply idfn '(x))
+   arc3 eval: x
+iter: 2,795  gc: 0  mem: 15661144  diff: 0%
+
+     ar eval: x
+iter: 421  gc: 0  mem: -12539880  diff: -563.9%
+
+ old nu eval: x
+iter: 449  gc: 0  mem: 9940952  diff: -522.49%
+
+ new nu eval: x
+iter: 1,115  gc: 0  mem: 14568400  diff: -150.67%
+
+==============================================================================
+
+> '(1 2 3 4 5)
+   arc3 eval: (1 2 3 4 5 . nil)
+iter: 6,651  gc: 0  mem: -10504296  diff: 0%
+
+     ar eval: {1 2 3 4 5 . nil}
+iter: 1,378  gc: 0  mem: -13379488  diff: -382.66%
+
+ old nu eval: (1 2 3 4 5)
+iter: 1,900  gc: 0  mem: 12997416  diff: -250.05%
+
+ new nu eval: (1 2 3 4 5)
+iter: 3,623  gc: 0  mem: 15276288  diff: -83.58%
+
+==============================================================================
+
+> (list 1 2 3 4 5)
+   arc3 eval: (1 2 3 4 5 . nil)
+iter: 915  gc: 0  mem: -16972368  diff: 0%
+
+     ar eval: {1 2 3 4 5 . nil}
+iter: 381  gc: 4  mem: -12024072  diff: -140.16%
+
+ old nu eval: (1 2 3 4 5)
+iter: 765  gc: 0  mem: 11519248  diff: -19.61%
+
+ new nu eval: (1 2 3 4 5)
+iter: 1,564  gc: 0  mem: 16068408  diff: 70.93%
+
+==============================================================================
+
+> (apply list 1 2 3 4 (list 5))
+   arc3 eval: (1 2 3 4 5 . nil)
+iter: 768  gc: 0  mem: -17343152  diff: 0%
+
+     ar eval: {1 2 3 4 5 . nil}
+iter: 230  gc: 0  mem: -12253040  diff: -233.91%
+
+ old nu eval: (1 2 3 4 5)
+iter: 333  gc: 0  mem: 10327496  diff: -130.63%
+
+ new nu eval: (1 2 3 4 5)
+iter: 794  gc: 0  mem: 15246488  diff: 3.39%
+
+==============================================================================
+
+> ()
+   arc3 eval: nil
+iter: 8,902  gc: 4  mem: -12964752  diff: 0%
+
+     ar eval: nil
+iter: 1,918  gc: 4  mem: -13365744  diff: -364.13%
+
+ old nu eval: ()
+iter: 6,916  gc: 4  mem: -12748072  diff: -28.72%
+
+ new nu eval: ()
+iter: 8,544  gc: 4  mem: -13795968  diff: -4.19%
+
+==============================================================================
+
+> nil
+   arc3 eval: nil
+iter: 8,859  gc: 0  mem: -13066072  diff: 0%
+
+     ar eval: nil
+iter: 1,917  gc: 4  mem: -13375416  diff: -362.13%
+
+ old nu eval: ()
+iter: 6,880  gc: 4  mem: -12851224  diff: -28.76%
+
+ new nu eval: ()
+iter: 8,556  gc: 4  mem: -13765504  diff: -3.54%
+
+==============================================================================
+
+> (list)
+   arc3 eval: nil
+iter: 3,619  gc: 0  mem: 14161560  diff: 0%
+
+     ar eval: nil
+iter: 795  gc: 4  mem: -13589960  diff: -355.22%
+
+ old nu eval: ()
+iter: 892  gc: 0  mem: 10465424  diff: -305.72%
+
+ new nu eval: ()
+iter: 1,882  gc: 0  mem: 14138984  diff: -92.3%
+
+==============================================================================
+
+> '(foo bar qux)
+   arc3 eval: (foo bar qux . nil)
+iter: 7,016  gc: 4  mem: -11938200  diff: 0%
+
+     ar eval: {foo bar qux . nil}
+iter: 1,371  gc: 4  mem: -13438976  diff: -411.74%
+
+ old nu eval: (foo bar qux)
+iter: 1,868  gc: 0  mem: -11327080  diff: -275.59%
+
+ new nu eval: (foo bar qux)
+iter: 3,547  gc: 0  mem: -9119816  diff: -97.8%
+
+==============================================================================
+
+> `(foo bar qux)
+   arc3 eval: (foo bar qux)
+iter: 3,299  gc: 0  mem: -9037968  diff: 0%
+
+     ar eval: {foo bar qux . nil}
+iter: 158  gc: 4  mem: -2625704  diff: -1,987.97%
+
+ old nu eval: (foo bar qux)
+iter: 477  gc: 0  mem: -10049032  diff: -591.61%
+
+ new nu eval: (foo bar qux)
+iter: 876  gc: 0  mem: -8311856  diff: -276.6%
+
+==============================================================================
+
+> (list 'foo 'bar 'qux)
+   arc3 eval: (foo bar qux . nil)
+iter: 2,502  gc: 0  mem: -7240192  diff: 0%
+
+     ar eval: {foo bar qux . nil}
+iter: 335  gc: 4  mem: -4061048  diff: -646.87%
+
+ old nu eval: (foo bar qux)
+iter: 429  gc: 0  mem: 11519496  diff: -483.22%
+
+ new nu eval: (foo bar qux)
+iter: 946  gc: 0  mem: -10173360  diff: -164.48%
+
+==============================================================================
+
+> (obj foo 5)
+   arc3 eval: #hash((foo . 5))
+iter: 1,005  gc: 0  mem: -10217904  diff: 0%
+
+     ar eval: #hash((foo . 5))
+iter: 188  gc: 4  mem: -4913888  diff: -434.57%
+
+ old nu eval: #hash((foo . 5))
+iter: 774  gc: 0  mem: 10417024  diff: -29.84%
+
+ new nu eval: #hash((foo . 5))
+iter: 567  gc: 0  mem: -11528848  diff: -77.25%
+
+==============================================================================
+
+> (let name (obj foo 5) name!foo)
+   arc3 eval: 5
+iter: 512  gc: 0  mem: -10053256  diff: 0%
+
+     ar eval: 5
+iter: 78  gc: 4  mem: -7392168  diff: -556.41%
+
+ old nu eval: 5
+iter: 98  gc: 0  mem: 6027744  diff: -422.45%
+
+ new nu eval: 5
+iter: 260  gc: 0  mem: 11624776  diff: -96.92%
+
+==============================================================================
+
+> (do1 10 20)
+   arc3 eval: 10
+iter: 1,142  gc: 4  mem: -11896528  diff: 0%
+
+     ar eval: 10
+iter: 228  gc: 4  mem: -9133872  diff: -400.88%
+
+ old nu eval: 10
+iter: 380  gc: 0  mem: 8735984  diff: -200.53%
+
+ new nu eval: 10
+iter: 1,059  gc: 0  mem: 15039504  diff: -7.84%
+
+==============================================================================
+
+> (after 10 20)
+   arc3 eval: 10
+iter: 1,025  gc: 16  mem: -12259240  diff: 0%
+
+     ar eval: 10
+iter: 183  gc: 8  mem: -13076064  diff: -460.11%
+
+ old nu eval: 10
+iter: 651  gc: 0  mem: 14068576  diff: -57.45%
+
+ new nu eval: 10
+iter: 765  gc: 0  mem: 16056160  diff: -33.99%
+
+==============================================================================
+
+> (rev '(1 2 3 4 5))
+   arc3 eval: (5 4 3 2 1 . nil)
+iter: 2,663  gc: 0  mem: -15091600  diff: 0%
+
+     ar eval: {5 4 3 2 1 . nil}
+iter: 547  gc: 0  mem: -12301560  diff: -386.84%
+
+ old nu eval: (5 4 3 2 1)
+iter: 616  gc: 0  mem: 10271464  diff: -332.31%
+
+ new nu eval: (5 4 3 2 1)
+iter: 1,350  gc: 0  mem: 14095320  diff: -97.26%
+
+==============================================================================
+
+> (rev (list 1 2 3 4 5))
+   arc3 eval: (5 4 3 2 1 . nil)
+iter: 788  gc: 0  mem: -16282576  diff: 0%
+
+     ar eval: {5 4 3 2 1 . nil}
+iter: 263  gc: 4  mem: -11611056  diff: -199.62%
+
+ old nu eval: (5 4 3 2 1)
+iter: 416  gc: 0  mem: 10525280  diff: -89.42%
+
+ new nu eval: (5 4 3 2 1)
+iter: 913  gc: 0  mem: 15237712  diff: 15.86%
+
+==============================================================================
+
+> (+ '(1 2) '(3 4))
+   arc3 eval: (1 2 3 4 . nil)
+iter: 2,631  gc: 4  mem: -14054360  diff: 0%
+
+     ar eval: {1 2 3 4 . nil}
+iter: 490  gc: 4  mem: -11870840  diff: -436.94%
+
+ old nu eval: (1 2 3 4)
+iter: 550  gc: 0  mem: 11613744  diff: -378.36%
+
+ new nu eval: (1 2 3 4)
+iter: 1,144  gc: 0  mem: 14884064  diff: -129.98%
+
+==============================================================================
+
+> (+ (list 1 2) (list 3 4))
+   arc3 eval: (1 2 3 4 . nil)
+iter: 882  gc: 0  mem: 15962752  diff: 0%
+
+     ar eval: {1 2 3 4 . nil}
+iter: 238  gc: 4  mem: -12725792  diff: -270.59%
+
+ old nu eval: (1 2 3 4)
+iter: 320  gc: 0  mem: 10556016  diff: -175.63%
+
+ new nu eval: (1 2 3 4)
+iter: 706  gc: 0  mem: 14878480  diff: -24.93%
+
+==============================================================================
+
+> (join '(1 2) '(3 4))
+   arc3 eval: (1 2 3 4 . nil)
+iter: 2,292  gc: 0  mem: -13998552  diff: 0%
+
+     ar eval: {1 2 3 4 . nil}
+iter: 414  gc: 4  mem: -12539064  diff: -453.62%
+
+ old nu eval: (1 2 3 4)
+iter: 518  gc: 0  mem: 11252536  diff: -342.47%
+
+ new nu eval: (1 2 3 4)
+iter: 1,147  gc: 0  mem: 14995024  diff: -99.83%
+
+==============================================================================
+
+> (join (list 1 2) (list 3 4))
+   arc3 eval: (1 2 3 4 . nil)
+iter: 828  gc: 0  mem: -17306944  diff: 0%
+
+     ar eval: {1 2 3 4 . nil}
+iter: 216  gc: 4  mem: -12782456  diff: -283.33%
+
+ old nu eval: (1 2 3 4)
+iter: 308  gc: 0  mem: 10349008  diff: -168.83%
+
+ new nu eval: (1 2 3 4)
+iter: 711  gc: 0  mem: 15029280  diff: -16.46%
+
+==============================================================================
+
+> (rand 50)
+   arc3 eval: 21
+iter: 2,310  gc: 0  mem: 14804760  diff: 0%
+
+     ar eval: 35
+iter: 637  gc: 4  mem: -13598360  diff: -262.64%
+
+ old nu eval: 4
+iter: 858  gc: 0  mem: 10496768  diff: -169.23%
+
+ new nu eval: 38
+iter: 1,760  gc: 0  mem: 14025392  diff: -31.25%
+
+==============================================================================
+
