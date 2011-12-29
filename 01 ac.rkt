@@ -1,6 +1,7 @@
 #lang racket/base
 ;; Nu Arc Compiler -- Corridors of Time
 ;; http://www.youtube.com/watch?v=9R-Isx2b-GE
+;; http://www.youtube.com/watch?v=wK1eJSCmv1A
 
 ;; Nu Arc Compiler -- Manifest Destiny
 ;; http://www.youtube.com/watch?v=qXp3qjeM0e4
@@ -23,18 +24,30 @@ change ac to use a parameter local-env rather than an argument env
 change eqv to eq
 |#
 
-(require racket/path)
+;(#%require 'racket/base)
 
 (provide (all-defined-out)
          (all-from-out racket/base)
          ;(all-from-out racket/path)
          )
 
+;(require (file "02 nu.rkt"))
+(require ffi/unsafe)
+(require racket/path)
 (require racket/port)
 (require racket/system)
 (require racket/tcp)
 (require racket/unsafe/ops)
-(require ffi/unsafe)
+
+#|(define-syntax (#%top stx)
+  ;(sprn stx)
+  (syntax-case stx ()
+    ((_ . var) (begin (prn var)
+                      (#%top . var)))))|#
+
+#|(define-syntax-rule (#%top . var)
+  (begin ((#%variable-reference displayln) var)
+         var))|#
 
 ;=============================================================================
 ;  Convenient extras; can remove
@@ -84,7 +97,6 @@ change eqv to eq
 
 ;; compile an Arc expression into a Racket expression; both are s-expressions
 (define (ac x)
-  ;(prn x)
   (cond ((symbol? x)
           (if (ssyntax x)
               (ac (ssexpand x))
@@ -92,7 +104,7 @@ change eqv to eq
         ((pair? x)
           (if (caris x nocompile)
               (cdr x)
-              (call (car x) (cdr x))))
+              (ac-call (car x) (cdr x))))
         ((null? x)
           ;(list ac-quote x)
           (list 'quote x))
@@ -101,41 +113,12 @@ change eqv to eq
         (else x)))
 
 (define (ac-all x)
-  (map ac x))
+  (dottedmap ac x))
 
-
-;=============================================================================
-;  Initialization and loading
-;=============================================================================
-(define (init (dir (current-directory)))
-  (xset exec-dir* dir) ;(path->string )
-  ;; TODO: why does Arc 3.1 do this?
-  (putenv "TZ" ":GMT")
-  (current-readtable arc3-readtable)
-  (aload-all dir))
-
-(define (repl)       ;; TODO: a little ew
-  (aload (build-path (var 'exec-dir*) "repl.arc")))
-
-(define (aload-all dir)
-  ;(aload (build-path dir "02 core.arc"))
-  (aload (build-path dir "arc.arc"))
-  ;(aload (build-path dir "03 import.arc"))
-  ;(aload (build-path dir "04 extra.arc"))
-  ;(aload (build-path dir "libs.arc"))
-  ;(aload (build-path dir "lib/repl.arc"))
-  ;(ac-eval '(importfn1 "repl"))
-  )
-
-(define (aload filename)
-  (call-with-input-file filename aload1))
-
-(define (aload1 p)
-  (let ((x (read p)))
-    (if (eof-object? x)
-        #t ;; TODO: should probably be (void)
-        (begin (ac-eval x)
-               (aload1 p)))))
+(define (dottedmap f x)
+  (if (pair? x)
+        (cons (f (car x)) (dottedmap f (cdr x)))
+      x))
 
 
 ;=============================================================================
@@ -144,26 +127,71 @@ change eqv to eq
 (define sig    (make-hash))
 (define names  (make-hash))
 
-(define-syntax-rule (ac-def name parms . body)
+(define-syntax-rule (redef name parms . body)
+  (reset name (lambda parms . body)))
+
+(define-syntax-rule (reset name val)
+  ((var-raw 'name) val))
+
+#|(define-syntax redef
+  (syntax-rules ()
+    ((_ name val)           ((var-raw 'name) val))
+    ((_ name parms . body)  (redef name (lambda parms . body)))))|#
+
+(define-syntax sdef
+  (syntax-rules ()
+    ((_ name parms #:sig parms2 . body)
+      (sset name parms2 (lambda parms . body)))
+    ((_ name parms . body)
+      (sset name parms (lambda parms . body)))))
+
+(define-syntax-rule (mdef name parms . body)
   (begin (define name (lambda parms . body))
-         (sset name parms name)))
+         (mset name parms name)))
 
-;; this makes a value accessible to Arc while setting the sig
-(define-syntax-rule (sset a parms b)
-  (begin (hash-set! sig 'a 'parms)
-         (xset a b)))
+#|(define-syntax mdef
+  (syntax-rules ()
+    ((_ name parms . body)
+      (begin (define name (lambda parms . body))
+             (mset name parms name)))
+    ((_ name parms #:sig parms2 . body)
+      (begin (define name (lambda parms . body))
+             (mset name parms2 name)))
 
+    ((_ name #:name name2 parms . body)
+      (begin (define name2 (lambda parms . body))
+             (mset name parms name2)))
+    ((_ name #:name name2 parms #:sig parms2 . body)
+      (begin (define name2 (lambda parms . body))
+             (mset name parms2 name2)))))|#
+
+
+;; wraps the Racket value in a global variable function before making it
+;; accessible to Arc while also optionally setting the sig of the name
+(define-syntax sset
+  (syntax-rules ()
+    ((_ a b)        (set 'a (global-var b)))
+    ((_ a parms b)  (begin (hash-set! sig 'a 'parms)
+                           (sset a b)))))
+
+#|
 ;; like sset but mutable
 ;; should probably be the default, but I need to run speed tests first
 (define-syntax-rule (mset a parms b)
   (begin (hash-set! sig 'a 'parms)
          (set 'a (case-lambda
                    (()  b)
-                   ((x) (set! b x))))))
+                   ((x) (set! b x))))))|#
 
-;; wraps the Arc value in a variable function before assigning it
-(define-syntax-rule (xset a b)
-  (set 'a (global-var b)))
+;; like sset but makes the Racket name mutable from within Arc.
+;; can only bind Racket names, not Racket values
+(define-syntax mset
+  (syntax-rules ()
+    ((_ a b)        (set 'a (case-lambda
+                              (()  b)
+                              ((x) (set! b x)))))
+    ((_ a parms b)  (begin (hash-set! sig 'a 'parms)
+                           (mset a b)))))
 
 
 ;; this makes the variable accessible to Arc (potentially giving it a name as
@@ -181,7 +209,7 @@ change eqv to eq
 (define (var a (def nil))
   (let ((v (var-raw a fail)))
     (if (eq? v fail)
-          def
+        def
         (v))))
 
 (define (var-ref x)
@@ -208,6 +236,71 @@ change eqv to eq
                  (procedure? val));)
     ;(prn name val)
     (hash-set! names val name)))
+
+
+;=============================================================================
+;  Initialization and loading
+;=============================================================================
+(define (init (dir (current-directory)))
+  ;(xset exec-dir* dir) ;(path->string )
+  ;(reset exec-dir* dir)
+  (set! exec-dir* dir)
+  ;; TODO: why does Arc 3.1 do this?
+  (putenv "TZ" ":GMT")
+  ;; TODO: why is this in Arc 3.1?
+  ;(print-hash-table #t)
+  (current-readtable arc3-readtable)
+  (ac-load-all dir))
+
+(define (repl)
+  (aload (build-path exec-dir* "repl.arc")))
+
+(define (aload filename)
+  (call-with-input-file filename aload1))
+
+(define (aload1 p)
+  (let ((x (read p)))
+    (if (eof-object? x)
+        #t ;; TODO: should probably be (void)
+        (begin (ac-eval x)
+               (aload1 p)))))
+
+
+(mdef ac-load-all (dir)
+  ;(aload (build-path dir "02 core.arc"))
+  (aload (build-path dir "arc.arc"))
+  ;(aload (build-path dir "03 import.arc"))
+  ;(aload (build-path dir "04 extra.arc"))
+  ;(aload (build-path dir "libs.arc"))
+  ;(aload (build-path dir "lib/repl.arc"))
+  ;(ac-eval '(importfn1 "repl"))
+  )
+
+
+;=============================================================================
+;  Types
+;=============================================================================
+(struct tagged (type rep)
+  #:constructor-name make-tagged
+  ;#:constructor-name annotate
+  ;; TODO: make mutable later, maybe
+  ;#:mutable
+  #|#:property prop:custom-write
+             (lambda (x port mode)
+               (display "#(tagged " port)
+               (display (type x) port)
+               (display " " port)
+               (display (rep x) port)
+               (display ")" port))|#
+  #|#:guard (lambda (type rep name)
+            (values type rep)
+            (values type rep))|#
+  )
+
+(define (iround x) (inexact->exact (round x)))
+
+(define (wrapnil f)  (lambda args (apply f args) nil))
+(define (wraptnil f) (lambda (x)  (tnil (f x))))
 
 
 ;=============================================================================
@@ -307,7 +400,7 @@ change eqv to eq
 ;   (ref foo bar)
 (define direct-calls #f)
 
-(define (call f args)
+(define (ac-call f args)
   (let ((macfn (macro? f)))
           ; the next three clauses could be removed without changing semantics
           ; ... except that they work for macros (so prob should do this for
@@ -436,6 +529,33 @@ change eqv to eq
       (f arg1 arg2 arg3 arg4)
       (ref f arg1 arg2 arg3 arg4)))|#
 
+#|(define call (case-lambda
+               ((x)              (if (procedure? x)
+                                     (x)
+                                     (ref x)))
+               ((x a)            (if (procedure? x)
+                                     (x a)
+                                     (ref x a)))
+               ((x a b)          (if (procedure? x)
+                                     (x a b)
+                                     (ref x a b)))
+               ((x a b c)        (if (procedure? x)
+                                     (x a b c)
+                                     (ref x a b c)))
+               ((x a b c d)      (if (procedure? x)
+                                     (x a b c d)
+                                     (ref x a b c d)))
+               ((x a b c d e)    (if (procedure? x)
+                                     (x a b c d e)
+                                     (ref x a b c d e)))
+               ((x a b c d e f)  (if (procedure? x)
+                                     (x a b c d e f)
+                                     (ref x a b c d e f)))
+               ((x . args)       (begin (prn "warning: called with 7+ arguments:" x args)
+                                        (if (procedure? x)
+                                            (apply x args)
+                                            (apply ref x args))))))|#
+
 (define (arg-list* args)
   (if (null? (cdr args))
       (car args)
@@ -520,32 +640,6 @@ change eqv to eq
                                       (symbol->string y)))
               ((char? x)    (char>? x y))
               (else         (> x y)))))
-
-
-;=============================================================================
-;  Types
-;=============================================================================
-(struct tagged (type rep)
-  #:constructor-name make-tagged
-  ;#:constructor-name annotate
-  ;; TODO: make mutable later, maybe
-  ;#:mutable
-  #|#:property prop:custom-write
-             (lambda (x port mode)
-               (display "#(tagged " port)
-               (display (type x) port)
-               (display " " port)
-               (display (rep x) port)
-               (display ")" port))|#
-  #|#:guard (lambda (type rep name)
-            (values type rep)
-            (values type rep))|#
-  )
-
-(define (iround x) (inexact->exact (round x)))
-
-(define (wrapnil f)  (lambda args (apply f args) nil))
-(define (wraptnil f) (lambda (x)  (tnil (f x))))
 
 
 ;=============================================================================
@@ -637,50 +731,6 @@ change eqv to eq
 
 (define arc3-readtable
   (make-readtable #f #\[ 'terminating-macro read-square-brackets))
-
-
-;=============================================================================
-;  Misc
-;=============================================================================
-; allow Arc to give up root privileges after it
-; calls open-socket. thanks, Eli!
-(define setuid (get-ffi-obj 'setuid #f (_fun _int -> _int)))
-
-
-(define uniq-counter (make-parameter 1))
-
-(define (uniq (name 'g) (num nil))
-  (let ((num (if (false? num)
-                 (let ((num (uniq-counter)))
-                   (uniq-counter (+ (uniq-counter) 1))
-                   num)
-                 num)))
-    (string->uninterned-symbol
-      (string-append (coerce name 'string)
-                     (coerce num  'string)))))
-
-
-;; TODO: better implementation
-; If an err occurs in an on-err expr, no val is returned and code
-; after it doesn't get executed.  Not quite what I had in mind.
-(define (on-err errfn f)
-  ((call-with-current-continuation
-     (lambda (k)
-       (lambda ()
-         (with-handlers ((exn:fail? (lambda (c)
-                                      (k (lambda () (errfn c))))))
-                        (f)))))))
-
-(define (scdr p x)
-  (cond ((pair? p)   (unsafe-set-mcdr! p x))
-        ((string? x) (err "can't set cdr of a string" x))
-        (else        (raise-type-error 'scdr "pair" p)))
-  x)
-
-;; TODO: why is this in Arc 3.1?
-;(print-hash-table #t)
-
-(define (gmt-date sec) (seconds->date sec))
 
 
 ;=============================================================================
@@ -1148,77 +1198,59 @@ change eqv to eq
 ;  Arc functions used by the compiler
 ;=============================================================================
 ;; TODO: a better argument name than typ
-(ac-def annotate (typ rep)
+;; TODO: annotate doesn't need to be mutable, but does need to be exposed to
+;;       both the compiler and Arc
+(mdef annotate (typ rep)
       ;; TODO: does this need to eqv? rather than eq?
   (if (eqv? (type rep) typ)
       rep
       (make-tagged typ rep)))
 
-(ac-def close args
+(mdef close args
   (map close1 args)
   (map (lambda (p) (try-custodian p)) args) ; free any custodian
   nil)
 
-(ac-def close1 (p)
+(mdef close1 (p)
   (cond ((input-port? p)    (close-input-port p))
         ((output-port? p)   (close-output-port p))
         ((tcp-listener? p)  (tcp-close p))
         (else               (err "can't close " p))))
 
-(ac-def err (x . rest)
+(mdef err (x . rest)
   (apply error x rest))
 
 ; macroexpand the outer call of a form as much as possible
-(ac-def macex (e)
+(mdef macex (e)
   (let ((v (macex1 e)))
     (if (eq? v e)
         v
         (macex v))))
 
 ; macroexpand the outer call of a form once
-(ac-def macex1 (e)
+(mdef macex1 (e)
   (if (pair? e)
       (let ((m (macro? (car e))))
         (if m  (apply m (cdr e))
                e))
       e))
 
-;; TODO: should pipe call ((caddddr x) 'wait)?
-;; TODO: expose pipe to Arc
-(ac-def pipe (cmd)
-        ;; TODO: destructuring
-  (let* ((x   (process/ports #f #f (current-error-port) cmd))
-         (in  (car x))
-         (out (cadr x)))
-    (list in out)))
-
-(ac-def pipe-from (cmd)
-        ;; TODO: destructuring
-  (let* ((x   (pipe cmd))
-         (in  (car x))
-         (out (cadr x)))
-    ;; Racket docs say I need to close all 3 ports explicitly,
-    ;; but the err port doesn't need to be closed, because it's
-    ;; redirected to stderr
-    (close out)
-    in))
-
-(ac-def protect (during after)
+(mdef protect (during after)
   (dynamic-wind (lambda () #t) during after))
 
-(ac-def rep (x)
+(mdef rep (x)
   (if (tagged? x)
       (tagged-rep x)
       x))
 
-(ac-def scar (p x)
+(mdef scar (p x)
   (cond ((pair? p)   (unsafe-set-mcar! p x))
         ((string? x) (string-set! p 0 x))
         (else        (raise-type-error 'scar "pair" p)))
   x)
 
 ; Later may want to have multiple indices.
-(ac-def sref (x val key)
+(mdef sref (x val key)
   (cond ((namespace? x) (namespace-set-variable-value! (global-name key) val #f x))
                             ;(eq? val nil)
         ((hash? x)      (if (false? val)
@@ -1229,7 +1261,7 @@ change eqv to eq
         (else           (err "can't set reference " x key val)))
   val)
 
-(ac-def type (x)
+(mdef type (x)
   (cond ((tagged? x)        (tagged-type x))
         ((pair? x)          'cons)
         ((symbol? x)        'sym)
@@ -1241,23 +1273,37 @@ change eqv to eq
         ((exint? x)         'int)
         ((number? x)        'num)     ; unsure about this
         ((hash? x)          'table)
-        ((namespace? x)     'namespace)
+        ;((namespace? x)     'namespace)
         ((output-port? x)   'output)
         ((input-port? x)    'input)
         ((tcp-listener? x)  'socket)
         ((exn? x)           'exception)
         ((thread? x)        'thread)
-        (else               (err "type: unknown type" x))))
+        (else               ;(err "type: unknown type" x)
+                            ;(prn "warning: unknown type" x)
+                            ;'unknown
+                            nil)))
+
+
+;; TODO: should pipe call ((caddddr x) 'wait)?
+(mdef pipe (cmd)
+        ;; TODO: destructuring
+  (let* ((x   (process/ports #f #f (current-error-port) cmd))
+         (in  (car x))
+         (out (cadr x)))
+    (list in out)))
 
 
 ;=============================================================================
 ;  Compiler functions exposed to Arc
 ;=============================================================================
 (define arc3-namespace  (current-namespace))
-(define defcall-types*  (make-hash))
+(define defref-types*   (make-hash))
+(define exec-dir*       (current-directory))
 (define namespace       (make-parameter arc3-namespace))
 (define nil             null)
 (define t               't)
+(define uniq-counter    (make-parameter 1))
 
 (define (ac-car x)
   (if (null? x)
@@ -1360,61 +1406,89 @@ change eqv to eq
   (case-lambda
     ((x)              (if (procedure? x)
                           (x)
-                          (let ((v (hash-ref defcall-types* (type x))))
+                          (let ((v (hash-ref defref-types* (type x) nil)))
                             (if (true? v)
                                 (v x)
                                 (err "function call on inappropriate object" x)))))
-    ((x k)            (cond ((procedure? x)  (x k))
-                            ((namespace? x)  (namespace-variable-value (global-name k) #f (lambda () nil) x))
-                            ((hash? x)       (hash-ref x k nil))
-                            ((string? x)     (string-ref x k))
-                            ((pair? x)       (list-ref x k))
-                            (else
-                              (let ((v (hash-ref defcall-types* (type x))))
-                                (if (true? v)
-                                    (v x k)
-                                    (err "function call on inappropriate object" x k))))))
-    ((x k d)          (cond ((procedure? x)  (x k d))
-                            ((namespace? x)  (namespace-variable-value (global-name k) #f
-                                               (if (procedure? d) d (lambda () d))
-                                               x))
-                            ((hash? x)       (hash-ref x k d))
-                            (else
-                              (let ((v (hash-ref defcall-types* (type x))))
-                                    (if (true? v)
-                                        (v x k d)
-                                        (err "function call on inappropriate object" x k d))))))
+    ((x k)            (if (procedure? x)
+                          (x k)
+                          (let ((v (hash-ref defref-types* (type x) nil)))
+                            (cond ((true? v)       (v x k))
+                                  ((namespace? x)  (namespace-variable-value (global-name k) #f (lambda () nil) x))
+                                  ((hash? x)       (hash-ref x k nil))
+                                  ((string? x)     (string-ref x k))
+                                  ((pair? x)       (list-ref x k))
+                                  (else (err "function call on inappropriate object" x k))))))
+    ((x k d)          (if (procedure? x)
+                          (x k d)
+                          (let ((v (hash-ref defref-types* (type x) nil)))
+                            (cond ((true? v)       (v x k d))
+                                  ((namespace? x)  (namespace-variable-value (global-name k) #f
+                                                     (if (procedure? d) d (lambda () d))
+                                                     x))
+                                  ((hash? x)       (hash-ref x k d))
+                                  (else (err "function call on inappropriate object" x k d))))))
     ((x a b c)        (if (procedure? x)
                           (x a b c)
-                          (let ((v (hash-ref defcall-types* (type x))))
+                          (let ((v (hash-ref defref-types* (type x) nil)))
                             (if (true? v)
                                 (v x a b c)
                                 (err "function call on inappropriate object" x a b c)))))
     ((x a b c d)      (if (procedure? x)
                           (x a b c d)
-                          (let ((v (hash-ref defcall-types* (type x))))
+                          (let ((v (hash-ref defref-types* (type x) nil)))
                             (if (true? v)
                                 (v x a b c d)
                                 (err "function call on inappropriate object" x a b c d)))))
     ((x a b c d e)    (if (procedure? x)
                           (x a b c d e)
-                          (let ((v (hash-ref defcall-types* (type x))))
+                          (let ((v (hash-ref defref-types* (type x) nil)))
                             (if (true? v)
                                 (v x a b c d e)
                                 (err "function call on inappropriate object" x a b c d e)))))
     ((x a b c d e f)  (if (procedure? x)
                           (x a b c d e f)
-                          (let ((v (hash-ref defcall-types* (type x))))
+                          (let ((v (hash-ref defref-types* (type x) nil)))
                             (if (true? v)
                                 (v x a b c d e f)
                                 (err "function call on inappropriate object" x a b c d e f)))))
     ((x . args)       (begin (prn "warning: called with 7+ arguments:" x args)
                              (if (procedure? x)
                                  (apply x args)
-                                 (let ((v (hash-ref defcall-types* (type x))))
+                                 (let ((v (hash-ref defref-types* (type x) nil)))
                                    (if (true? v)
                                        (apply v x args)
                                        (apply err "function call on inappropriate object" x args))))))))
+
+
+
+#|(define ref
+  (case-lambda
+    ((x k)       (if (procedure? x)
+                     (x k)
+                     (let ((v (hash-ref defref-types* (type x) nil)))
+                       (cond ((true? v)       (v x k))
+                             ((namespace? x)  (namespace-variable-value (global-name k) #f (lambda () nil) x))
+                             ((hash? x)       (hash-ref x k nil))
+                             ((string? x)     (string-ref x k))
+                             ((pair? x)       (list-ref x k))
+                             (else (err "function call on inappropriate object" x k))))))
+    ((x k d)     (if (procedure? x)
+                     (x k d)
+                     (let ((v (hash-ref defref-types* (type x) nil)))
+                       (cond ((true? v)       (v x k d))
+                             ((namespace? x)  (namespace-variable-value (global-name k) #f
+                                                (if (procedure? d) d (lambda () d))
+                                                x))
+                             ((hash? x)       (hash-ref x k d))
+                             (else (err "function call on inappropriate object" x k d))))))
+    ((x . args)  (if (procedure? x)
+                     (apply x args)
+                     (let ((v (hash-ref defref-types* (type x) nil)))
+                       (if (true? v)
+                           (apply v x args)
+                           (apply err "function call on inappropriate object" x args)))))))|#
+
 
 
 #|(require (for-syntax racket/base))
@@ -1428,7 +1502,7 @@ change eqv to eq
   #|(define (make-cond c d (trans #f))
     #`(#,c (if (procedure? #,(car c))
                #,(check trans c)
-               (let ((#,u (hash-ref defcall-types* (type #,(car c)) #f)))
+               (let ((#,u (hash-ref defref-types* (type #,(car c)) #f)))
                  (cond (#,u #,(check trans (cons u c)))
                        #,@d
                        (else (err "function call on inappropriate object" #,@(if trans (tolist c) c))))))))|#
@@ -1443,8 +1517,8 @@ change eqv to eq
     #`(if (procedure? #,(car x))
           #,(check x)
           ;; TODO: maybe should use nil and true?
-          ;; TODO: how slow is it to put defcall first...?
-          (let ((#,u (hash-ref defcall-types* (type #,(car x)) #f)))
+          ;; TODO: how slow is it to put defref first...?
+          (let ((#,u (hash-ref defref-types* (type #,(car x)) #f)))
             (cond (#,u #,(check (cons u x)))
                   #,@rest
                   (else #,(check `(err "function call on inappropriate object" ,@x)))))))
@@ -1489,7 +1563,7 @@ change eqv to eq
   (w/uniq u
     `(,c (if (fn? ,car.c)
              ,c
-             (let ,u (defcall-types* (type ,car.c))
+             (let ,u (defref-types* (type ,car.c))
                (if ,u
                    (,u ,@c)
                    ,@d
@@ -1527,28 +1601,28 @@ change eqv to eq
                                       (list (lambda () x))))))
 
 ;; globals
-(xset arc3-namespace                   arc3-namespace)
-(xset defcall-types*                   defcall-types*)
+(sset arc3-namespace                   arc3-namespace)
+(mset defref-types*                    defref-types*)
+(mset exec-dir*                        exec-dir*)
 (set  'namespace                       namespace)
-(xset nil                              nil)
-(xset sig                              sig)
-(xset t                                t)
+(mset nil                              nil)
+(mset sig                              sig)
+(mset t                                t)
+(set  'uniq-counter                    uniq-counter)
 
 ;; functions
 (sset -        args                    -)
 ;; car and cdr probably will be used later, but not right now
-(sset car      (x)                     ac-car)
-(sset cdr      (x)                     ac-cdr)
-(sset coerce   (x to (o base 10))      coerce)
-(sset cons     (x y)                   cons)
-(sset eval     (x)                     ac-eval)
-(sset if       args                    ac-if)
-(sset ref      (x . args)              ref)
-(sset quote    (x)                     ac-quote)
-(sset seconds  ()                      current-seconds)
-
-;; TODO
+(mset car      (x)                     ac-car)
+(mset cdr      (x)                     ac-cdr)
+(mset coerce   (x to (o base 10))      coerce)
+(sset cons     (x y)                   cons) ;; TODO: look for some uses of cons and replace em with ac-cons
+(mset eval     (x)                     ac-eval)
+(mset if       args                    ac-if)
 (sset instring (str (o name 'string))  open-input-string)
+(mset ref      (x . args)              ref)
+(mset quote    (x)                     ac-quote)
+(sset seconds  ()                      current-seconds)
 
 
 ;=============================================================================
@@ -1592,11 +1666,9 @@ change eqv to eq
 (sset sqrt                         (n)                        sqrt)
 (sset tan                          (n)                        tan)
 
-;; compiler functions
-(sset on-err                       (errfn f)                  on-err) ;; TODO: get rid of on-err in the compiler
-(sset scdr                         (p x)                      scdr)
-(sset setuid                       (n)                        setuid)
-(sset uniq                         ((o name 'g) (o num nil))  uniq)
+;; allow Arc to give up root privileges after it calls open-socket.
+;; thanks, Eli!
+(sset setuid (i) (get-ffi-obj 'setuid #f (_fun _int -> _int)))
 
 ;; binaries
 (sset +  args (binary +-2  reduce)) ;(lambda (f args) (foldl f 0 args)) ;; TODO: kinda hacky
@@ -1617,6 +1689,19 @@ change eqv to eq
 (sset exact       (x) (wraptnil exint?)) ;; TODO: bad name
 (sset file-exists (x) (wraptnil file-exists?))
 (sset ssyntax     (x) (wraptnil ssyntax))
+
+;; make-read
+(sset readc ((o in (stdin))) (make-read read-char))
+(sset readb ((o in (stdin))) (make-read read-byte))
+(sset peekc ((o in (stdin))) (make-read peek-char))
+
+;; make-write
+(sset writec (c (o out (stdout))) (make-write write-char))
+(sset writeb (c (o out (stdout))) (make-write write-byte))
+
+;; make-print
+(sset write  (x (o out (stdout))) (make-print write))
+(sset disp   (x (o out (stdout))) (make-print display))
 
 ;; macros
 (sset assign args
@@ -1643,49 +1728,40 @@ change eqv to eq
                              (cons 'begin args))))))
 
 ;; functions
-(sset apply (f . args)
-  (lambda (f . args)
-    ;(apply apply ref f args)
-    (apply ref f (arg-list* args)))) ;ac-apply
+(sdef apply (f . args)
+  ;(apply apply ref f args)
+  (apply ref f (arg-list* args))) ;ac-apply
+;(sset apply (f . args)
+;  (lambda (f . args)
 
-(ac-def len (x)
+(sdef len (x)
   (cond ((string? x) (string-length x))
         ((hash? x)   (hash-count x))
         (else        (length x))))
 
-(sset outfile (f (o mode 'truncate))
-             ;; TODO
-  (lambda (f (mode 'truncate))
-    (open-output-file f 'text mode)))
+                 ;; TODO check this
+(sdef outfile (f (mode 'truncate))
+        #:sig (f (o mode 'truncate))
+  (open-output-file f 'text mode))
 
-(ac-def call-w/stdout (port thunk)
+(sdef call-w/stdout (port thunk)
   (parameterize ((current-output-port port)) (thunk)))
 
-(ac-def call-w/stdin (port thunk)
+(sdef call-w/stdin (port thunk)
   (parameterize ((current-input-port port)) (thunk)))
 
-(sset readc ((o in (stdin))) (make-read read-char))
-(sset readb ((o in (stdin))) (make-read read-byte))
-(sset peekc ((o in (stdin))) (make-read peek-char))
-
-(sset writec (c (o out (stdout))) (make-write write-char))
-(sset writeb (c (o out (stdout))) (make-write write-byte))
-
-(sset write  (x (o out (stdout))) (make-print write))
-(sset disp   (x (o out (stdout))) (make-print display))
-
 ; sread = scheme read. eventually replace by writing read
-(ac-def sread (p eof)
+(sdef sread (p eof)
   (let ((expr (read p)))
     (if (eof-object? expr) eof expr)))
 
 
-(ac-def open-socket (num)
+(sdef open-socket (num)
   (tcp-listen num 50 #t))
 
 ; the 2050 means http requests currently capped at 2 meg
 ; http://list.cs.brown.edu/pipermail/plt-scheme/2005-August/009414.html
-(ac-def socket-accept (s)
+(sdef socket-accept (s)
   (let ((oc (current-custodian))
         (nc (make-custodian)))
     (current-custodian nc)
@@ -1702,19 +1778,19 @@ change eqv to eq
 
 ; Racket provides eq? eqv? and equal? hash tables
 ; we need equal? for strings
-(sset table ((o init))
-  (lambda ((init nil))
-    (let ((h (make-hash)))
-      (when (true? init)
-        (init h))
-      h)))
+(sdef table ((init nil))
+      #:sig ((o init))
+  (let ((h (make-hash)))
+    (when (true? init)
+      (init h))
+    h))
 
-(ac-def maptable (fn table)
+(sdef maptable (fn table)
   (hash-for-each table fn) ; arg is (fn (key value) ...)
   table)
 
 ;; TODO: better dir
-(ac-def dir (name)
+(sdef dir (name)
   (map path->string (directory-list name)))
 
 ;; TODO: mkdir with make-directory*
@@ -1722,27 +1798,27 @@ change eqv to eq
 ; of system in ensure-dir, but make-directory is too weak: it doesn't
 ; create intermediate directories like mkdir -p.
 
-(sset mvfile (old new (o flag t))
-  (lambda (old new (flag t))
-    (rename-file-or-directory old new (true? flag))
-    nil))
+(sdef mvfile (old new (flag t))
+       #:sig (old new (o flag t))
+  (rename-file-or-directory old new (true? flag))
+  nil)
 
 (sset details (c) exn-message)
                ;; TODO: why does this use disp-to-string...?
   ;(lambda (c) (disp-to-string (exn-message c)))
 
-(ac-def bound (x)
+(sdef bound (x)
   (tnil (not (eq? (var x fail) fail))))
 
-(ac-def trunc (x)
+(sdef trunc (x)
   (inexact->exact (truncate x)))
 
-(ac-def client-ip (port)
+(sdef client-ip (port)
   (let-values (((x y) (tcp-addresses port)))
               y))
 
 ;; TODO: make this better
-(ac-def atomic-invoke (f)
+(sdef atomic-invoke (f)
   (if (thread-cell-ref sema-cell)
       ;; TODO: why are these ref...?
       (ref f)
@@ -1756,22 +1832,22 @@ change eqv to eq
 
 ; Added because Mzscheme buffers output.  Not a permanent part of Arc.
 ; Only need to use when declare explicit-flush optimization.
-(ac-def flushout ()
+(sdef flushout ()
   (flush-output)
   t)
 
-(sset ssexpand (x)
-  (lambda (x) (if (symbol? x) (ssexpand x) x)))
+(sdef ssexpand (x)
+  (if (symbol? x) (ssexpand x) x))
 
 ;; TODO: force-close1
-(ac-def force-close args
+(sdef force-close args
   (map (lambda (p)
          (when (not (try-custodian p))
            (close p)))
        args)
   nil)
 
-(ac-def declare (key val)
+(sdef declare (key val)
   (let ((flag (true? val)))
     (case key
       ((atstrings)      (set! atstrings      flag))
@@ -1779,12 +1855,51 @@ change eqv to eq
       ((explicit-flush) (set! explicit-flush flag)))
     val))
 
-(sset timedate ((o sec (seconds)))
-  (lambda ((sec (current-seconds)))
-    (let ((d (gmt-date sec sec)))
-      (list (date-second d)
-            (date-minute d)
-            (date-hour d)
-            (date-day d)
-            (date-month d)
-            (date-year d)))))
+(sdef timedate ((sec (current-seconds)))
+         #:sig ((o sec (seconds)))
+  (let ((d (seconds->date sec)))
+    (list (date-second d)
+          (date-minute d)
+          (date-hour d)
+          (date-day d)
+          (date-month d)
+          (date-year d))))
+
+(sdef pipe-from (cmd)
+        ;; TODO: destructuring
+  (let* ((x   (pipe cmd))
+         (in  (car x))
+         (out (cadr x)))
+    ;; Racket docs say I need to close all 3 ports explicitly,
+    ;; but the err port doesn't need to be closed, because it's
+    ;; redirected to stderr
+    (close out)
+    in))
+
+(sdef uniq ((name 'g) (num nil))
+     #:sig ((o name 'g) (o num))
+  (let ((num (if (false? num)
+                 (let ((num (uniq-counter)))
+                   (uniq-counter (+ (uniq-counter) 1))
+                   num)
+                 num)))
+    (string->uninterned-symbol
+      (string-append (coerce name 'string)
+                     (coerce num  'string)))))
+
+;; TODO: better implementation
+; If an err occurs in an on-err expr, no val is returned and code
+; after it doesn't get executed.  Not quite what I had in mind.
+(sdef on-err (errfn f)
+  ((call-with-current-continuation
+     (lambda (k)
+       (lambda ()
+         (with-handlers ((exn:fail? (lambda (c)
+                                      (k (lambda () (errfn c))))))
+                        (f)))))))
+
+(sdef scdr (p x)
+  (cond ((pair? p)   (unsafe-set-mcdr! p x))
+        ((string? x) (err "can't set cdr of a string" x))
+        (else        (raise-type-error 'scdr "pair" p)))
+  x)

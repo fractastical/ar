@@ -2,7 +2,7 @@
 #lang racket/base
 
 (require racket/cmdline)
-(require racket/path)
+(require racket/path) ;; TODO: if I don't require this, it's very slow to startup
 (require readline)
 (require profile)
 
@@ -29,7 +29,10 @@
 (parameterize ((current-namespace (make-base-empty-namespace)))
   (profile-thunk (lambda ()
     (parameterize ((current-directory exec-dir))
-      (namespace-require '(file "01 ac.rkt"))
+      ;(namespace-require 'racket/base)
+      ;(load "01 arc.rkt")
+      ;(namespace-require '(file "01 ac.rkt"))
+      (namespace-require '(file "02 nu.rkt"))
       (eval `(init ,(path->string exec-dir))))
 
       ;(init ,(path->string exec-dir))
@@ -42,7 +45,8 @@
             (load (car arguments))))
 
       (when (or (repl) (null? arguments))
-        (eval `(repl))))))
+        (eval `(repl))))
+  ))
 
   ;; This is to prevent () from being printed when the REPL exits
   (void))
