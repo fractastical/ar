@@ -46,8 +46,8 @@
                           ;;       #<mac:do>
                           ;;       > do
                           ;;       #<mac:that>
-                          (sref namespace val  'that)
-                          (sref namespace expr 'thatexpr)
+                          (sref (%.namespace) val  'that)
+                          (sref (%.namespace) expr 'thatexpr)
                           (repl)))))))
       (%.default-continuation-prompt-tag)
       (fn args (repl)))))

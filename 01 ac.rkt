@@ -100,7 +100,7 @@ change eqv to eq
   (cond ((symbol? x)
           (if (ssyntax x)
               (ac (ssexpand x))
-              (var-ref x)))
+              (ac-symbol x)))
         ((pair? x)
           (if (caris x nocompile)
               (cdr x)
@@ -122,10 +122,59 @@ change eqv to eq
 
 
 ;=============================================================================
+;  Namespaces
+;=============================================================================
+(define (empty-namespace)
+  (parameterize ((current-namespace (make-empty-namespace)))
+    (namespace-init)
+    (current-namespace)))
+
+(define (namespace-init)
+  (namespace-require '(rename '#%kernel  #%set  set!))
+  (namespace-require '(rename '#%kernel  #%var  case-lambda))
+  ;(namespace-require '(rename '#%kernel  #%top  #%top))
+  (namespace-require '(only   '#%kernel  #%top))
+  (namespace-require '(only   '#%kernel  #%app #%datum)) ;; TODO
+  ;(namespace-require '(only   racket/base  displayln))
+  )
+
+(define arc3-namespace  (empty-namespace))
+(define namespace       (make-parameter arc3-namespace))
+(define ac-unique       (gensym))
+;(define ac-unique (gensym))
+
+#|(define (global-ref name)
+  (global-var-ref name arc3-namespace)
+  #|(let ((v (var-raw name fail)))
+
+    (prn v)
+    )|#
+  )|#
+
+(define cached-global-ref (gensym))
+
+                                ;; TODO
+(define (global-ref name (space arc3-namespace))
+  (let ((hash (ref space cached-global-ref
+                   (lambda ()
+                     (sref space (make-hash) cached-global-ref)))))
+    ;(prn name)
+    (hash-ref! hash name
+      (lambda ()
+        (parameterize ((current-namespace space)
+                       (compile-allow-set!-undefined #t))
+          (eval `(#%var (()           (,name))
+                        ((,ac-unique) (#%set ,name ,ac-unique)))))))))
+
+;(namespace-init)
+
+
+;=============================================================================
 ;  Variables
 ;=============================================================================
-(define sig    (make-hash))
-(define names  (make-hash))
+(define replace-var  (make-parameter null))
+(define sig          (make-hash))
+(define names        (make-hash))
 
 (define-syntax-rule (redef name parms . body)
   (reset name (lambda parms . body)))
@@ -170,7 +219,7 @@ change eqv to eq
 ;; accessible to Arc while also optionally setting the sig of the name
 (define-syntax sset
   (syntax-rules ()
-    ((_ a b)        (set 'a (global-var b)))
+    ((_ a b)        (set 'a (make-global-var b)))
     ((_ a parms b)  (begin (hash-set! sig 'a 'parms)
                            (sset a b)))))
 
@@ -194,12 +243,34 @@ change eqv to eq
                            (mset a b)))))
 
 
+(define (lex? v) ;; is v lexically bound?
+  (memq v (local-env)))
+
+(define (make-global-var x)
+  (case-lambda
+    (()  x)
+    ((v) #;(prn "assigning" v) (set! x v))))
+#|
+;; TODO: version that uses two tables mapping symbols to gensyms
+(define (global-name x)
+  (string->symbol (string-append "_" (symbol->string x))))|#
+
+(define (nameit name val)
+  ;(prn name val)
+  (when ;(and (not (hash-has-key? names val))
+             (or (procedure? val)
+                 (tagged? val));)
+    ;(prn name val)
+    (hash-set! names val name)))
+
+
 ;; this makes the variable accessible to Arc (potentially giving it a name as
 ;; well) but doesn't wrap it or do anything else
 (define (set a b)
   (nameit a b) ;(hash-set! names b 'a)
   ;(sref (namespace) b (global-name a))
-  (namespace-set-variable-value! (global-name a) b #f)
+                                        ;; TODO
+  (namespace-set-variable-value! a b #f arc3-namespace) ;(global-name a)
   ;(void)
   )
 
@@ -212,69 +283,15 @@ change eqv to eq
         def
         (v))))
 
-(define (var-ref x)
-  (if (lex? x)
-      x
-      `(,(global-name x))))
+(mdef ac-symbol-global (x)
+  `(,(global-ref x)))
 
-(define (lex? v) ;; is v lexically bound?
-  (memq v (local-env)))
-
-(define (global-var x)
-  (case-lambda
-    (()  x)
-    ((v) #;(prn "assigning" v) (set! x v))))
-
-;; TODO: version that uses two tables mapping symbols to gensyms
-(define (global-name x)
-  (string->symbol (string-append "_" (symbol->string x))))
-
-(define (nameit name val)
-  ;(prn name val)
-  (when ;(and (not (hash-has-key? names val))
-             (or (tagged? val)
-                 (procedure? val));)
-    ;(prn name val)
-    (hash-set! names val name)))
-
-
-;=============================================================================
-;  Initialization and loading
-;=============================================================================
-(define (init (dir (current-directory)))
-  ;(xset exec-dir* dir) ;(path->string )
-  ;(reset exec-dir* dir)
-  (set! exec-dir* dir)
-  ;; TODO: why does Arc 3.1 do this?
-  (putenv "TZ" ":GMT")
-  ;; TODO: why is this in Arc 3.1?
-  ;(print-hash-table #t)
-  (current-readtable arc3-readtable)
-  (ac-load-all dir))
-
-(define (repl)
-  (aload (build-path exec-dir* "repl.arc")))
-
-(define (aload filename)
-  (call-with-input-file filename aload1))
-
-(define (aload1 p)
-  (let ((x (read p)))
-    (if (eof-object? x)
-        #t ;; TODO: should probably be (void)
-        (begin (ac-eval x)
-               (aload1 p)))))
-
-
-(mdef ac-load-all (dir)
-  ;(aload (build-path dir "02 core.arc"))
-  (aload (build-path dir "arc.arc"))
-  ;(aload (build-path dir "03 import.arc"))
-  ;(aload (build-path dir "04 extra.arc"))
-  ;(aload (build-path dir "libs.arc"))
-  ;(aload (build-path dir "lib/repl.arc"))
-  ;(ac-eval '(importfn1 "repl"))
-  )
+(define (ac-symbol x)
+  (let ((r (assq x (replace-var))))
+    (if r (cadr r)
+          (if (lex? x)
+              x
+              (ac-symbol-global x)))))
 
 
 ;=============================================================================
@@ -301,6 +318,47 @@ change eqv to eq
 
 (define (wrapnil f)  (lambda args (apply f args) nil))
 (define (wraptnil f) (lambda (x)  (tnil (f x))))
+
+
+;=============================================================================
+;  Initialization and loading
+;=============================================================================
+(define (init (dir (current-directory)))
+  ;(xset exec-dir* dir) ;(path->string )
+  ;(reset exec-dir* dir)
+  (set! exec-dir* dir)
+  ;; TODO: why does Arc 3.1 do this?
+  (putenv "TZ" ":GMT")
+  ;; TODO: why is this in Arc 3.1?
+  ;(print-hash-table #t)
+  (current-readtable arc3-readtable)
+  (ac-load-all dir)
+  ;(prn (namespace-mapped-symbols arc3-namespace))
+  )
+
+(define (repl)
+  (aload (build-path exec-dir* "repl.arc")))
+
+(define (aload filename)
+  (call-with-input-file filename aload1))
+
+(define (aload1 p)
+  (let ((x (read p)))
+    (if (eof-object? x)
+        #t ;; TODO: should probably be (void)
+        (begin (ac-eval x)
+               (aload1 p)))))
+
+
+(mdef ac-load-all (dir)
+  ;(aload (build-path dir "02 core.arc"))
+  (aload (build-path dir "arc.arc"))
+  ;(aload (build-path dir "03 import.arc"))
+  ;(aload (build-path dir "04 extra.arc"))
+  ;(aload (build-path dir "libs.arc"))
+  ;(aload (build-path dir "lib/repl.arc"))
+  ;(ac-eval '(importfn1 "repl"))
+  )
 
 
 ;=============================================================================
@@ -571,7 +629,7 @@ change eqv to eq
 ; pred returns t/nil, as does pairwise
 ; reduce?
 (define (pairwise pred lst)
-  (cond ;((null? lst) t)
+  (cond ((null? lst)       t)
         ((null? (cdr lst)) t)
         ((true? (pred (car lst) (cadr lst)))
           (pairwise pred (cdr lst)))
@@ -675,8 +733,8 @@ change eqv to eq
 
 (define (make-read f)
   (lambda ((in (current-input-port)))
-    (let ((c (f in)))
-      (if (eof-object? c) nil c))))
+    (let ((x (f in)))
+      (if (eof-object? x) nil x))))
 
 (define (make-write f)
   (lambda (c (out (current-output-port)))
@@ -761,22 +819,25 @@ change eqv to eq
                     #|(if (true? (bound a))
                         (list (global-name a) (ac b1))
                         )|#
-                    (ac (list assign-global-raw
-                              (namespace)
-                              (list 'quote a)
-                              b1)))
+                    `(assign-global-raw ,(namespace) ',a ,(ac b1))
+                    #|(ac `(,(cons nocompile 'assign-global-raw)
+                          ,(namespace)
+                          ',a
+                          ,b1))|#
+                    )
       (err "first arg to assign must be a symbol" a)))
 
 (define (assign-global-new space name val)
   ;(nameit name val)
-  (sref space (global-var val) name))
+  (sref space (make-global-var val) name))
 
 (define (assign-global-raw space name val)
   (nameit name val)
   (let ((v (ref space name fail)))
+    ;(prn v)
     ;(prn space v (var-raw name fail))
     (if (eq? v fail)
-          (assign-global-new space name val)
+        (assign-global-new space name val)
         (v val)))
   ;(prn name val)
   #|(let ((v (ref space name fail)))
@@ -809,7 +870,7 @@ change eqv to eq
     (x) (= v x)))
 
 
-(extend %.var-ref (x) (isa namespace 'namespace)
+(extend %.ac-symbol (x) (isa namespace 'namespace)
   (if (lex? x)
       (orig x)
       (bound x)
@@ -841,8 +902,9 @@ change eqv to eq
 ;=============================================================================
 ;  fn
 ;=============================================================================
-(define fn-body (make-parameter null))
-(define fn-let* (make-parameter null))
+(define fn-gensym-args  (make-parameter #f))
+(define fn-body         (make-parameter null))
+(define fn-let*         (make-parameter null))
 
 (define (cons-to x y)
   (x (cons y (x))))
@@ -853,7 +915,7 @@ change eqv to eq
 (define (ac-fn parms body)
   (cons 'lambda
         (parameterize ((fn-body (if (null? body)
-                                    (list nil)
+                                    (list 'nil) ;; TODO: nil or 'nil ?
                                     body)))
           (cons (parameterize ((local-env  (local-env))
                                (fn-let*    null))
@@ -866,19 +928,33 @@ change eqv to eq
                     x))
                 (fn-body)))))
 
+(define (fn-gensym x)
+  (if (fn-gensym-args)
+      (let ((u (gensym)))
+        (cons-to replace-var (list x (list 'quote u)))
+        u)
+      x))
+
 (define (fn-args x)
   (cond ((null? x) x)        ;; end of the argument list
         ((symbol? x)         ;; dotted rest args
-          (cons-to local-env x)
-          x)
+          (let ((x (fn-gensym x)))
+            (cons-to local-env x)
+            x))
+        ((and (fn-gensym-args)
+              (caris (car x) 'quote)) ;; anaphoric arg
+          (cons-to local-env (cadar x))
+          (prn (cadar x))
+          (cons (cadar x) (fn-args (cdr x)))
+          )
         ((caris (car x) 'o)  ;; optional arg
-          (let* ((c (car x))
-                 (n (cadr c))
-                 (d (cddr c)))
+          (let* ((c  (car x))
+                 (n  (fn-gensym (cadr c)))
+                 (d  (cddr c)))
             (cons-to local-env n)
                           ;; TODO: code duplication with ac-fn
             (cons (cons n (if (null? d)
-                              (list 'nil)
+                              (list 'nil) ;; TODO: nil or 'nil ?
                               (ac-all d)))
                   (fn-args (cdr x)))))
         ((pair? (car x))     ;; destructuring args
@@ -886,8 +962,9 @@ change eqv to eq
             (append-to fn-let* (fn-destructuring u (car x)))
             (cons u (fn-args (cdr x)))))
         (else                ;; normal args
-          (cons-to local-env (car x))
-          (cons (car x) (fn-args (cdr x))))))
+          (let ((n (fn-gensym (car x))))
+            (cons-to local-env n)
+            (cons n (fn-args (cdr x)))))))
 
 
 ;; u is a local variable which refers to the current place within the object
@@ -899,13 +976,14 @@ change eqv to eq
 (define (fn-destructuring u x)
   (cond ((null? x) x)        ;; end of the argument list
         ((symbol? x)         ;; dotted rest args
-          (cons-to local-env x)
-          (list (list x u)))
+          (let ((x (fn-gensym x)))
+            (cons-to local-env x)
+            (list (list x u))))
         ((caris (car x) 'o)  ;; optional args
           ;; TODO: code duplication with fn-args
-          (let* ((c (car x))
-                 (n (cadr c))
-                 (d (caddr c)))
+          (let* ((c  (car x))
+                 (n  (fn-gensym (cadr c)))
+                 (d  (caddr c)))
             (cons-to local-env n)
                                     ;; TODO: code duplication
             (cons (list n (ac `(if ,(cons nocompile u)
@@ -924,9 +1002,10 @@ change eqv to eq
                    (fn-destructuring u (cdr x))|#
                    )))
         (else                ;; normal args
-          (cons-to local-env (car x))
-          (cons (list (car x) (ac `(car ,(cons nocompile u))))
-                (fn-destructuring-next u x)))))
+          (let ((n (fn-gensym (car x))))
+            (cons-to local-env n)
+            (cons (list n (ac `(car ,(cons nocompile u))))
+                  (fn-destructuring-next u x))))))
 
 (define (fn-destructuring-next u x)
   (if (null? (cdr x))
@@ -996,79 +1075,6 @@ change eqv to eq
       (if (null? x)
           x
           (list ac-quote x))))
-
-
-;=============================================================================
-;  quasisyntax
-;=============================================================================
-(define (qs-expand x)
-        ;; TODO: don't hardcode the symbol quote
-  (cond ((caris x 'quote)
-          (qs-expand-quote (cdr x)))
-        ;; TODO: don't hardcode the symbol unquote
-        ((caris x 'unquote)
-          ;(ac-compile (cadr x))
-          (cadr x))
-        ;; TODO: don't hardcode the symbol unquote-splicing
-        ((caris x 'unquote-splicing)
-          (err ",@ cannot be used immediately after #`"))
-        ;; TODO: don't hardcode the symbol quasisyntax
-        ((caris x 'quasisyntax)
-          (qs-expand (qs-expand (cadr x))))
-        ((pair? x)
-          (qs-expand-pair x))
-        (else x)))
-
-(define (qs-expand-pair x)
-  (if (pair? x)
-      (let ((c (car x)))
-              ;; TODO: don't hardcode the symbol unquote
-        (cond ((and (eq? c 'unquote)
-                    (null? (cddr x)))
-                (cadr x))
-              ;; TODO: don't hardcode the symbol unquote-splicing
-              ((and (eq? c 'unquote-splicing)
-                    (null? (cddr x)))
-                (err "cannot use ,@ after ."))
-              ;; TODO: don't hardcode the symbol quote
-              ((caris c 'quote)
-                (list cons (qs-expand-quote (cdr c))
-                           (qs-expand-pair (cdr x))))
-              ;; TODO: don't hardcode the symbol unquote
-              ((caris c 'unquote)
-                (list cons (cadr c)
-                           (qs-expand-pair (cdr x))))
-              ;; TODO: don't hardcode the symbol unquote-splicing
-              ((caris c 'unquote-splicing)
-                (if (null? (cdr x))
-                    (cadr c)
-                    (list append (cadr c)
-                                 (qs-expand-pair (cdr x)))))
-              ;; TODO: don't hardcode the symbol quasisyntax
-              ((caris c 'quasisyntax)
-                (list cons (qs-expand-pair (qs-expand (cadr c)))
-                           (qs-expand-pair (cdr x))))
-              (else
-                (list cons (qs-expand-pair c)
-                           (qs-expand-pair (cdr x))))))
-      x))
-
-(define (qs-expand-quote x)
-  (let ((c (car x)))
-          ;; TODO: don't hardcode the symbol quote
-    (cond ((caris c 'quote)
-            (list list (list ac-quote ac-quote)
-                       (qs-expand-quote (cdr c))))
-          ;; TODO: don't hardcode the symbol unquote
-          ((caris c 'unquote)
-            (list cons (list ac-quote ac-quote)
-                       (cons list (cdr c))))
-          ;; TODO: don't hardcode the symbol unquote-splicing
-          ((caris c 'unquote-splicing)
-            (list* cons (list ac-quote ac-quote)
-                        (cdr c)))
-          (else
-            (cons ac-quote x)))))
 
 
 ;=============================================================================
@@ -1251,7 +1257,7 @@ change eqv to eq
 
 ; Later may want to have multiple indices.
 (mdef sref (x val key)
-  (cond ((namespace? x) (namespace-set-variable-value! (global-name key) val #f x))
+  (cond ((namespace? x) (namespace-set-variable-value! key val #f x)) ;(global-name key)
                             ;(eq? val nil)
         ((hash? x)      (if (false? val)
                             (hash-remove! x key)
@@ -1295,12 +1301,10 @@ change eqv to eq
 
 
 ;=============================================================================
-;  Compiler functions exposed to Arc
+;  Compiler stuff exposed to Arc
 ;=============================================================================
-(define arc3-namespace  (current-namespace))
 (define defref-types*   (make-hash))
 (define exec-dir*       (current-directory))
-(define namespace       (make-parameter arc3-namespace))
 (define nil             null)
 (define t               't)
 (define uniq-counter    (make-parameter 1))
@@ -1360,7 +1364,11 @@ change eqv to eq
         (else           (err "can't coerce" x to))))
 
 (define (ac-eval expr)
-  (eval (ac expr)))
+  (eval (ac expr))
+  #|(eval (ac expr) (if (namespace? (namespace))
+                      (namespace)
+                      (current-namespace)))|#
+  )
 
 ;; (if ...)
 (define ac-if (annotate 'mac (lambda args
@@ -1414,7 +1422,7 @@ change eqv to eq
                           (x k)
                           (let ((v (hash-ref defref-types* (type x) nil)))
                             (cond ((true? v)       (v x k))
-                                  ((namespace? x)  (namespace-variable-value (global-name k) #f (lambda () nil) x))
+                                  ((namespace? x)  (namespace-variable-value k #f (lambda () nil) x)) ;(global-name k)
                                   ((hash? x)       (hash-ref x k nil))
                                   ((string? x)     (string-ref x k))
                                   ((pair? x)       (list-ref x k))
@@ -1423,7 +1431,7 @@ change eqv to eq
                           (x k d)
                           (let ((v (hash-ref defref-types* (type x) nil)))
                             (cond ((true? v)       (v x k d))
-                                  ((namespace? x)  (namespace-variable-value (global-name k) #f
+                                  ((namespace? x)  (namespace-variable-value k #f ;(global-name k)
                                                      (if (procedure? d) d (lambda () d))
                                                      x))
                                   ((hash? x)       (hash-ref x k d))
@@ -1452,13 +1460,25 @@ change eqv to eq
                             (if (true? v)
                                 (v x a b c d e f)
                                 (err "function call on inappropriate object" x a b c d e f)))))
-    ((x . args)       (begin (prn "warning: called with 7+ arguments:" x args)
+    ((x . args)       (begin ;(prn "warning: called with 7+ arguments:" x args)
                              (if (procedure? x)
                                  (apply x args)
                                  (let ((v (hash-ref defref-types* (type x) nil)))
                                    (if (true? v)
                                        (apply v x args)
                                        (apply err "function call on inappropriate object" x args))))))))
+
+
+(define dref
+  (case-lambda
+    ((n)    (if (namespace? (namespace))
+                (let ((x (ref (namespace) n fail)))
+                  (if (eq? x fail)
+                      nil
+                      (begin (namespace-undefine-variable! n (namespace))
+                             x)))
+                (err "can't delete reference" n)))
+    ((x k)  (err "can't delete reference" x k))))
 
 
 
@@ -1617,6 +1637,7 @@ change eqv to eq
 (mset cdr      (x)                     ac-cdr)
 (mset coerce   (x to (o base 10))      coerce)
 (sset cons     (x y)                   cons) ;; TODO: look for some uses of cons and replace em with ac-cons
+(mset dref     (x (o k))               dref)
 (mset eval     (x)                     ac-eval)
 (mset if       args                    ac-if)
 (sset instring (str (o name 'string))  open-input-string)
@@ -1643,7 +1664,7 @@ change eqv to eq
 (sset asin                         (n)                        asin)
 (sset atan                         (n (o m))                  atan)
 (sset break-thread                 (x)                        break-thread)
-(sset ccc                          (f (o prompt))             call-with-current-continuation) ;; TODO: get rid of call/cc in the compiler
+(sset ccc                          (f (o prompt))             call-with-current-continuation)
 (sset cos                          (n)                        cos)
 (sset current-gc-milliseconds      ()                         current-gc-milliseconds)
 (sset current-process-milliseconds (x)                        current-process-milliseconds)
@@ -1683,7 +1704,12 @@ change eqv to eq
 ;; middle of generating it?
 (sset system (command)   (wrapnil system))
 
+;; TODO: sdef
+(define (bound? x)
+  (not (eq? (var-raw x fail) fail)))
+
 ;; wraptnil
+(sset bound       (x) (wraptnil bound?))
 (sset dead        (x) (wraptnil thread-dead?))
 (sset dir-exists  (x) (wraptnil directory-exists?))
 (sset exact       (x) (wraptnil exint?)) ;; TODO: bad name
@@ -1715,10 +1741,6 @@ change eqv to eq
 (sset quasiquote (x)
   (annotate 'mac (lambda (x)
                    (qq-expand x))))
-
-(sset quasisyntax (x)
-  (annotate 'mac (lambda (x)
-                   (qs-expand x))))
 
 (sset % args
   (annotate 'mac (lambda args
@@ -1803,12 +1825,9 @@ change eqv to eq
   (rename-file-or-directory old new (true? flag))
   nil)
 
-(sset details (c) exn-message)
+(sset details (e) exn-message)
                ;; TODO: why does this use disp-to-string...?
-  ;(lambda (c) (disp-to-string (exn-message c)))
-
-(sdef bound (x)
-  (tnil (not (eq? (var x fail) fail))))
+  ;(lambda (e) (disp-to-string (exn-message e)))
 
 (sdef trunc (x)
   (inexact->exact (truncate x)))
@@ -1887,16 +1906,18 @@ change eqv to eq
       (string-append (coerce name 'string)
                      (coerce num  'string)))))
 
-;; TODO: better implementation
 ; If an err occurs in an on-err expr, no val is returned and code
 ; after it doesn't get executed.  Not quite what I had in mind.
 (sdef on-err (errfn f)
-  ((call-with-current-continuation
+  (with-handlers ((exn:fail? errfn)) (f))
+  ;; TODO: why does Arc 3.1 implement it like this?
+  #|((call-with-current-continuation
      (lambda (k)
        (lambda ()
-         (with-handlers ((exn:fail? (lambda (c)
-                                      (k (lambda () (errfn c))))))
-                        (f)))))))
+         (with-handlers ((exn:fail? (lambda (e)
+                                      (k (lambda () (errfn e))))))
+                        (f))))))|#
+  )
 
 (sdef scdr (p x)
   (cond ((pair? p)   (unsafe-set-mcdr! p x))

@@ -31,8 +31,10 @@
     (parameterize ((current-directory exec-dir))
       ;(namespace-require 'racket/base)
       ;(load "01 arc.rkt")
-      ;(namespace-require '(file "01 ac.rkt"))
-      (namespace-require '(file "02 nu.rkt"))
+      (namespace-require '(file "01 ac.rkt"))
+      ;(namespace-require '(file "02 arc.rkt"))
+      ;(namespace-require '(file "02 nu.rkt"))
+      ;(namespace-require '(file "01 ac.rkt.bak (1)"))
       (eval `(init ,(path->string exec-dir))))
 
       ;(init ,(path->string exec-dir))
