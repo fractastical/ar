@@ -764,78 +764,71 @@ change eqv to eq
 ;;   (and (pred a b) (pred b c) (pred c d))
 ;; pred returns t/nil, as does pairwise
 (define (pairwise pred lst)
-  (cond ;((null? lst)       t)
-        ((null? (cdr lst)) t)
-        ((true? (pred (car lst) (cadr lst)))
+  (cond ((null? (cdr lst)) t)
+        ;; TODO: maybe the binary functions should return #t and #f rather
+        ;;       than t and nil
+        ((pred (car lst) (cadr lst))
           (pairwise pred (cdr lst)))
         (else nil)))
 
 ;; Arc's reduce. Can't use foldl because it doesn't work well with multiple
 ;; types (e.g. +-2)
 (define (reduce f xs)
-  (cond #|((null? xs)
-          xs)|#
-        ((null? (cdr xs))
-          ;(f (car xs))
-          (car xs))
-        #|((null? (cddr xs))
-          (f (car xs) (cadr xs)))|#
-        (else
-          (reduce f (cons (f (car xs) (cadr xs)) (cddr xs))))))
+  (if (null? (cdr xs))
+      (car xs) ;(f (car xs))
+      (reduce f (cons (f (car xs) (cadr xs)) (cddr xs)))))
 
-;; creates a function that when given 0-2 arguments will be very fast, but
-;; still works when given any number of arguments
-;;
-;; this is so you can say (binary is-2 pairwise) to create a fast multi-arg
-;; version of is-2, etc.
-(define (binary f reduce)
+;; TODO: should pairwise take an init parameter or not...?
+(define (make-pairwise f)
   (case-lambda
-    (()    (f))
-    ((x)   (f x))
+    (()    t)
+    ((x)   t)
+    ((x y) (tnil (f x y)))
+    (args  (pairwise f args))))
+
+(define (make-reduce f init)
+  (case-lambda
+    (()    init)
+    ((x)   x)
     ((x y) (f x y))
     (args  (reduce f args))))
+
+;; generic comparison
+(define (make-comparer a b c)
+  (lambda (x y)
+                ;; TODO: better ordering for speed
+    (cond ((number? x)  (a x y))
+          ((string? x)  (b x y))
+          ((char? x)    (c x y))
+          ((symbol? x)  (b (symbol->string x)
+                           (symbol->string y)))
+          (else         (a x y)))))
+
+;; generic +: strings, lists, numbers.
+;; return val has same type as first argument.
+(define (+-2 x y)
+        ;; TODO: better ordering for speed
+  (cond ((number? x)  (+ x y))
+        ((string? x)  (string-append x (coerce y 'string)))
+        ((list? x)    (append x y))
+        ;; TODO: check the behavior of Arc 3.1 for (+ "foo" #\a) and (+ #\a "foo")
+        ((char? x)    (string-append (string x) (coerce y 'string)))
+        (else         (+ x y)
+                      ;(err "can't + " x " with " y)
+                      )))
+
+(define <-2 (make-comparer < string<? char<?))
+(define >-2 (make-comparer > string>? char>?))
 
 ;; not quite right, because behavior of underlying eqv unspecified
 ;; in many cases according to r5rs
 ;; do we really want is to ret t for distinct strings?
 (define (is-2 a b)
-  (tnil (or (eqv? a b)
-            (and (string? a) (string? b) (string=? a b))
-            ;; TODO: why is this here in Arc 3.1?
-            ;(and (false? a) (false? b))
-            )))
-
-;; generic +: strings, lists, numbers.
-;; return val has same type as first argument.
-(define +-2
-  (case-lambda
-    (()    0)
-    ((x)   x)
-                 ;; TODO: better ordering for speed
-    ((x y) (cond ((number? x)  (+ x y))
-                 ((string? x)  (string-append x (coerce y 'string)))
-                 ((list? x)    (append x y))
-                 ;; TODO: check the behavior of Arc 3.1 for (+ "foo" #\a) and (+ #\a "foo")
-                 ((char? x)    (string-append (string x) (coerce y 'string)))
-                 (else         (+ x y)
-                               ;(err "can't + " x " with " y)
-                               )))))
-
-;; generic comparison
-(define (make-comparer a b c)
-  (case-lambda
-    (()    t)
-    ((x)   t)
-                       ;; TODO: better ordering for speed
-    ((x y) (tnil (cond ((number? x)  (a x y))
-                       ((string? x)  (b x y))
-                       ((char? x)    (c x y))
-                       ((symbol? x)  (b (symbol->string x)
-                                        (symbol->string y)))
-                       (else         (a x y)))))))
-
-(define <-2 (make-comparer < string<? char<?))
-(define >-2 (make-comparer > string>? char>?))
+  (or (eqv? a b)
+      (and (string? a) (string? b) (string=? a b))
+      ;; TODO: why is this here in Arc 3.1?
+      ;(and (false? a) (false? b))
+      ))
 
 
 ;=============================================================================
@@ -1374,10 +1367,10 @@ change eqv to eq
 (sset setuid (i) (get-ffi-obj 'setuid #f (_fun _int -> _int)))
 
 ;; binaries
-(sset +  args (binary +-2  reduce))
-(sset >  args (binary >-2  pairwise))
-(sset <  args (binary <-2  pairwise))
-(sset is args (binary is-2 pairwise))
+(sset +  args (make-reduce    +-2 0))
+(sset >  args (make-pairwise  >-2))
+(sset <  args (make-pairwise  <-2))
+(sset is args (make-pairwise is-2))
 
 ;; wrapnil
 (sset rmfile (path)      (wrapnil delete-file))
