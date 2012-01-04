@@ -1,6 +1,6 @@
 Lite Nu is Nu stripped down to the bare minimum:
 
-  * "01 ac.rkt" is the Nu compiler for Arc
+  * "01 nu.rkt" is the Nu compiler for Arc
   * "arc.arc" is copied unmodified from Arc 3.1
   * "repl.arc" implements a REPL
   * "arc" is an executable that will load the above three files in order
@@ -34,11 +34,22 @@ Why would you want to use it over Arc 3.1 or Anarki, then?
     This also lets you call Nu compiler/Racket functions that aren't exposed
     to Arc:
 
-        > (%.global-name 'foo)
-        _foo
+        > (%.global-ref 'foo)
+        #<fn>
 
         > (%.string? "foo")
         #t
+
+  * `[a b c]` is expanded into `(square-brackets a b c)` which is then
+    implemented as a macro:
+
+        (mac square-brackets body
+          `(fn (_) ,body))
+
+    Likewise, `{a b c}` is expanded into `(curly-brackets a b c)`
+
+    This makes it easy to change the meaning of `[...]` and `{...}` from
+    within Arc
 
   * The Nu compiler is written in Racket, rather than mzscheme
 
@@ -54,10 +65,13 @@ Why would you want to use it over Arc 3.1 or Anarki, then?
         (prn "foo")
 
     This is like "arc.sh" in Anarki but implemented in Racket rather than as a
-    bash script
+    bash script, so it should be cleaner and more portable
 
   * Nu has reorganized Arc 3.1 significantly, hopefully this makes it easier
     to understand and hack
 
   * All special forms (`assign`, `fn`, `if`, `quasiquote`, and `quote`) are
     implemented as ordinary Arc macros
+
+  * For more details on the differences between Arc/Nu and Arc/pg, see [this
+    file](notes/differences.md)

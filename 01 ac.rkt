@@ -75,46 +75,10 @@ change eqv to eq
 
 
 ;=============================================================================
-;  Namespaces
-;=============================================================================
-(define (empty-namespace)
-  (parameterize ((current-namespace (make-empty-namespace)))
-    (namespace-init)
-    (current-namespace)))
-
-(define (namespace-init)
-  (namespace-require '(rename '#%kernel  #%set  set!))
-  (namespace-require '(rename '#%kernel  #%var  case-lambda))
-  (namespace-require '(only   '#%kernel  #%top))
-  (namespace-require '(only   '#%kernel  #%app #%datum)) ;; TODO
-  ;(namespace-require '(only   racket/base  displayln))
-  )
-
-(define arc3-namespace     (empty-namespace)) ;; TODO: use mset
-(define cached-global-ref  (gensym))
-(define namespace          (make-parameter arc3-namespace)) ;; TODO: use pset
-(define unique             (gensym))
-
-                                ;; TODO
-(define (global-ref name (space arc3-namespace))
-  (let ((hash (ref space cached-global-ref
-                   (lambda ()
-                     (sref space (make-hash) cached-global-ref)))))
-    (hash-ref! hash name
-      (lambda ()
-        (parameterize ((current-namespace space)
-                       ;(compile-allow-set!-undefined #t)
-                       )
-          (eval `(#%var (() (,name))))
-          #|(eval `(#%var (()           (,name))
-                        ((,unique) (#%set ,name ,unique))))|#
-          )))))
-
-
-;=============================================================================
 ;  Arc variables
 ;=============================================================================
-(define names  (make-hash))
+(define namespace  (make-parameter (make-empty-namespace)))
+(define names      (make-hash))
 
 ;; TODO: see if redef and reset are needed
 #|(define-syntax-rule (redef name parms . body)
@@ -133,9 +97,7 @@ change eqv to eq
     ((_ name parms . body)
       (sset name parms (lambda parms . body)))))
 
-;; like sdef but makes the function accessible to both Arc and Racket and
-;; mutable from within Arc
-;;
+;; like sdef but makes the function mutable from within Arc
 ;; use #:name to define a different Arc name than the Racket name
 (define-syntax mdef
   (syntax-rules ()
@@ -151,7 +113,9 @@ change eqv to eq
 ;; accessible to Arc while also optionally setting the sig of the name
 (define-syntax sset
   (syntax-rules ()
-    ((_ a b)        (set 'a (make-global-var b)))
+    ((_ a b)        (let ((v b))
+                      (nameit 'a v)
+                      (set 'a (make-global-var v))))
     ((_ a parms b)  (begin (hash-set! sig 'a 'parms)
                            (sset a b)))))
 
@@ -160,6 +124,7 @@ change eqv to eq
 (define-syntax mset
   (syntax-rules ()
     ((_ a #:name name b)        (begin (define a b)
+                                       (nameit 'name a)
                                        (set 'name (case-lambda
                                                     (()  a)
                                                     ((x) (set! a x))))))
@@ -177,13 +142,11 @@ change eqv to eq
          (set 'a a)))
 
 
-;; this makes the variable accessible to Arc (potentially giving it a name as
-;; well) but doesn't wrap it or do anything else
+;; this makes the variable accessible to Arc but doesn't wrap it or do
+;; anything else
 (define (set a b)
-  (nameit a b)
   ;(sref (namespace) b a)
-                                        ;; TODO
-  (namespace-set-variable-value! a b #f arc3-namespace))
+  (namespace-set-variable-value! a b #f (namespace))) ;(coerce (namespace) 'namespace)
 
 (define (nameit name val)
   (when (or (procedure? val)
@@ -194,6 +157,27 @@ change eqv to eq
   (case-lambda
     (()  x)
     ((v) (set! x v))))
+
+
+;=============================================================================
+;  Types
+;=============================================================================
+(struct tagged (type rep)
+  #:constructor-name make-tagged
+  ;; TODO: make mutable later, maybe
+  ;#:mutable
+  #|#:property prop:custom-write
+             (lambda (x port mode)
+               (display "#(tagged " port)
+               (display (type x) port)
+               (display " " port)
+               (display (rep x) port)
+               (display ")" port))|#
+  )
+
+(define (iround x)   (inexact->exact (round x)))
+(define (wrapnil f)  (lambda args (apply f args) nil))
+(define (wraptnil f) (lambda (x)  (tnil (f x))))
 
 
 ;=============================================================================
@@ -296,16 +280,14 @@ change eqv to eq
 (mdef macex1 (e)
   (if (pair? e)
       (let ((m (macro? (car e))))
-               ;; TODO: not sure about this
-        (if m  (if (or ;(eq? m ac-assign)
-                       ;(eq? m ac-fn)
-                       (eq? m ac-if)
-                       (eq? m ac-quote)
-                       ;(eq? m ac-quasiquote)
-                       )
-                   e
-                   (apply m (cdr e)))
-               e))
+                   ;; TODO: not sure about this
+        (if (and m (not (or (eq? m assign)
+                            (eq? m fn)
+                            (eq? m ac-if)
+                            (eq? m ac-quote)
+                            (eq? m ac-quasiquote))))
+            (apply (rep m) (cdr e))
+            e))
       e))
 
 ;; TODO: not sure what category this should be placed in
@@ -346,6 +328,7 @@ change eqv to eq
 (mdef type (x)
         ;; TODO: better ordering for speed
   (cond ((tagged? x)        (tagged-type x))
+        ((namespace? x)     'namespace)
         ((pair? x)          'cons)
         ((symbol? x)        'sym)
         ; (type nil) -> sym
@@ -356,7 +339,6 @@ change eqv to eq
         ((exint? x)         'int)
         ((number? x)        'num)     ; unsure about this
         ((hash? x)          'table)
-        ;((namespace? x)     'namespace)
         ((output-port? x)   'output)
         ((input-port? x)    'input)
         ((tcp-listener? x)  'socket)
@@ -443,9 +425,31 @@ change eqv to eq
 
 
 ;=============================================================================
+;  Namespaces
+;=============================================================================
+(define (empty-namespace)
+  (parameterize ((current-namespace (make-empty-namespace)))
+    (namespace-init)
+    (current-namespace)))
+
+(define (namespace-init)
+  (namespace-require '(rename '#%kernel  #%set  set!))
+  (namespace-require '(rename '#%kernel  #%var  case-lambda))
+  (namespace-require '(only   '#%kernel  #%top))
+  (namespace-require '(only   '#%kernel  #%app #%datum)) ;; TODO
+  ;(namespace-require '(only   racket/base  displayln))
+  )
+
+(parameterize ((current-namespace (namespace)))
+  (namespace-init))
+
+
+;=============================================================================
 ;  Variables
 ;=============================================================================
-(define replace-var (make-parameter null))
+(define cached-global-ref  (gensym))
+(define replace-var        (make-parameter null))
+(define unique             (gensym))
 
 (define (var-raw a (def nil))
   (ref (namespace) a def))
@@ -466,29 +470,23 @@ change eqv to eq
               x
               (%symbol-global x)))))
 
+                                ;; TODO
+(define (global-ref name (space (namespace)))
+  (let ((hash (ref space cached-global-ref
+                   (lambda ()
+                     (sref space (make-hash) cached-global-ref)))))
+    (hash-ref! hash name
+      (lambda ()
+        (parameterize ((current-namespace (coerce space 'namespace))
+                       ;(compile-allow-set!-undefined #t)
+                       )
+          (eval `(#%var (() (,name))))
+          #|(eval `(#%var (()           (,name))
+                        ((,unique) (#%set ,name ,unique))))|#
+          )))))
+
 (define (lex? v) ;; is v lexically bound?
   (memq v (local-env)))
-
-
-;=============================================================================
-;  Types
-;=============================================================================
-(struct tagged (type rep)
-  #:constructor-name make-tagged
-  ;; TODO: make mutable later, maybe
-  ;#:mutable
-  #|#:property prop:custom-write
-             (lambda (x port mode)
-               (display "#(tagged " port)
-               (display (type x) port)
-               (display " " port)
-               (display (rep x) port)
-               (display ")" port))|#
-  )
-
-(define (iround x)   (inexact->exact (round x)))
-(define (wrapnil f)  (lambda args (apply f args) nil))
-(define (wraptnil f) (lambda (x)  (tnil (f x))))
 
 
 ;=============================================================================
@@ -625,12 +623,12 @@ change eqv to eq
               (not (lex? f)))
           (macro? (var f)))
         ((isa f 'mac)
-          (rep f))
+          f)
         (else #f)))
 
 (define (mac-call m args)
   ;; TODO: (apply ref ...)
-  (ac (apply m args)))
+  (ac (apply (rep m) args)))
 
 (define (arg-list* args)
   (if (null? (cdr args))
@@ -767,12 +765,12 @@ change eqv to eq
   (cond ((null? (cdr lst)) t)
         ;; TODO: maybe the binary functions should return #t and #f rather
         ;;       than t and nil
-        ((pred (car lst) (cadr lst))
+        ((true? (pred (car lst) (cadr lst)))
           (pairwise pred (cdr lst)))
         (else nil)))
 
-;; Arc's reduce. Can't use foldl because it doesn't work well with multiple
-;; types (e.g. +-2)
+;; based on Arc's reduce. Can't use foldl because it doesn't work well with
+;; multiple types (e.g. +-2)
 (define (reduce f xs)
   (if (null? (cdr xs))
       (car xs) ;(f (car xs))
@@ -781,28 +779,28 @@ change eqv to eq
 ;; TODO: should pairwise take an init parameter or not...?
 (define (make-pairwise f)
   (case-lambda
-    (()    t)
+    ((x y) (f x y))
+    (args  (pairwise f args))
     ((x)   t)
-    ((x y) (tnil (f x y)))
-    (args  (pairwise f args))))
+    (()    t)))
 
 (define (make-reduce f init)
   (case-lambda
-    (()    init)
-    ((x)   x)
     ((x y) (f x y))
-    (args  (reduce f args))))
+    (args  (reduce f args))
+    ((x)   x)
+    (()    init)))
 
 ;; generic comparison
 (define (make-comparer a b c)
   (lambda (x y)
                 ;; TODO: better ordering for speed
-    (cond ((number? x)  (a x y))
-          ((string? x)  (b x y))
-          ((char? x)    (c x y))
-          ((symbol? x)  (b (symbol->string x)
-                           (symbol->string y)))
-          (else         (a x y)))))
+    (tnil (cond ((number? x)  (a x y))
+                ((string? x)  (b x y))
+                ((char? x)    (c x y))
+                ((symbol? x)  (b (symbol->string x)
+                                 (symbol->string y)))
+                (else         (a x y))))))
 
 ;; generic +: strings, lists, numbers.
 ;; return val has same type as first argument.
@@ -824,11 +822,11 @@ change eqv to eq
 ;; in many cases according to r5rs
 ;; do we really want is to ret t for distinct strings?
 (define (is-2 a b)
-  (or (eqv? a b)
-      (and (string? a) (string? b) (string=? a b))
-      ;; TODO: why is this here in Arc 3.1?
-      ;(and (false? a) (false? b))
-      ))
+  (tnil (or (eqv? a b)
+            (and (string? a) (string? b) (string=? a b))
+            ;; TODO: why is this here in Arc 3.1?
+            ;(and (false? a) (false? b))
+            )))
 
 
 ;=============================================================================
@@ -838,21 +836,37 @@ change eqv to eq
 
 (define (print f x port)
         ;; TODO: should probably use (no x) or whatever
-  (cond ((null? x)    (display "nil" port))
-        ((isa x 'fn)  (print-w/name x "#<fn" ":" ">" port))
-        ((isa x 'mac) (print-w/name x "#<mac" ":" ">" port))
-        ((tagged? x)  (display "#(tagged " port)
-                      (print f (type x) port)
-                      (display " " port)
-                      (print f (rep x)  port)
-                      (display ")" port))
-        (else         (f x port)))
+  (cond ((null? x)       (display "nil" port))
+        ;; TODO: maybe use isa for pair? and procedure?
+        ((pair? x)       (print-w/list f x port))
+        ((procedure? x)  (print-w/name x "#<fn" ":" ">" port))
+        ((isa x 'mac)    (print-w/name x "#<mac" ":" ">" port))
+        ((tagged? x)     (display "#(tagged " port)
+                         (print f (type x) port)
+                         (display " " port)
+                         (print f (rep x)  port)
+                         (display ")" port))
+        (else            (f x port)))
   nil)
 
 (define (name x)
   (or (hash-ref names x #f)
-      (object-name x)
+      (and (not (tagged? x))
+           (object-name x))
       nil))
+
+(define (print-w/list f x port)
+  (display "(" port)
+  (let loop ((x x))
+    (cond ((pair? x)
+            (print f (car x) port)
+            (unless (null? (cdr x))
+              (display " " port)
+              (loop (cdr x))))
+          (else
+            (display ". " port)
+            (print f x port))))
+  (display ")" port))
 
 (define (print-w/name x l m r port)
   (let ((x (name x)))
@@ -912,14 +926,20 @@ change eqv to eq
 
 
 ;=============================================================================
-;  readtable
+;  square-brackets / curly-brackets
 ;=============================================================================
 (define (read-square-brackets ch port src line col pos)
-  ;; TODO: square-bracket macro
-  `(fn (_) ,(read/recursive port #\[ #f)))
+  `(square-brackets ,@(read/recursive port #\[ #f)))
+
+(define (read-curly-brackets ch port src line col pos)
+  `(curly-brackets ,@(read/recursive port #\{ #f)))
 
 (define arc3-readtable
-  (make-readtable #f #\[ 'terminating-macro read-square-brackets))
+  (make-readtable #f #\[ 'terminating-macro read-square-brackets
+                     #\{ 'terminating-macro read-curly-brackets))
+
+(sset square-brackets body
+  (annotate 'mac (lambda body `(fn (_) ,body))))
 
 
 ;=============================================================================
@@ -960,7 +980,7 @@ change eqv to eq
         (v val)))
   val)
 
-(sset assign args
+(mset assign args
   (annotate 'mac (lambda args
                    (cons nocompile (ac-assign args)))))
 
@@ -1097,7 +1117,7 @@ change eqv to eq
       (cons (list u (ac `(cdr ,(cons nocompile u))))
             (fn-destructuring u (cdr x)))))
 
-(sset fn (parms . body)
+(mset fn (parms . body)
   (annotate 'mac (lambda (parms . body)
                    (cons nocompile (ac-fn parms body)))))
 
@@ -1164,7 +1184,7 @@ change eqv to eq
           x
           (list ac-quote x))))
 
-(sset quasiquote (x)
+(mset ac-quasiquote (x) #:name quasiquote
   (annotate 'mac (lambda (x)
                    (qq-expand x))))
 
@@ -1306,15 +1326,15 @@ change eqv to eq
 ;=============================================================================
 ;  Extra stuff
 ;=============================================================================
+(set 'namespace  namespace)
+
 (mset dref (x (o k))
   (case-lambda
-    ((n)    (if (namespace? (namespace))
-                (let ((x (ref (namespace) n fail)))
-                  (if (eq? x fail)
-                      nil
-                      (begin (namespace-undefine-variable! n (namespace))
-                             x)))
-                (err "can't delete reference" n)))
+    ((n)    (let ((x (ref (namespace) n fail)))
+              (if (eq? x fail)
+                  nil
+                  (begin (namespace-undefine-variable! n (coerce (namespace) 'namespace))
+                         x))))
     ((x k)  (err "can't delete reference" x k))))
 
 (sset % args
@@ -1323,10 +1343,6 @@ change eqv to eq
                          (if (null? (cdr args))
                              (car args)
                              (cons 'begin args))))))
-
-;; globals
-(sset arc3-namespace  arc3-namespace)
-(set 'namespace       namespace) ;; TODO: use pset
 
 
 ;=============================================================================
