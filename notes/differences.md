@@ -17,7 +17,7 @@ Differences between Arc/Nu and Arc/pg
 
         %load-all %symbol-global close1 dref pipe ref
 
-  * The following macro works differently in Nu:
+  * The following macro works differently in Nu (use `%` instead):
 
         > (mac $ (x) `(cdr `(0 . ,,x)))
 
