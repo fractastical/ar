@@ -363,10 +363,10 @@ change eqv to eq
 ;=============================================================================
 ;  Initialization and loading
 ;=============================================================================
-(mset exec-dir*  (current-directory))
+(define exec-dir (current-directory))
 
 (define (init (dir (current-directory)))
-  (set! exec-dir* dir)
+  (set! exec-dir dir)
   ;; TODO: why does Arc 3.1 do this?
   (putenv "TZ" ":GMT")
   ;; TODO: why is this in Arc 3.1?
@@ -374,8 +374,11 @@ change eqv to eq
   (current-readtable arc3-readtable)
   (%load-all dir))
 
+(mdef %load-all (dir)
+  (aload (build-path dir "02 arc.arc")))
+
 (define (repl)
-  (aload (build-path exec-dir* "repl.arc")))
+  (aload (build-path exec-dir "03 repl.arc")))
 
 (define (aload filename)
   (call-with-input-file filename aload1))
@@ -386,10 +389,6 @@ change eqv to eq
         #t ;; TODO: should probably be (void)
         (begin (ac-eval x)
                (aload1 p)))))
-
-
-(mdef %load-all (dir)
-  (aload (build-path dir "arc.arc")))
 
 
 ;=============================================================================

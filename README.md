@@ -1,16 +1,16 @@
 Lite Nu is Nu stripped down to the bare minimum:
 
   * "01 nu.rkt" is the Nu compiler for Arc
-  * "arc.arc" is copied unmodified from Arc 3.1
-  * "repl.arc" implements a REPL
+  * "02 arc.arc" is copied unmodified from Arc 3.1
+  * "03 repl.arc" implements a REPL
   * "arc" is an executable that will load the above three files in order
 
 Okay, so it's basically just Arc 3.1 (it even copies arc.arc from Arc 3.1!).
 Why would you want to use it over Arc 3.1 or Anarki, then?
 
   * It's faster! Nu strives to be *at least* as fast as Arc 3.1, and in some
-    cases is significantly faster. For instance, `(+ 1 2)` is 44.12% faster in
-    Nu than in Arc 3.1
+    cases is significantly faster. For instance, `(+ 1 2)` was 38.41% faster
+    in Nu than in Arc 3.1, last time I checked
 
   * Nu lets you define custom calling behavior for anything you like by
     extending the `ref` function. This is like `defcall` in Anarki

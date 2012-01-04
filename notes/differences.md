@@ -11,7 +11,7 @@ Differences between Arc/Nu and Arc/pg
 
   * The following Arc global variables are defined:
 
-        exec-dir* namespace ref* uniq-counter
+        namespace ref* uniq-counter
 
   * The following Arc functions are defined:
 
@@ -86,6 +86,9 @@ Differences between Arc/Nu and Arc/pg
 
         > (if #f 5 10)
         10
+
+        > #(foo bar qux)
+        #(foo bar qux)
 
     In addition, function and macro values can be included by macros:
 
