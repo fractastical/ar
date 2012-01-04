@@ -11,7 +11,7 @@ Differences between Arc/Nu and Arc/pg
 
   * The following Arc global variables are defined:
 
-        namespace ref* uniq-counter
+        namespace uniq-counter
 
   * The following Arc functions are defined:
 

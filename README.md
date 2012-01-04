@@ -19,22 +19,15 @@ Why would you want to use it over Arc 3.1 or Anarki, then?
         (= ref* (obj))
 
         (extend ref (x . args) (orig ref* (type x))
-          (apply it args))
+          (apply it x args))
 
         (mac defcall (type parms . body)
           `(= (ref* ',type) (fn ,parms ,@body)))
 
 
-
-    As a convenience, rather than extending the `ref` function, you can simply
-    assign a function to the `ref*` table:
-
-        (= (ref* 'foo) (fn ...))
-
-    Now Nu will call the function when calling something with a type of
-    `'foo`. This is like `defcall` in Anarki
-
-
+        ;; custom calling behavior for anything with a type of 'foo
+        (defcall foo (x . args)
+          ...)
 
   * Nu reflects some of the compiler functions into Arc, so they can be called
     and hacked from within Arc

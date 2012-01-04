@@ -636,7 +636,14 @@ change eqv to eq
             (arg-list* (cdr args)))))
 
 
-(define call ;(x . args)
+;; call a function or perform an array ref, hash ref, etc.
+(define call
+  ;; uses case-lambda for ridiculous speed: now using call for *all* function
+  ;; calls is just as fast as using the funcall functions, and unlike
+  ;; funcall, this hardcodes up to 6 arguments rather than only 4
+  ;;
+  ;; I could go higher but it'd be kinda pointless and would just make the
+  ;; definition of call even bigger than it already is
   (case-lambda
     ((x)              (if (procedure? x)
                           (x)
@@ -659,15 +666,11 @@ change eqv to eq
     ((x a b c d e f)  (if (procedure? x)
                           (x a b c d e f)
                           (ref x a b c d e f)))
-    ((x . args)       (begin ;(prn "warning: called with 7+ arguments:" x args)
-                             (if (procedure? x)
-                                 (apply x args)
-                                 (apply ref x args))))))
+    ((x . args)       ;(prn "warning: called with 7+ arguments:" x args)
+                      (if (procedure? x)
+                          (apply x args)
+                          (apply ref x args)))))
 
-(mset ref* (make-hash))
-
-;; call a function or perform an array ref, hash ref, etc.
-;;
 ;; Non-fn constants in functional position are valuable real estate, so
 ;; should figure out the best way to exploit it.  What could (1 foo) or
 ;; ('a foo) mean?  Maybe it should mean currying.
@@ -684,37 +687,19 @@ change eqv to eq
 ;;       ((or (number? fn) (symbol? fn)) fn)
 ;; another possibility: constant in functional pos means it gets
 ;; passed to the first arg, i.e. ('kids item) means (item 'kids).
-(mset ref (x . args)
-  ;; TODO: tests for procedure? so you can say (ref car ...) (ref (fn () 5)) etc.
-
-  ;; uses case-lambda for ridiculous speed: now using ref for *all* function
-  ;; calls is just as fast as using the funcall functions, and unlike
-  ;; funcall, this hardcodes up to 6 arguments rather than only 4
-  ;;
-  ;; I could go higher but it'd be kinda pointless and would just make the
-  ;; definition of ref even bigger than it already is
-  ;;
-  ;; maybe I could write a macro to automatically generate the special-cases
-  ;; for procedures
+(mset ref (x k (o d))
   (case-lambda
-    ((x k)       (let ((v (hash-ref ref* (type x) nil)))
-                   (cond ((true? v)       (v x k))
-                         ((namespace? x)  (namespace-variable-value k #f (lambda () nil) x)) ;(global-name k)
-                         ((hash? x)       (hash-ref x k nil))
-                         ((string? x)     (string-ref x k))
-                         ((pair? x)       (list-ref x k))
-                         (else (err "function call on inappropriate object" x k)))))
-    ((x k d)     (let ((v (hash-ref ref* (type x) nil)))
-                   (cond ((true? v)       (v x k d))
-                         ((namespace? x)  (namespace-variable-value k #f ;(global-name k)
-                                            (if (procedure? d) d (lambda () d))
-                                            x))
-                         ((hash? x)       (hash-ref x k d))
-                         (else (err "function call on inappropriate object" x k d)))))
-    ((x . args)  (let ((v (hash-ref ref* (type x) nil)))
-                   (if (true? v)
-                       (apply v x args)
-                       (apply err "function call on inappropriate object" x args))))))
+    ((x k)    (cond ((namespace? x)  (namespace-variable-value k #f (lambda () nil) x)) ;(global-name k)
+                    ((hash? x)       (hash-ref x k nil))
+                    ((string? x)     (string-ref x k))
+                    ((pair? x)       (list-ref x k))
+                    (else            (err "function call on inappropriate object" x k))))
+    ((x k d)  (cond ((namespace? x)  (namespace-variable-value k #f ;(global-name k)
+                                       (if (procedure? d) d (lambda () d))
+                                       x))
+                    ((hash? x)       (hash-ref x k d))
+                    (else            (err "function call on inappropriate object" x k d))))
+    (args     (apply err "function call on inappropriate object" args))))
 
 
 ;=============================================================================
