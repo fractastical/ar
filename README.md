@@ -74,4 +74,4 @@ Why would you want to use it over Arc 3.1 or Anarki, then?
     implemented as ordinary Arc macros
 
   * For more details on the differences between Arc/Nu and Arc/pg, see [this
-    file](notes/differences.md)
+    file](../blob/lite-nu/notes/differences.md)

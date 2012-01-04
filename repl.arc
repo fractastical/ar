@@ -1,7 +1,9 @@
 ;; http://arclanguage.org/item?id=10344
-(let interactive t ;(%.terminal-port? (stdin))
-  #|(when interactive
-    (% (namespace-require 'readline)))|#
+(let interactive (%.terminal-port? (stdin))
+  (when interactive
+    (%:namespace-require 'readline/rep-start)
+    ;(%:dynamic-require 'readline/rep-start #f)
+    )
 
   (def repl ()
     ;; This causes Ctrl+C to return to the REPL, rather than aborting.
@@ -46,8 +48,8 @@
                           ;;       #<mac:do>
                           ;;       > do
                           ;;       #<mac:that>
-                          (sref (%.namespace) val  'that)
-                          (sref (%.namespace) expr 'thatexpr)
+                          (sref namespace val  'that)     ;(%.namespace)
+                          (sref namespace expr 'thatexpr) ;(%.namespace)
                           (repl)))))))
       (%.default-continuation-prompt-tag)
       (fn args (repl)))))
