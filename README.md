@@ -1,19 +1,40 @@
 Lite Nu is Nu stripped down to the bare minimum:
 
-  * "01 nu.rkt" is the Nu compiler for Arc
-  * "02 arc.arc" is copied unmodified from Arc 3.1
-  * "03 repl.arc" implements a REPL
-  * "arc" is an executable that will load the above three files in order
+  * _"01 nu.rkt"_ is the Nu compiler for Arc
+  * _"02 arc.arc"_ is copied unmodified from Arc 3.1
+  * _"03 repl.arc"_ implements a REPL
+  * _"arc"_ is an executable that will load the above three files in order
 
 Okay, so it's basically just Arc 3.1 (it even copies arc.arc from Arc 3.1!).
 Why would you want to use it over Arc 3.1 or Anarki, then?
 
   * It's faster! Nu strives to be *at least* as fast as Arc 3.1, and in some
-    cases is significantly faster. For instance, `(+ 1 2)` was 38.41% faster
+    cases is significantly faster. For instance, `(+ 1 2)` was 52.94% faster
     in Nu than in Arc 3.1, last time I checked
 
-  * Nu lets you define custom calling behavior for anything you like by
-    extending the `ref` function. This is like `defcall` in Anarki
+  * Nu lets you define custom calling behavior for any non-function type by
+    extending the `ref` function. Using this, it's possible to implement
+    `defcall` from Anarki:
+
+        (= ref* (obj))
+
+        (extend ref (x . args) (orig ref* (type x))
+          (apply it args))
+
+        (mac defcall (type parms . body)
+          `(= (ref* ',type) (fn ,parms ,@body)))
+
+
+
+    As a convenience, rather than extending the `ref` function, you can simply
+    assign a function to the `ref*` table:
+
+        (= (ref* 'foo) (fn ...))
+
+    Now Nu will call the function when calling something with a type of
+    `'foo`. This is like `defcall` in Anarki
+
+
 
   * Nu reflects some of the compiler functions into Arc, so they can be called
     and hacked from within Arc

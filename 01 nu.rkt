@@ -599,10 +599,10 @@ change eqv to eq
                   ;; optimization for (#<fn> ...) and ((lambda ...) ...)
               (if (or (procedure? f)
                       (caris f 'lambda))
-                  `(    ,f ,@(ac-all args))
-                  `(ref ,f ,@(ac-all args))))))))
+                  `(     ,f ,@(ac-all args))
+                  `(call ,f ,@(ac-all args))))))))
 
-;; The next two are optimizations, except work for macros.
+;; the next two are optimizations, except work for macros.
 (define (de-compose fns args)
   (prn fns)
   (cond ((null? fns)       `((fn vals (car vals)) ,@args))
@@ -616,7 +616,7 @@ change eqv to eq
                     (cdr f))))
       ,@args)))
 
-;; returns #f or the macro function
+;; returns #f or the macro
 (define (macro? f)
   (cond ((and (symbol? f)
               (not (lex? f)))
@@ -626,7 +626,7 @@ change eqv to eq
         (else #f)))
 
 (define (mac-call m args)
-  ;; TODO: (apply ref ...)
+  ;; TODO: (apply call ...)
   (ac (apply (rep m) args)))
 
 (define (arg-list* args)
@@ -636,7 +636,7 @@ change eqv to eq
             (arg-list* (cdr args)))))
 
 
-#|(define call
+(define call ;(x . args)
   (case-lambda
     ((x)              (if (procedure? x)
                           (x)
@@ -662,7 +662,7 @@ change eqv to eq
     ((x . args)       (begin ;(prn "warning: called with 7+ arguments:" x args)
                              (if (procedure? x)
                                  (apply x args)
-                                 (apply ref x args))))))|#
+                                 (apply ref x args))))))
 
 (mset ref* (make-hash))
 
@@ -697,61 +697,24 @@ change eqv to eq
   ;; maybe I could write a macro to automatically generate the special-cases
   ;; for procedures
   (case-lambda
-    ((x)              (if (procedure? x)
-                          (x)
-                          (let ((v (hash-ref ref* (type x) nil)))
-                            (if (true? v)
-                                (v x)
-                                (err "function call on inappropriate object" x)))))
-    ((x k)            (if (procedure? x)
-                          (x k)
-                          (let ((v (hash-ref ref* (type x) nil)))
-                            (cond ((true? v)       (v x k))
-                                  ((namespace? x)  (namespace-variable-value k #f (lambda () nil) x)) ;(global-name k)
-                                  ((hash? x)       (hash-ref x k nil))
-                                  ((string? x)     (string-ref x k))
-                                  ((pair? x)       (list-ref x k))
-                                  (else (err "function call on inappropriate object" x k))))))
-    ((x k d)          (if (procedure? x)
-                          (x k d)
-                          (let ((v (hash-ref ref* (type x) nil)))
-                            (cond ((true? v)       (v x k d))
-                                  ((namespace? x)  (namespace-variable-value k #f ;(global-name k)
-                                                     (if (procedure? d) d (lambda () d))
-                                                     x))
-                                  ((hash? x)       (hash-ref x k d))
-                                  (else (err "function call on inappropriate object" x k d))))))
-    ((x a b c)        (if (procedure? x)
-                          (x a b c)
-                          (let ((v (hash-ref ref* (type x) nil)))
-                            (if (true? v)
-                                (v x a b c)
-                                (err "function call on inappropriate object" x a b c)))))
-    ((x a b c d)      (if (procedure? x)
-                          (x a b c d)
-                          (let ((v (hash-ref ref* (type x) nil)))
-                            (if (true? v)
-                                (v x a b c d)
-                                (err "function call on inappropriate object" x a b c d)))))
-    ((x a b c d e)    (if (procedure? x)
-                          (x a b c d e)
-                          (let ((v (hash-ref ref* (type x) nil)))
-                            (if (true? v)
-                                (v x a b c d e)
-                                (err "function call on inappropriate object" x a b c d e)))))
-    ((x a b c d e f)  (if (procedure? x)
-                          (x a b c d e f)
-                          (let ((v (hash-ref ref* (type x) nil)))
-                            (if (true? v)
-                                (v x a b c d e f)
-                                (err "function call on inappropriate object" x a b c d e f)))))
-    ((x . args)       (begin ;(prn "warning: called with 7+ arguments:" x args)
-                             (if (procedure? x)
-                                 (apply x args)
-                                 (let ((v (hash-ref ref* (type x) nil)))
-                                   (if (true? v)
-                                       (apply v x args)
-                                       (apply err "function call on inappropriate object" x args))))))))
+    ((x k)       (let ((v (hash-ref ref* (type x) nil)))
+                   (cond ((true? v)       (v x k))
+                         ((namespace? x)  (namespace-variable-value k #f (lambda () nil) x)) ;(global-name k)
+                         ((hash? x)       (hash-ref x k nil))
+                         ((string? x)     (string-ref x k))
+                         ((pair? x)       (list-ref x k))
+                         (else (err "function call on inappropriate object" x k)))))
+    ((x k d)     (let ((v (hash-ref ref* (type x) nil)))
+                   (cond ((true? v)       (v x k d))
+                         ((namespace? x)  (namespace-variable-value k #f ;(global-name k)
+                                            (if (procedure? d) d (lambda () d))
+                                            x))
+                         ((hash? x)       (hash-ref x k d))
+                         (else (err "function call on inappropriate object" x k d)))))
+    ((x . args)  (let ((v (hash-ref ref* (type x) nil)))
+                   (if (true? v)
+                       (apply v x args)
+                       (apply err "function call on inappropriate object" x args))))))
 
 
 ;=============================================================================
@@ -1416,18 +1379,18 @@ change eqv to eq
 
 ;; functions
 (sdef apply (f . args)
-  (apply ref f (arg-list* args)))
+  (apply call f (arg-list* args)))
 
 ;; TODO: make this better
 (sdef atomic-invoke (f)
   (if (thread-cell-ref sema-cell)
-      ;; TODO: why are these ref...?
-      (ref f)
+      ;; TODO: why are these call...?
+      (call f)
       (begin (thread-cell-set! sema-cell #t)
              (protect (lambda ()
                         (call-with-semaphore
                           the-sema
-                          (lambda () (ref f))))
+                          (lambda () (call f))))
                       (lambda ()
                         (thread-cell-set! sema-cell #f))))))
 
