@@ -225,43 +225,43 @@ change eqv to eq
           (err "can't coerce annotated object"))
          ;; TODO: does this need to be eqv? rather than eq?
         ((eqv? to (type x)) x)
-        ((symbol? x)    (case to
-                          ((string)  (symbol->string x))
-                          (else      (err "can't coerce" x to))))
-        ((pair? x)      (case to
-                          ((string)  (apply string-append
-                                            (map (lambda (y) (coerce y 'string))
-                                                 x)))
-                          (else      (err "can't coerce" x to))))
+        ((symbol? x)         (case to
+                               ((string)  (symbol->string x))
+                               (else      (err "can't coerce" x to))))
+        ((pair? x)           (case to
+                               ((string)  (apply string-append
+                                                 (map (lambda (y) (coerce y 'string))
+                                                      x)))
+                               (else      (err "can't coerce" x to))))
         ;(eq? x nil)
-        ((null? x)      (case to
-                          ((string)  "")
-                          (else      (err "can't coerce" x to))))
-        ((char? x)      (case to
-                          ((int)     (char->integer x))
-                          ((string)  (string x))
-                          ((sym)     (string->symbol (string x)))
-                          (else      (err "can't coerce" x to))))
-        ((exint? x)     (case to
-                          ((num)     x)
-                          ((char)    (integer->char x))
-                          ((string)  (number->string x base))
-                          (else      (err "can't coerce" x to))))
-        ((number? x)    (case to
-                          ((int)     (iround x))
-                          ((char)    (integer->char (iround x)))
-                          ((string)  (number->string x base))
-                          (else      (err "can't coerce" x to))))
-        ((string? x)    (case to
-                          ((sym)     (string->symbol x))
-                          ((cons)    (string->list x))
-                          ((num)     (or (string->number x base)
-                                         (err "can't coerce" x to)))
-                          ((int)     (let ((n (string->number x base)))
-                                       (if n  (iround n)
-                                              (err "can't coerce" x to))))
-                          (else      (err "can't coerce" x to))))
-        (else           (err "can't coerce" x to))))
+        ((null? x)           (case to
+                               ((string)  "")
+                               (else      (err "can't coerce" x to))))
+        ((char? x)           (case to
+                               ((int)     (char->integer x))
+                               ((string)  (string x))
+                               ((sym)     (string->symbol (string x)))
+                               (else      (err "can't coerce" x to))))
+        ((exact-integer? x)  (case to
+                               ((num)     x)
+                               ((char)    (integer->char x))
+                               ((string)  (number->string x base))
+                               (else      (err "can't coerce" x to))))
+        ((number? x)         (case to
+                               ((int)     (iround x))
+                               ((char)    (integer->char (iround x)))
+                               ((string)  (number->string x base))
+                               (else      (err "can't coerce" x to))))
+        ((string? x)         (case to
+                               ((sym)     (string->symbol x))
+                               ((cons)    (string->list x))
+                               ((num)     (or (string->number x base)
+                                              (err "can't coerce" x to)))
+                               ((int)     (let ((n (string->number x base)))
+                                            (if n  (iround n)
+                                                   (err "can't coerce" x to))))
+                               (else      (err "can't coerce" x to))))
+        (else                (err "can't coerce" x to))))
 
 (mdef err (x . rest)
   (apply error x rest))
@@ -327,26 +327,26 @@ change eqv to eq
 
 (mdef type (x)
         ;; TODO: better ordering for speed
-  (cond ((tagged? x)        (tagged-type x))
-        ((namespace? x)     'namespace)
-        ((pair? x)          'cons)
-        ((symbol? x)        'sym)
+  (cond ((tagged? x)         (tagged-type x))
+        ((namespace? x)      'namespace)
+        ((pair? x)           'cons)
+        ((symbol? x)         'sym)
         ; (type nil) -> sym
-        ((null? x)          'sym)
-        ((procedure? x)     'fn)
-        ((char? x)          'char)
-        ((string? x)        'string)
-        ((exint? x)         'int)
-        ((number? x)        'num)     ; unsure about this
-        ((hash? x)          'table)
-        ((output-port? x)   'output)
-        ((input-port? x)    'input)
-        ((tcp-listener? x)  'socket)
-        ((exn? x)           'exception)
-        ((thread? x)        'thread)
-        (else               ;(err "type: unknown type" x)
-                            ;; TODO: not sure about this, but seems okay
-                            nil)))
+        ((null? x)           'sym)
+        ((procedure? x)      'fn)
+        ((char? x)           'char)
+        ((string? x)         'string)
+        ((exact-integer? x)  'int)
+        ((number? x)         'num)     ; unsure about this
+        ((hash? x)           'table)
+        ((output-port? x)    'output)
+        ((input-port? x)     'input)
+        ((tcp-listener? x)   'socket)
+        ((exn? x)            'exception)
+        ((thread? x)         'thread)
+        (else                ;(err "type: unknown type" x)
+                             ;; TODO: not sure about this, but seems okay
+                             nil)))
 
 ;; Racket functions
 (sset -        args                    -)
@@ -372,13 +372,14 @@ change eqv to eq
   ;; TODO: why is this in Arc 3.1?
   ;(print-hash-table #t)
   (current-readtable arc3-readtable)
-  (%load-all dir))
+  ;(%load-all dir)
+  )
 
-(mdef %load-all (dir)
+#|(mdef %load-all (dir)
   (aload (build-path dir "02 arc.arc")))
 
 (define (repl)
-  (aload (build-path exec-dir "03 repl.arc")))
+  (aload (build-path exec-dir "03 repl.arc")))|#
 
 (define (aload filename)
   (call-with-input-file filename aload1))
@@ -419,7 +420,7 @@ change eqv to eq
 
 (define (dottedmap f x)
   (if (pair? x)
-        (cons (f (car x)) (dottedmap f (cdr x)))
+      (cons (f (car x)) (dottedmap f (cdr x)))
       x))
 
 
@@ -562,9 +563,6 @@ change eqv to eq
 
 (define (isa x y)
   (eq? (type x) y))
-
-(define (exint? x)
-  (and (integer? x) (exact? x)))
 
 
 ;=============================================================================
@@ -1345,7 +1343,7 @@ change eqv to eq
 ;; wraptnil
 (sset dead        (x) (wraptnil thread-dead?))
 (sset dir-exists  (x) (wraptnil directory-exists?))
-(sset exact       (x) (wraptnil exint?)) ;; TODO: bad name
+(sset exact       (x) (wraptnil exact-integer?)) ;; TODO: bad name
 (sset file-exists (x) (wraptnil file-exists?))
 (sset ssyntax     (x) (wraptnil ssyntax))
 

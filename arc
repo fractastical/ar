@@ -3,7 +3,6 @@
 
 (require racket/cmdline)
 (require racket/path)
-;(require readline/rep-start)
 (require profile)
 
 (define repl (make-parameter #f))
@@ -28,30 +27,21 @@
 
 (parameterize ((current-namespace (make-base-empty-namespace)))
   (profile-thunk (lambda ()
-    ;(namespace-require 'readline) ;; TODO: if I don't require this, it's very slow to startup
-
     (parameterize ((current-directory exec-dir))
-      ;(namespace-require 'racket/base)
-      ;(load "01 arc.rkt")
-      (namespace-require '(file "01 nu.rkt"))
-      ;(namespace-require '(file "02 arc.rkt"))
-      ;(namespace-require '(file "02 nu.rkt"))
-      ;(namespace-require '(file "01 ac.rkt.bak (1)"))
-      )
+      (namespace-require '(file "01 nu.rkt")))
 
     (eval `(init ,(path->string exec-dir)))
 
-      ;(init ,(path->string exec-dir))
-
     (let ((load (eval 'aload)))
-    ;(let ((load (eval '(var 'importfn1)))) ) ;; TODO: better pattern than using var, should access the variable directly
+      (load (build-path exec-dir "02 arc.arc"))
+
       (unless (null? arguments)
         (if (all)
             (map load arguments)
             (load (car arguments))))
 
       (when (or (repl) (null? arguments))
-        (eval `(repl))))
+        (load (build-path exec-dir "03 repl.arc"))))
   ))
 
   ;; This is to prevent () from being printed when the REPL exits

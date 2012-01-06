@@ -9,8 +9,10 @@ Okay, so it's basically just Arc 3.1 (it even copies arc.arc from Arc 3.1!).
 Why would you want to use it over Arc 3.1 or Anarki, then?
 
   * It's faster! Nu strives to be *at least* as fast as Arc 3.1, and in some
-    cases is significantly faster. For instance, `(+ 1 2)` was 44.55% faster
+    cases is significantly faster. For instance, `(+ 1 2)` was 109.52% faster
     in Nu than in Arc 3.1, last time I checked
+
+    You can view the latest timing tests [here](../nu/timing)
 
   * Nu lets you define custom calling behavior for any non-function type by
     extending the `ref` function. Using this, it's possible to implement
@@ -23,7 +25,6 @@ Why would you want to use it over Arc 3.1 or Anarki, then?
 
         (mac defcall (type parms . body)
           `(= (ref* ',type) (fn ,parms ,@body)))
-
 
 
         ;; custom calling behavior for anything with a type of 'foo
@@ -49,7 +50,7 @@ Why would you want to use it over Arc 3.1 or Anarki, then?
     This also lets you call Nu compiler/Racket functions that aren't exposed
     to Arc:
 
-        > (%.global-ref 'foo)
+        > (%.make-global-var 5)
         #<fn>
 
         > (%.string? "foo")
