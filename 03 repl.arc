@@ -1,5 +1,5 @@
 ;; http://arclanguage.org/item?id=10344
-(let interactive (%.terminal-port? (stdin))
+(let interactive (%:terminal-port? (current-input-port))
   (when interactive
     (%:namespace-require 'readline/rep-start)
     ;(%:dynamic-require 'readline/rep-start #f)

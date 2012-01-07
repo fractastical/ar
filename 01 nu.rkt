@@ -77,8 +77,8 @@ change eqv to eq
 ;=============================================================================
 ;  Arc variables
 ;=============================================================================
-(define namespace  (make-parameter (make-empty-namespace)))
-(define names      (make-hash))
+(define arc3-namespace  (make-base-empty-namespace))
+(define names           (make-hash))
 
 ;; TODO: see if redef and reset are needed
 #|(define-syntax-rule (redef name parms . body)
@@ -146,7 +146,7 @@ change eqv to eq
 ;; anything else
 (define (set a b)
   ;(sref (namespace) b a)
-  (namespace-set-variable-value! a b #f (namespace))) ;(coerce (namespace) 'namespace)
+  (namespace-set-variable-value! a b #f arc3-namespace)) ;(coerce (namespace) 'namespace)
 
 (define (nameit name val)
   (when (or (procedure? val)
@@ -267,7 +267,11 @@ change eqv to eq
   (apply error x rest))
 
 (mdef ac-eval (expr) #:name eval
-  (eval (ac expr)))
+  (eval (ac expr) (coerce (namespace) 'namespace)
+                  #|(if (namespace? (namespace))
+                      (namespace)
+                      arc3-namespace)|#
+                  ))
 
 ;; macroexpand the outer call of a form as much as possible
 (mdef macex (e)
@@ -410,7 +414,7 @@ change eqv to eq
               (cdr x)
               (ac-call (car x) (cdr x))))
         ((null? x)
-          (list 'quote x))
+          (list '#%datum))
         ((string? x)
           (ac-string x))
         (else x)))
@@ -428,20 +432,27 @@ change eqv to eq
 ;  Namespaces
 ;=============================================================================
 (define (empty-namespace)
-  (parameterize ((current-namespace (make-empty-namespace)))
+  (parameterize ((current-namespace (make-base-empty-namespace)))
     (namespace-init)
     (current-namespace)))
 
 (define (namespace-init)
-  (namespace-require '(rename '#%kernel  #%set  set!))
-  (namespace-require '(rename '#%kernel  #%var  case-lambda))
-  (namespace-require '(only   '#%kernel  #%top))
-  (namespace-require '(only   '#%kernel  #%app #%datum)) ;; TODO
+  (namespace-require '(rename   '#%kernel  #%begin   begin))
+  (namespace-require '(rename   '#%kernel  #%if      if))
+  (namespace-require '(rename racket/base  #%lambda  lambda))
+  (namespace-require '(rename racket/base  #%let*    let*))
+  ;(namespace-require '(rename   '#%kernel  #%quote   quote))
+  (namespace-require '(rename   '#%kernel  #%set     set!))
+  ;(namespace-require '(rename   '#%kernel  #%var  case-lambda))
+  (namespace-require '(only   '#%kernel  #%top #%app #%datum))
   ;(namespace-require '(only   racket/base  displayln))
   )
 
-(parameterize ((current-namespace (namespace)))
-  (namespace-init))
+(parameterize ((current-namespace arc3-namespace))
+  (namespace-init)
+  )
+
+(pset namespace arc3-namespace)
 
 
 ;=============================================================================
@@ -461,7 +472,8 @@ change eqv to eq
         (v))))
 
 (mdef %symbol-global (x)
-  `(,(global-ref x)))
+  ;`(,(global-ref x))
+  `(,x))
 
 (define (ac-symbol x)
   (let ((r (assq x (replace-var))))
@@ -470,6 +482,7 @@ change eqv to eq
               x
               (%symbol-global x)))))
 
+#|
                                 ;; TODO
 (define (global-ref name (space (namespace)))
   (let ((hash (ref space cached-global-ref
@@ -483,7 +496,7 @@ change eqv to eq
           (eval `(#%var (() (,name))))
           #|(eval `(#%var (()           (,name))
                         ((,unique) (#%set ,name ,unique))))|#
-          )))))
+          )))))|#
 
 (define (lex? v) ;; is v lexically bound?
   (memq v (local-env)))
@@ -571,7 +584,10 @@ change eqv to eq
 (define direct-calls #f)
 
 (define (ac-call f args)
-  (let ((macfn (macro? f)))
+  (let* ((f      (if (ssyntax f)
+                     (ssexpand f)
+                     f))
+         (macfn  (macro? f)))
           ; the next three clauses could be removed without changing semantics
           ; ... except that they work for macros (so prob should do this for
           ; every elt of s, not just the car)
@@ -594,16 +610,16 @@ change eqv to eq
             `(,(ac f) ,@(ac-all args)))
           (else
             (let ((f (ac f)))
-                  ;; optimization for (#<fn> ...) and ((lambda ...) ...)
+                  ;; optimization for (#<fn> ...) and ((fn ...) ...)
               (if (or (procedure? f)
-                      (caris f 'lambda))
-                  `(     ,f ,@(ac-all args))
-                  `(call ,f ,@(ac-all args))))))))
+                      (caris f '#%lambda))
+                  `(       ,f ,@(ac-all args))
+                  `(#%call ,f ,@(ac-all args))))))))
 
 ;; the next two are optimizations, except work for macros.
 (define (de-compose fns args)
-  (prn fns)
-  (cond ((null? fns)       `((fn vals (car vals)) ,@args))
+        ;; TODO: is this needed anywhere in Arc or can I remove it...?
+  (cond ;((null? fns)       `((fn vals (car vals)) ,@args))
         ((null? (cdr fns)) (cons (car fns) args))
         (else              (list (car fns) (de-compose (cdr fns) args)))))
 
@@ -624,7 +640,7 @@ change eqv to eq
         (else #f)))
 
 (define (mac-call m args)
-  ;; TODO: (apply call ...)
+  ;; TODO: (apply #%call ...)
   (ac (apply (rep m) args)))
 
 (define (arg-list* args)
@@ -633,9 +649,8 @@ change eqv to eq
       (cons (car args)
             (arg-list* (cdr args)))))
 
-
 ;; call a function or perform an array ref, hash ref, etc.
-(define call
+(define #%call ;(x . args)
   ;; uses case-lambda for ridiculous speed: now using call for *all* function
   ;; calls is just as fast as using the funcall functions, and unlike
   ;; funcall, this hardcodes up to 6 arguments rather than only 4
@@ -668,6 +683,8 @@ change eqv to eq
                       (if (procedure? x)
                           (apply x args)
                           (apply ref x args)))))
+
+(set '#%call #%call)
 
 ;; Non-fn constants in functional position are valuable real estate, so
 ;; should figure out the best way to exploit it.  What could (1 foo) or
@@ -894,7 +911,7 @@ change eqv to eq
   (let ((x (pairfn assign1 x)))
     (if (null? (cdr x))
         (car x)
-        (cons 'begin x))))
+        (cons '#%begin x))))
 
 (define (pairfn f x)
   (if (null? x)
@@ -910,14 +927,16 @@ change eqv to eq
 
 (define (assign1 a b1)
   (if (symbol? a)
-      (if (lex? a)  `(set! ,a ,(ac b1))
-                    `(assign-global-raw ,(namespace) ',a ,(ac b1)))
+      (if (lex? a)  `(#%set ,a ,(ac b1))
+                    ;`(,(ac '%assign-global-raw) ,(namespace) (#%datum . ,a) ,(ac b1))
+                    (ac `(%assign-global-raw ,(namespace) ',a ,b1))
+                    )
       (err "first arg to assign must be a symbol" a)))
 
 (define (assign-global-new space name val)
   (sref space (make-global-var val) name))
 
-(define (assign-global-raw space name val)
+(mdef %assign-global-raw (space name val)
   (nameit name val)
   (let ((v (ref space name fail)))
     (if (eq? v fail)
@@ -940,14 +959,14 @@ change eqv to eq
 ; (if nil a b c) -> (if b c)
 (define (ac-ifn args)
         ;; TODO: maybe simplify this a little, like by using ac-cdr
-  (cond ((null? args) 'nil)
+  (cond ((null? args) (ac 'nil))
         ((null? (cdr args))
           (ac (car args)))
         (else
-               ;; TODO: inline
-          `(if (true? ,(ac (car args)))
-               ,(ac (cadr args))
-               ,(ac-ifn (cddr args))))))
+                 ;; TODO: fix this if I expose true? to Arc
+          `(#%if (,true? ,(ac (car args)))
+                 ,(ac (cadr args))
+                 ,(ac-ifn (cddr args))))))
 
 (mset ac-if args #:name if
   (annotate 'mac (lambda args
@@ -968,7 +987,7 @@ change eqv to eq
   (x (append y (x))))
 
 (define (ac-fn parms body)
-  (cons 'lambda
+  (cons '#%lambda
         (parameterize ((fn-body (if (null? body)
                                     (list 'nil) ;; TODO: nil or 'nil ?
                                     body)))
@@ -977,7 +996,7 @@ change eqv to eq
                   (let ((x (fn-args parms)))
                     (fn-body (if (null? (fn-let*))
                                  (ac-all (fn-body))
-                                 (list (list* 'let*
+                                 (list (list* '#%let*
                                               (fn-let*)
                                               (ac-all (fn-body))))))
                     x))
@@ -986,7 +1005,8 @@ change eqv to eq
 (define (fn-gensym x)
   (if (fn-gensym-args)
       (let ((u (gensym)))
-        (cons-to replace-var (list x (list 'quote u)))
+                                     ;; TODO: test this, should it be (list 'quote u) ?
+        (cons-to replace-var (list x (cons '#%datum u)))
         u)
       x))
 
@@ -1271,7 +1291,8 @@ change eqv to eq
 ;=============================================================================
 ;  Extra stuff
 ;=============================================================================
-(set 'namespace  namespace)
+#|(define namespace  (make-parameter arc3-namespace))
+(set 'namespace  namespace)|#
 
 (mset dref (x (o k))
   (case-lambda
@@ -1282,12 +1303,22 @@ change eqv to eq
                          x))))
     ((x k)  (err "can't delete reference" x k))))
 
-(sset % args
+#|(sset % args
   (annotate 'mac (lambda args
                    (cons nocompile
                          (if (null? (cdr args))
                              (car args)
-                             (cons 'begin args))))))
+                             (cons '#%begin args))))))
+
+(let ((space (current-namespace)))
+  (sset % args
+    (annotate 'mac (lambda (x)
+                     (list nocompile eval (cons '#%datum x) space)))))|#
+
+(let ((space (current-namespace)))
+  (sset % args
+    (annotate 'mac (lambda args
+                     (list (eval `(lambda () ,@args) space))))))
 
 
 ;=============================================================================
@@ -1362,18 +1393,18 @@ change eqv to eq
 
 ;; functions
 (sdef apply (f . args)
-  (apply call f (arg-list* args)))
+  (apply #%call f (arg-list* args)))
 
 ;; TODO: make this better
 (sdef atomic-invoke (f)
   (if (thread-cell-ref sema-cell)
-      ;; TODO: why are these call...?
-      (call f)
+      ;; TODO: why are these #%call...?
+      (#%call f)
       (begin (thread-cell-set! sema-cell #t)
              (protect (lambda ()
                         (call-with-semaphore
                           the-sema
-                          (lambda () (call f))))
+                          (lambda () (#%call f))))
                       (lambda ()
                         (thread-cell-set! sema-cell #f))))))
 

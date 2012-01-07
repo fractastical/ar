@@ -3,7 +3,7 @@ Differences between Arc/Nu and Arc/pg
 
   * The following special Racket values are defined:
 
-        #%app #%datum #%set #%top #%var
+        #%app #%begin #%call #%datum #%if #%lambda #%let* #%set #%top
 
   * The following Arc macros are defined:
 
@@ -15,7 +15,7 @@ Differences between Arc/Nu and Arc/pg
 
   * The following Arc functions are defined:
 
-        %load-all %symbol-global close1 dref pipe ref
+        %assign-global-raw %symbol-global close1 dref pipe ref
 
   * The following macro works differently in Nu (use `%` instead):
 
