@@ -3,34 +3,27 @@ Differences between Arc/Nu and Arc/pg
 
   * The following special Racket values are defined:
 
-        #%app #%begin #%call #%datum #%if #%lambda #%let* #%set #%top
+        #%app #%begin #%call #%datum #%if #%lambda #%let* #%set #%set-global #%top
 
   * The following Arc macros are defined:
 
         % assign fn if square-brackets quasiquote quote
 
-  * The following Arc global variables are defined:
-
-        namespace uniq-counter
-
   * The following Arc functions are defined:
 
-        %assign-global-raw %symbol-global close1 dref pipe ref
+        %symbol-global close1 dref pipe ref
 
   * The following macro works differently in Nu (use `%` instead):
 
         > (mac $ (x) `(cdr `(0 . ,,x)))
-
         > ($ (let a 5 a))
         5
 
   * Lexical variables take precedence over macros:
 
         > (mac foo (x) `(+ ,x 2))
-
         > (foo 0)
         2
-
         > (let foo [+ _ 5] (foo 0))
         5
 
@@ -39,12 +32,6 @@ Differences between Arc/Nu and Arc/pg
 
         > do
         #<mac:do>
-
-  * `quasiquote` supports nested quasiquotes:
-
-        > `(foo bar
-             `(qux corge))
-        (foo bar (#<fn:cons> (#<mac:quote> qux) (#<fn:cons> (#<mac:quote> corge) nil)))
 
   * `[a b c]` is expanded into `(square-brackets a b c)` which is then
     implemented as a macro:
@@ -61,9 +48,7 @@ Differences between Arc/Nu and Arc/pg
     copying it:
 
         > (mac inline (x) `',(eval x))
-
         > (= x '(a b c))
-
         > (is x (inline x))
         t
 
@@ -103,3 +88,19 @@ Differences between Arc/Nu and Arc/pg
         15
 
     This enables you to write hygienic macros in Arc
+
+  * A new `'inline-calls` declare mode, which is even faster than
+    `'direct-calls`:
+
+        > (declare 'inline-calls t)
+
+        > (%.ac '(+ 1 2))
+        (#<fn:+> 1 2)
+
+    Basically, it takes the value of the symbol at compile-time and splices it
+    into the expression. This is much faster than direct-calls because it
+    doesn't need to do a global lookup at runtime.
+
+    The downside is that if you redefine any global variable, even functions,
+    those changes aren't retroactive: they'll affect new code but not old
+    code

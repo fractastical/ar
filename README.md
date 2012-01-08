@@ -9,7 +9,7 @@ Okay, so it's basically just Arc 3.1 (it even copies arc.arc from Arc 3.1!).
 Why would you want to use it over Arc 3.1 or Anarki, then?
 
   * It's faster! Nu strives to be *at least* as fast as Arc 3.1, and in some
-    cases is significantly faster. For instance, `(+ 1 2)` was 109.52% faster
+    cases is significantly faster. For instance, `(+ 1 2)` was 132.48% faster
     in Nu than in Arc 3.1, last time I checked
 
     You can view the latest timing tests [here](../nu/timing)
@@ -31,8 +31,48 @@ Why would you want to use it over Arc 3.1 or Anarki, then?
         (defcall foo (x . args)
           ...)
 
-  * Nu reflects some of the compiler functions into Arc, so they can be called
-    and hacked from within Arc
+  * The REPL is implemented **substantially** better:
+
+      * Ctrl+D exits the REPL
+
+      * Ctrl+C aborts the current computation but doesn't exit the REPL:
+
+            > ((afn () (self)))
+            ^Cuser break
+            >
+
+      * Readline support is built-in, which means:
+
+          * Pressing Tab will autocomplete the names of global variables:
+
+                > f
+                filechars    file-exists  fill-table   find         firstn       flat         flushout     fn           for          force-close  forlen       fromdisk     fromstring
+
+          * Pressing Up will recall the entire expression rather than only the
+            last line:
+
+                > (+ 1
+                     2
+                     3)
+                6
+                > (+ 1
+                     2
+                     3)
+
+  * You can use the "arc" executable to write shell scripts:
+
+        #! /path/to/arc
+        (prn "foo")
+
+    This is like "arc.sh" in Anarki but implemented in Racket rather than as a
+    bash script, so it should be cleaner and more portable.
+
+    In addition, it supports common Unix idioms such as:
+
+        $ /path/to/arc < foo.arc
+        $ echo "(+ 1 2)" | /path/to/arc
+
+    This idea is courtesy of [this thread](http://arclanguage.org/item?id=10344)
 
   * Like Anarki, Nu provides a form that lets you bypass the compiler and drop
     directly into Racket. In Anarki this form is `$` and in Nu it's `%`:
@@ -74,14 +114,6 @@ Why would you want to use it over Arc 3.1 or Anarki, then?
 
   * Nu cleans up a lot of stuff in Arc 3.1 and fixes bugs (Anarki also fixes
     some bugs in Arc 3.1, but it generally doesn't clean things up)
-
-  * You can use the "arc" executable to write shell scripts:
-
-        #! /path/to/arc
-        (prn "foo")
-
-    This is like "arc.sh" in Anarki but implemented in Racket rather than as a
-    bash script, so it should be cleaner and more portable
 
   * Nu has reorganized Arc 3.1 significantly, hopefully this makes it easier
     to understand and hack

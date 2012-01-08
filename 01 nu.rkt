@@ -1,28 +1,6 @@
 #lang racket/base
-;; Nu Arc Compiler -- Corridors of Time
-;; http://www.youtube.com/watch?v=9R-Isx2b-GE
-;; http://www.youtube.com/watch?v=wK1eJSCmv1A
-
 ;; Nu Arc Compiler -- Manifest Destiny
 ;; http://www.youtube.com/watch?v=qXp3qjeM0e4
-
-
-#|
-Steps to change "01 ac.rkt" to "01 nu.rkt":
-
-replace #t in cond with else
-remove ac-denil
-remove ar-nil-terminate
-remove ac-niltree
-make nil a global variable that holds the Racket null value
-change instances of 'nil to nil
-change instances of '() to null
-allow for rebinding nil and t
-remove literal?
-change ac to use a parameter local-env rather than an argument env
-
-change eqv to eq
-|#
 
 (provide (all-defined-out)
          (all-from-out racket/base))
@@ -55,9 +33,7 @@ change eqv to eq
 (define (acompile inname)
   (let ((outname (string-append inname ".scm")))
     (when (file-exists? outname)
-      ;; TODO
-      (display "deleting file: ")
-      (displayln outname)
+      (warn "deleting file " outname)
       (delete-file outname))
     (call-with-input-file inname
       (lambda (ip)
@@ -452,7 +428,8 @@ change eqv to eq
   (namespace-init)
   )
 
-(pset namespace arc3-namespace)
+(define namespace (make-parameter arc3-namespace))
+;(pset namespace arc3-namespace)
 
 
 ;=============================================================================
@@ -582,24 +559,44 @@ change eqv to eq
 ;  call / ref
 ;=============================================================================
 (define direct-calls #f)
+(define inline-calls #f)
 
 (define (ac-call f args)
-  (let* ((f      (if (ssyntax f)
-                     (ssexpand f)
-                     f))
-         (macfn  (macro? f)))
+  (let* ((f  (if (ssyntax f)
+                 (ssexpand f)
+                 f))
+         (c  (and (pair? f)
+                  (macro? (car f))))
+         (m  (macro? f)))
+    ;(when (and c (not (caris f 'fn))) (prn c f))
           ; the next three clauses could be removed without changing semantics
           ; ... except that they work for macros (so prob should do this for
           ; every elt of s, not just the car)
-          ;; TODO: don't hardcode the symbols
-    (cond ((caris f 'compose)
+                         ;; TODO: this is only very slightly better than
+                         ;;       hardcoding the symbol: figure out a better
+                         ;;       way
+    (cond ((and c (eq? c (var 'compose)))
             (ac (de-compose (cdr f) args)))
-          ((caris f 'complement)
+          ((and c (eq? c (var 'complement)))
             (ac (list 'no (cons (cadr f) args))))
-          ((caris f 'andf)
+          ((and c (eq? c (var 'andf)))
             (ac (de-andf f args)))
-          (macfn
-            (mac-call macfn args))
+          (m (mac-call m args))
+          ;; inserts the actual value for things in functional position, so
+          ;; (+ 1 2) compiles into (#<fn:+> 1 2)
+          ;;
+          ;; this is much faster than direct-calls but it's even more strict:
+          ;; if you redefine any global, even functions, those changes aren't
+          ;; retroactive: they affect new code, but not old code
+          ((and inline-calls
+                (symbol? f)
+                (not (lex? f))
+                ;; TODO: bound
+                (not (eq? (var f fail) fail)))
+            (let ((f (var f)))
+              (if (procedure? f)
+                  `(     ,f ,@(ac-all args))
+                  `(,ref ,f ,@(ac-all args)))))
           ;; (foo bar) where foo is a global variable bound to a procedure.
           ;; this breaks if you redefine foo to be a non-fn (like a hash table)
           ;; but as long as you don't redefine anything, it's faster
@@ -928,21 +925,26 @@ change eqv to eq
 (define (assign1 a b1)
   (if (symbol? a)
       (if (lex? a)  `(#%set ,a ,(ac b1))
-                    ;`(,(ac '%assign-global-raw) ,(namespace) (#%datum . ,a) ,(ac b1))
-                    (ac `(%assign-global-raw ,(namespace) ',a ,b1))
+                    ;`(,(ac '%assign-global) ,(namespace) (#%datum . ,a) ,(ac b1))
+                    `(#%set-global ,(namespace) (#%datum . ,a) ,(ac b1))
                     )
       (err "first arg to assign must be a symbol" a)))
 
 (define (assign-global-new space name val)
   (sref space (make-global-var val) name))
 
-(mdef %assign-global-raw (space name val)
-  (nameit name val)
+(define (assign-global-raw space name val)
   (let ((v (ref space name fail)))
     (if (eq? v fail)
         (assign-global-new space name val)
         (v val)))
   val)
+
+(define (assign-global space name val)
+  (nameit name val)
+  (assign-global-raw space name val))
+
+(set '#%set-global assign-global)
 
 (mset assign args
   (annotate 'mac (lambda args
@@ -1322,6 +1324,18 @@ change eqv to eq
 
 
 ;=============================================================================
+;  Compiler stuff used by Arc
+;=============================================================================
+(define uniq-counter (make-parameter 1))
+
+(define (warn . args)
+  (display "warning: " (current-error-port))
+  (for ((x args))
+    (display x (current-error-port)))
+  (newline (current-error-port)))
+
+
+;=============================================================================
 ;  Arc functions not used by the compiler
 ;=============================================================================
 ;; Racket functions
@@ -1426,7 +1440,9 @@ change eqv to eq
     (case key
       ((atstrings)      (set! atstrings      flag))
       ((direct-calls)   (set! direct-calls   flag))
-      ((explicit-flush) (set! explicit-flush flag)))
+      ((inline-calls)   (set! inline-calls   flag))
+      ((explicit-flush) (set! explicit-flush flag))
+      (else             (warn "invalid declare mode " key)))
     val))
 
 (sset details (e) exn-message)
@@ -1554,9 +1570,6 @@ change eqv to eq
 
 (sdef trunc (x)
   (inexact->exact (truncate x)))
-
-
-(pset uniq-counter  1) ;; TODO: not really a part of Arc
 
 (sdef uniq ((name 'g) (num nil))
      #:sig ((o name 'g) (o num))

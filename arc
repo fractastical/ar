@@ -26,7 +26,7 @@
 (define exec-dir (path-only (normalize-path (find-system-path 'run-file))))
 
 (parameterize ((current-namespace (make-base-empty-namespace)))
-  (profile-thunk (lambda ()
+  ;(profile-thunk (lambda ()
     (parameterize ((current-directory exec-dir))
       (namespace-require '(file "01 nu.rkt")))
 
@@ -42,7 +42,7 @@
 
       (when (or (repl) (null? arguments))
         (load (build-path exec-dir "03 repl.arc"))))
-  ))
+  ;))
 
   ;; This is to prevent () from being printed when the REPL exits
   (void))
