@@ -1,3 +1,21 @@
+How to run
+==========
+
+Just call `./arc` and you'll get a REPL.
+
+You can also use `./arc foo.arc` to load an Arc file.
+
+This also means that the `arc` executable is suitable for writing shell
+scripts:
+
+    #! /path/to/arc
+
+    (prn "foo")
+
+
+What is it?
+===========
+
 Lite Nu is Nu stripped down to the bare minimum:
 
   * _"01 nu.rkt"_ is the Nu compiler for Arc

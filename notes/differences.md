@@ -11,7 +11,7 @@ Differences between Arc/Nu and Arc/pg
 
   * The following Arc functions are defined:
 
-        %symbol-global close1 dref pipe ref
+        %symbol-global close1 pipe ref
 
   * The following macro works differently in Nu (use `%` instead):
 

@@ -2,6 +2,8 @@
 ;; Nu Arc Compiler -- Manifest Destiny
 ;; http://www.youtube.com/watch?v=qXp3qjeM0e4
 
+;; TODO: look for uses of null? and replace them with empty-stream? as needed
+
 (provide (all-defined-out)
          (all-from-out racket/base))
 
@@ -174,14 +176,28 @@
 
 ;; car and cdr probably will be used later, but not right now
 (mdef ac-car (x) #:name car
-  (if (null? x)
-      x
-      (car x)))
+  (cond ((null? x)
+          x)
+        #|((stream-empty? x)
+          x)|#
+        ((pair? x)
+          (car x))
+        #|((stream? x)
+          (stream-first x))|#
+        (else
+          (raise-type-error 'car "cons" x))))
 
 (mdef ac-cdr (x) #:name cdr
-  (if (null? x)
-      x
-      (cdr x)))
+  (cond ((null? x)
+          x)
+        #|((stream-empty? x)
+          x)|#
+        ((pair? x)
+          (cdr x))
+        #|((stream? x)
+          (stream-rest x))|#
+        (else
+          (raise-type-error 'cdr "cons" x))))
 
 (mdef close args
   (map close1 args)
@@ -290,7 +306,7 @@
 (mdef scar (p x)
   (cond ((pair? p)   (unsafe-set-mcar! p x))
         ((string? x) (string-set! p 0 x))
-        (else        (raise-type-error 'scar "pair" p)))
+        (else        (raise-type-error 'scar "cons" p)))
   x)
 
 ;; Later may want to have multiple indices.
@@ -310,6 +326,7 @@
   (cond ((tagged? x)         (tagged-type x))
         ((namespace? x)      'namespace)
         ((pair? x)           'cons)
+        ;((stream? x)         'stream) ;; TODO: not sure about this
         ((symbol? x)         'sym)
         ; (type nil) -> sym
         ((null? x)           'sym)
@@ -917,7 +934,6 @@
       (cons (f (car x) (cadr x))
                 ;; this is so the assign form returns the value
             (if (and (null? (cddr x))
-                     ;; TODO: why is this here?
                      (lex? (car x)))
                 (list (ac (car x)))
                 (pairfn f (cddr x))))))
@@ -979,6 +995,7 @@
 ;  fn
 ;=============================================================================
 (define fn-gensym-args  (make-parameter #f))
+(define fn-parms        (make-parameter null))
 (define fn-body         (make-parameter null))
 (define fn-let*         (make-parameter null))
 
@@ -994,7 +1011,8 @@
                                     (list 'nil) ;; TODO: nil or 'nil ?
                                     body)))
           (cons (parameterize ((local-env  (local-env))
-                               (fn-let*    null))
+                               (fn-let*    null)
+                               (fn-parms   parms))
                   (let ((x (fn-args parms)))
                     (fn-body (if (null? (fn-let*))
                                  (ac-all (fn-body))
@@ -1136,7 +1154,7 @@
               ;; TODO: don't hardcode the symbol unquote-splicing
               ((caris c 'unquote-splicing)
                 (if (null? (cdr x))
-                      (cadr c)
+                    (cadr c)
                     (list append (cadr c)
                                  (qq-expand-pair (cdr x)))))
               ;; TODO: don't hardcode the symbol quasiquote
@@ -1205,7 +1223,7 @@
   ((cond ((or (insym? #\: sym) (insym? #\~ sym)) expand-compose)
          ((or (insym? #\. sym) (insym? #\! sym)) expand-sexpr)
          ((insym? #\& sym)                       expand-and)
-         (else (err "Unknown ssyntax" sym)))
+         (else (err "unknown ssyntax" sym)))
    sym))
 
 (define (expand-compose sym)
@@ -1296,14 +1314,14 @@
 #|(define namespace  (make-parameter arc3-namespace))
 (set 'namespace  namespace)|#
 
-(mset dref (x (o k))
+#|(mset dref (x (o k))
   (case-lambda
     ((n)    (let ((x (ref (namespace) n fail)))
               (if (eq? x fail)
                   nil
                   (begin (namespace-undefine-variable! n (coerce (namespace) 'namespace))
                          x))))
-    ((x k)  (err "can't delete reference" x k))))
+    ((x k)  (err "can't delete reference" x k))))|#
 
 #|(sset % args
   (annotate 'mac (lambda args
@@ -1521,7 +1539,7 @@
 (sdef scdr (p x)
   (cond ((pair? p)   (unsafe-set-mcdr! p x))
         ((string? x) (err "can't set cdr of a string" x))
-        (else        (raise-type-error 'scdr "pair" p)))
+        (else        (raise-type-error 'scdr "cons" p)))
   x)
 
 ; the 2050 means http requests currently capped at 2 meg
