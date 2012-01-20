@@ -29,9 +29,9 @@ Why would you want to use it over Arc 3.1 or Anarki, then?
 
   * It's faster! Nu strives to be *at least* as fast as Arc 3.1, and in some
     cases is significantly faster. For instance, `(+ 1 2)` was 132.48% faster
-    in Nu than in Arc 3.1, last time I checked
+    in Nu than in Arc 3.1, last time I checked.
 
-    You can view the latest timing tests [here](../nu/timing)
+    You can view the latest timing tests [here](../tree/nu/timing)
 
   * Nu lets you define custom calling behavior for any non-function type by
     extending the `ref` function. Using this, it's possible to implement
