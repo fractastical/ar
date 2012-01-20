@@ -1,17 +1,8 @@
 Differences between Arc/Nu and Arc/pg
 =====================================
 
-  * The following special Racket values are defined:
-
-        #%app #%begin #%call #%datum #%if #%lambda #%let* #%set #%set-global #%top
-
-  * The following Arc macros are defined:
-
-        % assign fn if square-brackets quasiquote quote
-
-  * The following Arc functions are defined:
-
-        %symbol-global close1 pipe ref
+Bug Fixes
+---------
 
   * The following macro works differently in Nu (use `%` instead):
 
@@ -26,6 +17,36 @@ Differences between Arc/Nu and Arc/pg
         2
         > (let foo [+ _ 5] (foo 0))
         5
+
+  * Global variables are represented with their Arc names:
+
+        > x
+        error: reference to undefined identifier: x
+
+  * Function rest args are `nil`-terminated:
+
+        > (cdr ((fn args args) 1))
+        nil
+
+  * `uniq` is implemented using actual Racket gensyms
+
+  * The queue bug [has been fixed](http://arclanguage.org/item?id=13616)
+
+
+New Features
+------------
+
+  * The following special Racket values are defined:
+
+        #%app #%begin #%call #%datum #%if #%lambda #%let* #%set #%set-global #%top
+
+  * The following Arc macros are defined:
+
+        % assign fn if square-brackets quasiquote quote
+
+  * The following Arc functions are defined:
+
+        %symbol-global close1 pipe ref
 
   * Functions print with `#<fn:...>` and macros print with `#<mac:...>`. In
     addition, macros have names:
@@ -51,20 +72,6 @@ Differences between Arc/Nu and Arc/pg
         > (= x '(a b c))
         > (is x (inline x))
         t
-
-  * Global variables are represented with their Arc names:
-
-        > x
-        error: reference to undefined identifier: x
-
-  * Function rest args are `nil`-terminated:
-
-        > (cdr ((fn args args) 1))
-        nil
-
-  * `uniq` is implemented using actual Racket gensyms
-
-  * The queue bug [has been fixed](http://arclanguage.org/item?id=13616)
 
   * Anything not understood by the compiler is considered to be a literal.
     Thus, Racket values can be used freely:
