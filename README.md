@@ -9,8 +9,9 @@ This also means that the `arc` executable is suitable for writing shell
 scripts:
 
     #! /path/to/arc
-
     (prn "foo")
+
+Use `./arc -h` to see all the available options.
 
 
 What is it?
