@@ -1367,7 +1367,7 @@
 (sset current-process-milliseconds (x)                        current-process-milliseconds)
 (sset current-thread               ()                         current-thread)
 (sset expt                         (n to)                     expt)
-(sset infile                       (path (o #:mode 'binary))  open-input-file)
+(sset infile                       (path (o #:mode 'binary))  open-input-file) ;; TODO: Arc exposes the mzscheme version of open-input-file, but Nu exposes the Racket version, which uses keywords rather than optional args. Does any Arc code depend on infile accepting more than 1 argument?
 ;; use as a general fn for looking inside things
 (sset inside                       (out)                      get-output-string)
 (sset kill-thread                  (x)                        kill-thread)
@@ -1521,7 +1521,7 @@
                  ;; TODO check this
 (sdef outfile (f (mode 'truncate))
         #:sig (f (o mode 'truncate))
-  (open-output-file f 'text mode))
+  (open-output-file f #:mode 'text #:exists mode))
 
 (sdef pipe-from (cmd)
         ;; TODO: destructuring
