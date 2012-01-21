@@ -1005,22 +1005,23 @@
 (define (append-to x y)
   (x (append y (x))))
 
+(define (nilify x)
+  (if (null? x)
+      (list 'nil)
+      x))
+
 (define (ac-fn parms body)
   (cons '#%lambda
-        (parameterize ((fn-body (if (null? body)
-                                    (list 'nil) ;; TODO: nil or 'nil ?
-                                    body)))
-          (cons (parameterize ((local-env  (local-env))
-                               (fn-let*    null)
-                               (fn-parms   parms))
-                  (let ((x (fn-args parms)))
-                    (fn-body (if (null? (fn-let*))
-                                 (ac-all (fn-body))
-                                 (list (list* '#%let*
-                                              (fn-let*)
-                                              (ac-all (fn-body))))))
-                    x))
-                (fn-body)))))
+        (parameterize ((fn-body    (nilify body))
+                       (local-env  (local-env))
+                       (fn-let*    null)
+                       (fn-parms   parms))
+          (let ((x (fn-args parms)))
+            (cons x (if (null? (fn-let*))
+                        (ac-all (fn-body))
+                        (list (list* '#%let*
+                                     (fn-let*)
+                                     (ac-all (fn-body))))))))))
 
 (define (fn-gensym x)
   (if (fn-gensym-args)
@@ -1047,10 +1048,7 @@
                  (n  (fn-gensym (cadr c)))
                  (d  (cddr c)))
             (cons-to local-env n)
-                          ;; TODO: code duplication with ac-fn
-            (cons (cons n (if (null? d)
-                              (list 'nil) ;; TODO: nil or 'nil ?
-                              (ac-all d)))
+            (cons (cons n (ac-all (nilify d)))
                   (fn-args (cdr x)))))
         ((pair? (car x))               ;; destructuring args
           (let ((u (gensym)))
