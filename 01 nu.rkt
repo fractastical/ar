@@ -1200,9 +1200,7 @@
 
 (mset ac-quote (x) #:name quote
   (annotate 'mac (lambda (x)
-                   (let ((x (if (pair? x)
-                                (dottedmap sym->nil x) ; #:end nil->null
-                                (sym->nil x))))
+                   (let ((x (dottedmap sym->nil x))) ; #:end nil->null
                      (list (lambda () x))))))
 
 
@@ -1583,7 +1581,9 @@
 ; sread = scheme read. eventually replace by writing read
 (sdef sread (p eof)
   (let ((expr (read p)))
-    (if (eof-object? expr) eof expr)))
+    (if (eof-object? expr)
+        eof
+        (dottedmap sym->nil expr))))
 
 (sdef ssexpand (x)
   (if (symbol? x) (ssexpand x) x))
