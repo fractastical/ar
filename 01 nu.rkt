@@ -406,19 +406,32 @@
           (if (caris x nocompile)
               (cdr x)
               (ac-call (car x) (cdr x))))
-        ((null? x)
-          (list '#%datum))
+        #|((null? x)
+          ;; this causes it to return null
+          (list '#%datum)
+          ;null
+          )|#
         ((string? x)
           (ac-string x))
         (else x)))
 
 (define (ac-all x)
-  (dottedmap ac x))
+  (dottedmap ac x #:end idfn))
 
-(define (dottedmap f x)
-  (if (pair? x)
-      (cons (f (car x)) (dottedmap f (cdr x)))
-      x))
+(define (idfn x) x)
+
+(define (dottedmap f xs #:end (end f))
+  (let loop ((xs xs))
+    (if (pair? xs)
+        (cons (f (car xs))
+              (loop (cdr xs)))
+        (end xs))))
+
+#|(define (imap f xs)
+  (if (pair? xs)
+      (cons (f (car xs))
+            (imap f (cdr xs)))
+      xs))|#
 
 
 ;=============================================================================
@@ -1175,12 +1188,22 @@
 ;=============================================================================
 ;  quote
 ;=============================================================================
+(define (sym->nil x)
+  (if (eq? x 'nil)
+      nil
+      x))
+
+#|(define (nil->null x)
+  (if (eq? x 'nil)
+      null
+      x))|#
+
 (mset ac-quote (x) #:name quote
   (annotate 'mac (lambda (x)
-                       ;; TODO: a little hacky
-                   (if (eq? x 'nil)
-                       nil
-                       (list (lambda () x))))))
+                   (let ((x (if (pair? x)
+                                (dottedmap sym->nil x) ; #:end nil->null
+                                (sym->nil x))))
+                     (list (lambda () x))))))
 
 
 ;=============================================================================

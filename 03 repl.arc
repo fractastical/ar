@@ -19,10 +19,12 @@
                   (let expr (if interactive
                                 ;; This is to make GNU readline work
                                 (let it ((%.current-prompt-read))
-                                  (when %.syntax?.it
-                                    (%.syntax->datum it)))
-                                (read))
-                    (if expr
+                                  (if %.syntax?.it
+                                      %.syntax->datum.it
+                                      it))
+                                (read (stdin) %.eof))
+                        ;; this is to distinguish () from eof
+                    (if (isnt expr %.eof)
                           (let that? (in expr 'that 'thatexpr)
                             (unless that?
                               (%.assign-global-raw (%.namespace) 'thatexpr expr))
