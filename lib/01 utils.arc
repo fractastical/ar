@@ -24,6 +24,15 @@
             (apply orig ,args)))))|#
 
 
+(= ref-types* (obj))
+
+(extend ref (x . args) (orig ref-types* (type x))
+  (apply it x args))
+
+(mac defcall (type parms . body)
+  `(= (ref-types* ',type) (fn ,parms ,@body)))
+
+
 (def eachfn (f xs)
   (each x xs f.x))
 

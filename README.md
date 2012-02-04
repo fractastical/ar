@@ -3,7 +3,7 @@ How to run
 
 Just call `./arc` and you'll get a REPL.
 
-You can also use `./arc foo.arc` to load an Arc file.
+You can also use `./arc foo` to load the Arc file "foo.arc".
 
 This also means that the `arc` executable is suitable for writing shell
 scripts:
@@ -17,14 +17,19 @@ Use `./arc -h` to see all the available options.
 What is it?
 ===========
 
-Lite Nu is Nu stripped down to the bare minimum:
+Arc/Nu is Arc 3.1 implemented with the Nu compiler. It also includes some
+additional libraries and applications that I've found useful.
 
   * _"01 nu.rkt"_ is the Nu compiler for Arc
   * _"02 arc.arc"_ is copied unmodified from Arc 3.1
+  * _"lib/01 utils.arc"_ contains generic utilities
+  * _"lib/02 parameters.arc"_ implements implicit parameters
+  * _"lib/03 paths.arc"_ contains functions for inspecting and manipulating paths
+  * _"lib/04 import.arc"_ implements an `import` macro for loading files
   * _"03 repl.arc"_ implements a REPL
-  * _"arc"_ is an executable that will load the above three files in order
+  * _"arc"_ is an executable that will load the above files in order
 
-Okay, so it's basically just Arc 3.1 (it even copies arc.arc from Arc 3.1!).
+Okay, so it's basically Arc 3.1 (it even copies arc.arc from Arc 3.1!).
 Why would you want to use it over Arc 3.1 or Anarki, then?
 
   * It's faster! Nu strives to be *at least* as fast as Arc 3.1, and in some
@@ -32,22 +37,12 @@ Why would you want to use it over Arc 3.1 or Anarki, then?
     in Nu than in Arc 3.1, last time I checked. You can view the latest timing
     tests [here](../tree/nu/timing)
 
-  * Nu lets you define custom calling behavior for any non-function type by
-    extending the `ref` function. Using this, it's possible to implement
-    `defcall` from Anarki:
+  * Nu makes it possible to add in awesome things like namespaces, aliases,
+    and implicit parameters as a library without hacking the compiler.
 
-        (= ref* (obj))
-
-        (extend ref (x . args) (orig ref* (type x))
-          (apply it x args))
-
-        (mac defcall (type parms . body)
-          `(= (ref* ',type) (fn ,parms ,@body)))
-
-
-        ;; custom calling behavior for anything with a type of 'foo
-        (defcall foo (x . args)
-          ...)
+    As an example, Arc/Nu implements `defcall` as a library by extending the
+    `ref` function in _"lib/01 utils.arc"_ and implements implicit parameters
+    in _"lib/02 parameters.arc"_
 
   * The REPL is implemented **substantially** better:
 
@@ -126,9 +121,6 @@ Why would you want to use it over Arc 3.1 or Anarki, then?
     within Arc
 
   * The Nu compiler is written in Racket, rather than mzscheme
-
-  * Nu makes it possible to add in awesome things like namespaces, aliases,
-    and implicit parameters as a library without hacking the compiler
 
   * Nu cleans up a lot of stuff in Arc 3.1 and fixes bugs (Anarki also fixes
     some bugs in Arc 3.1, but it generally doesn't clean things up)
