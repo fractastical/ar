@@ -1,0 +1,184 @@
+#! /usr/bin/env arc
+
+;; TODO: import is Nu specific
+;(import script strings sxml boyer-moore) ; parse-script-args
+(import strings sxml boyer-moore) ; parse-script-args
+
+(= verbose nil)
+
+;; TODO
+#|(parse-script-args
+  ("-v" "--verbose" (= verbose t)))|#
+
+
+(def prn-verbose args
+  (when verbose
+    (w/stdout stderr
+      (apply prn args))))
+
+
+(def dirall-ext (exts)
+  ;; TODO: dirall is Nu specific
+  (dirall nil (fn (x)
+                ;(prn x " " (dir-exists x))
+                     ;; TODO: hidden-file? is Nu specific
+                (and (no:hidden-file? x)
+                         ;; TODO: dirname is Nu specific
+                         ;; dirname
+                     (or (dir-exists x)
+                               ;; TODO: extension is Nu specific
+                         (some (sym:downcase:extension x) exts))))))
+
+
+(= all-files (dirall-ext '(webm mp3 mp4 ogm ogg wma mid flv wav)))
+
+(= titles (obj))
+
+(def include (xs)
+  ;; TODO: should use ret
+  (let items nil
+            ;; TODO: ew
+    (each x (cdr:assoc 'include xs)
+      (iflet x titles.x ;; TODO: ew
+        (zap join items (cdr:assoc 'playlist x) (include x))
+                          ;; TODO: ew
+        (warn:string "\"" (cadr:assoc 'title xs)
+                     "\" tried to include \"" x
+                     "\" but could not find it")))
+    items))
+
+;; TODO: should be in strings.arc
+(def xml-encode (s)
+  (multisubst '(("&" "&amp;")
+                ("<" "&lt;")) s))
+
+(def ->sxml (xs)
+  (w/pretty:->xml
+    `(playlist version  "1"
+               xmlns    "http://xspf.org/ns/0/"
+               xml:base ,cwd
+                        ;; TODO: ew
+       ,(with (playlist (cdr:assoc 'playlist xs)
+                        ;; TODO: ew
+               title    (assoc 'title xs))
+
+          (awhen include.xs
+            (zap join playlist it))
+
+          (let body `(trackList
+                       ,@(map (fn (x)
+                                `(track
+                                   (location ,xml-encode.x)))
+                              playlist))
+            (when title
+              (push title body))
+            body)))))
+
+
+(redef boyer-multi-match1 (patterns inputs every)
+  (trues (fn (pat)
+           (car:keep (fn (in)
+                       (awhen (boyer-moore-search pat in)
+                         (when every
+                           (every car.pat in))
+                         in))
+                     inputs))
+         patterns))
+
+(def multi-string-filter (patterns
+                          strings
+                          (o missing  [err:string "the pattern \"" _ "\" did not match anything"])
+                          (o pattern  (fn (p (l r))
+                                        (err:string "the pattern \"" p "\" matched both:\n  \"" l "\"\n  \"" r "\"\n")))
+                          (o file     (fn (p (l r))
+                                        (err:string "the file \"" p "\" was matched by both:\n  \"" l "\"\n  \"" r "\"\n"))))
+  (withs (track   (obj)
+          files   (obj)
+          errors  nil
+          matches (boyer-multi-match patterns strings
+                    (fn (x y)
+                      (if files.y
+                            (push (catcherr:file y (list files.y x)) errors)
+                          track.x
+                            (push (catcherr:pattern x (list track.x y)) errors))
+                      (= files.y x
+                         track.x y))))
+
+    (each x patterns
+      (if (no track.x)
+        (push (catcherr:missing x)
+              errors)))
+
+    (when errors
+      (w/stdout stderr
+        (each x (nrev errors)
+          (prn x))
+        (prn "\n" "aborting due to errors")
+        (quit 1)))
+
+    matches))
+
+
+(mac playlist args
+  (let (l r) (partition cons? args)
+    ;; TODO: unquote this?
+    `(playlist ,@(mappend (fn (x)
+                            (if (caris x 'w/folder)
+                                (let s (+ cadr.x "/")
+                                  ;; TODO: don't call (keep [posmatch ...] ...)
+                                  (multi-string-filter cddr.x (keep [posmatch s _] all-files)))
+                                (err "invalid expression" x)))
+                          l)
+               ,@(multi-string-filter r all-files))))
+
+
+;(require profile)
+
+                    ;; TODO: Nu specific
+(let (input output) script-args
+  ;; TODO: Nu specific
+  (zap todir input)
+
+  ;(racket-profile-thunk (fn ()
+  ;; TODO: Nu specific
+  (w/cwd input
+    (each x (dir ".")
+          ;; TODO: Nu specific
+      (if (hidden-file? x)
+          (prn-verbose "ignoring hidden file \"" input x "\"")
+          (let info (readfile x)
+            (iflet x (alref info 'title)
+                  ;; TODO: Nu specific
+              (do (zap macex1 (car (assoc-ref info 'playlist)))
+                  ;(assoc info 'playlist)
+                  ;(scar (assoc-ref name index) val)
+                  (= (titles x) info))
+              (warn:string "file \""
+                            input x
+                           "\" has no (title) element; it will be skipped"))))))
+  ;))
+
+;; Arc posmatch
+;  Total cpu time observed: 38236ms (out of 38326ms)
+;  Number of samples taken: 751 (once every 51ms)
+
+;; Boyer-Moore-Horspool
+;  Total cpu time observed: 6396ms (out of 6432ms)
+;  Number of samples taken: 126 (once every 51ms)
+
+;; Boyer-Moore-Horspool with error checking
+;  Total cpu time observed: 6928ms (out of 6968ms)
+;  Number of samples taken: 136 (once every 51ms)
+
+;; Boyer-Moore-Horspool with more error checking
+;  Total cpu time observed: 6890ms (out of 6920ms)
+;  Number of samples taken: 135 (once every 51ms)
+
+  (each (key val) titles
+    (zap ->sxml val)
+    ;; TODO: Nu specific
+    (w/cwd output
+      (prn-verbose "writing to \"" output key ".xspf\"")
+      (w/outfile out (+ key ".xspf")
+        (disp val out))
+    )))

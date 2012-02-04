@@ -1,6 +1,6 @@
-(load:string %.exec-dir "lib/01 utils.arc")
-(load:string %.exec-dir "lib/02 parameters.arc")
-(load:string %.exec-dir "lib/03 paths.arc")
+;(load:string %.exec-dir "lib/01 utils.arc")
+;(load:string %.exec-dir "lib/02 parameters.arc")
+;(load:string %.exec-dir "lib/03 paths.arc")
 ;(load:string %.exec-dir "lib/04 namespaces.arc")
 
 

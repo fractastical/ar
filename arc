@@ -49,7 +49,10 @@
 
     (let ((load (eval 'aload)))
       (load (build-path exec-dir "02 arc.arc"))
-      (load (build-path exec-dir "lib/04 import.arc"))
+      (load (build-path exec-dir "03 utils.arc"))
+      (load (build-path exec-dir "04 parameters.arc"))
+      (load (build-path exec-dir "05 paths.arc"))
+      (load (build-path exec-dir "06 import.arc"))
 
       (let ((load (eval '(ac-eval 'import1))))
         (unless (null? arguments)
@@ -58,7 +61,7 @@
               (load (car arguments)))))
 
       (when (or (repl) (null? arguments))
-        (load (build-path exec-dir "03 repl.arc"))))
+        (load (build-path exec-dir "07 repl.arc"))))
   ;))
 
   ;; This is to prevent () from being printed when the REPL exits

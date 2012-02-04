@@ -41,6 +41,14 @@
   (listtab pair.args))
 
 
+(def assoc-ref (xs key)
+  (if (atom xs)
+        nil
+      (and (acons (car xs)) (is (caar xs) key))
+        (car xs)
+      (assoc-ref (cdr xs) key)))
+
+
 (def debug args
   ;(apply prn (intersperse " " args))
   nil)

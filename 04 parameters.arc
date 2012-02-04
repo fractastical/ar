@@ -23,6 +23,9 @@
      `(parameterize ((%no ,',x) ,v) ;(var ',',x)
         ,@body)))
 
-(mac parameter (x (o y))
+(mac make-parameter (x y)
   `(do (make-w/ ,x)
-       (= (var ',x) (%.make-parameter ,y)))) ;(sref (%.namespace) (%.make-parameter ,y) ',x)
+       (= (var ',x) ,y))) ;(sref (%.namespace) (%.make-parameter ,y) ',x)
+
+(mac parameter (x (o y))
+  `(make-parameter ,x (%.make-parameter ,y)))

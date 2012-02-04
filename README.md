@@ -22,12 +22,15 @@ additional libraries and applications that I've found useful.
 
   * _"01 nu.rkt"_ is the Nu compiler for Arc
   * _"02 arc.arc"_ is copied unmodified from Arc 3.1
-  * _"lib/01 utils.arc"_ contains generic utilities
-  * _"lib/02 parameters.arc"_ implements implicit parameters
-  * _"lib/03 paths.arc"_ contains functions for inspecting and manipulating paths
-  * _"lib/04 import.arc"_ implements an `import` macro for loading files
-  * _"03 repl.arc"_ implements a REPL
+  * _"03 utils.arc"_ contains generic utilities
+  * _"04 parameters.arc"_ implements implicit parameters
+  * _"05 paths.arc"_ contains functions for inspecting and manipulating paths
+  * _"06 import.arc"_ implements an `import` macro for loading files
+  * _"07 repl.arc"_ implements a REPL
   * _"arc"_ is an executable that will load the above files in order
+
+  * _"lib/"_ contains other useful libraries
+  * _"app/"_ contains applications I've written using Nu
 
 Okay, so it's basically Arc 3.1 (it even copies arc.arc from Arc 3.1!).
 Why would you want to use it over Arc 3.1 or Anarki, then?
@@ -35,7 +38,7 @@ Why would you want to use it over Arc 3.1 or Anarki, then?
   * It's faster! Nu strives to be *at least* as fast as Arc 3.1, and in some
     cases is significantly faster. For instance, `(+ 1 2)` was 132.48% faster
     in Nu than in Arc 3.1, last time I checked. You can view the latest timing
-    tests [here](../tree/nu/timing)
+    tests [here](timing)
 
   * Nu makes it possible to add in awesome things like namespaces, aliases,
     and implicit parameters as a library without hacking the compiler.
@@ -132,4 +135,4 @@ Why would you want to use it over Arc 3.1 or Anarki, then?
     implemented as ordinary Arc macros
 
   * For more details on the differences between Arc/Nu and Arc/pg, see [this
-    page](../blob/lite-nu/notes/differences.md)
+    page](../blob/arc/nu/notes/differences.md)
