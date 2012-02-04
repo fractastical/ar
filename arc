@@ -25,6 +25,21 @@
 
 (define exec-dir (path-only (normalize-path (find-system-path 'run-file))))
 
+#|(parameterize ((current-directory exec-dir))
+  (namespace-require '(file "01 nu.rkt")))
+
+(init (path->string exec-dir))
+
+(aload (build-path exec-dir "02 arc.arc"))
+
+(unless (null? arguments)
+  (if (all)
+      (map aload arguments)
+      (aload (car arguments))))
+
+(when (or (repl) (null? arguments))
+  (aload (build-path exec-dir "03 repl.arc")))|#
+
 (parameterize ((current-namespace (make-base-empty-namespace)))
   ;(profile-thunk (lambda ()
     (parameterize ((current-directory exec-dir))
@@ -34,11 +49,13 @@
 
     (let ((load (eval 'aload)))
       (load (build-path exec-dir "02 arc.arc"))
+      (load (build-path exec-dir "lib/04 import.arc"))
 
-      (unless (null? arguments)
-        (if (all)
-            (map load arguments)
-            (load (car arguments))))
+      (let ((load (eval '(ac-eval 'import1))))
+        (unless (null? arguments)
+          (if (all)
+              (map load arguments)
+              (load (car arguments)))))
 
       (when (or (repl) (null? arguments))
         (load (build-path exec-dir "03 repl.arc"))))

@@ -5,7 +5,9 @@
 ;; TODO: look for uses of null? and replace them with empty-stream? as needed
 
 (provide (all-defined-out)
-         (all-from-out racket/base))
+         (all-from-out racket/base)
+         ;(all-from-out racket/path)
+         )
 
 (require ffi/unsafe)
 (require racket/path)
@@ -1354,10 +1356,11 @@
     (annotate 'mac (lambda (x)
                      (list nocompile eval (cons '#%datum x) space)))))|#
 
-(let ((space (current-namespace)))
-  (sset % args
-    (annotate 'mac (lambda args
-                     (list (eval `(lambda () ,@args) space))))))
+(define nu-namespace (current-namespace))
+
+(sset % args
+  (annotate 'mac (lambda args
+                   (list (eval `(lambda () ,@args) nu-namespace)))))
 
 
 ;=============================================================================
