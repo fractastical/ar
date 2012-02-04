@@ -41,12 +41,29 @@
   (listtab pair.args))
 
 
+(mac catcherr body
+  (w/uniq c
+    `(on-err (fn (,c) (details ,c))
+             (fn ()   ,@body nil))))
+
+
 (def assoc-ref (xs key)
   (if (atom xs)
         nil
       (and (acons (car xs)) (is (caar xs) key))
-        (car xs)
+        xs
       (assoc-ref (cdr xs) key)))
+
+(def partition (f xs)
+  ;; awith
+  ((afn (x l r)
+         ;; TODO: should use cons? rather than no
+     (if (no x)
+           (list l r)
+         (f car.x)
+           (self cdr.x (cons car.x l) r)
+         (self cdr.x l (cons car.x r))))
+   xs nil nil))
 
 
 (def debug args

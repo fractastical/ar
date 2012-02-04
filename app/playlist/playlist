@@ -13,7 +13,7 @@
 
 (def prn-verbose args
   (when verbose
-    (w/stdout stderr
+    (w/stdout (stderr)
       (apply prn args))))
 
 
@@ -110,8 +110,8 @@
               errors)))
 
     (when errors
-      (w/stdout stderr
-        (each x (nrev errors)
+      (w/stdout (stderr)
+        (each x (rev errors) ;; nrev
           (prn x))
         (prn "\n" "aborting due to errors")
         (quit 1)))
@@ -120,7 +120,7 @@
 
 
 (mac playlist args
-  (let (l r) (partition cons? args)
+  (let (l r) (partition acons args)
     ;; TODO: unquote this?
     `(playlist ,@(mappend (fn (x)
                             (if (caris x 'w/folder)

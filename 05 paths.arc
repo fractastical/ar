@@ -34,7 +34,7 @@
   (%.path->string:apply %.build-path
     ((afn (x acc)
        (if no.x
-           rev.acc
+           rev.acc ;; nrev
            (let c (expandpath car.x)
              (if (empty c)
                    (self cdr.x acc)
