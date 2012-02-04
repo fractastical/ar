@@ -34,12 +34,12 @@
 (def call-w/find-file (x f)
   (parameterize (%.port-count-lines-enabled #t)
     (let y import-normalize-path.x
-      (iflet it import-file-dir.y
-        (f (path it y) y)
-        (iflet it (and (isnt x y)
-                       (import-file-dir x))
-          (f (path it x) x)
-          (err:string "file \"" x "\" was not found"))))))
+      (aif (import-file-dir y)
+             (f (path it y) y)
+           (and (isnt x y)
+                (import-file-dir x))
+             (f (path it x) x)
+           (err:string "file \"" x "\" was not found")))))
 
 
 (def import-file (x)
@@ -50,8 +50,7 @@
             (debug " skipping:" name)
             (do (debug " loading: " name)
                 (= import-cache.path t)
-                (w/import-loading t
-                  (load path))))))))
+                (w/import-loading t load.path)))))))
 
 (def import-dir (x)
   (push abspath.x import-dirs))
