@@ -27,8 +27,10 @@ It will then store those .xspf playlists in the "Playlists" folder.
 The S-expression Playlist Format
 ================================
 
-All playlists are composed of two or more S-expressions. The only required
-S-expressions are `title` and `playlist`:
+All playlists are composed of one or more S-expressions. The only required
+S-expression is `title`. The playlist can then optionally include files via
+either the `include` or `playlist` expressions. Here's an example of a simple
+playlist:
 
     (title "foo")
 
@@ -58,16 +60,17 @@ There are three error conditions:
  3. If a pattern does not match any file, an error will be raised.
 
 
-To create a playlist, simply create a new file in the "Templates" folder and
-place the two required S-expressions inside the file: that's it! Now just run
-the program as specified in "How to run".
+To create a playlist, simply create a new file in the "Templates" folder,
+place a `title` expression inside the file, then add an `include` or
+`playlist` expression (or both): that's it! Now just run the program as
+specified in "How to run".
 
 
 Including other playlists
 =========================
 
 If you wish to combine multiple different playlists into a single one, you can
-use the `include` S-expression:
+use the `include` S-expression at the top level:
 
     (include "bar"
              "qux")
@@ -75,6 +78,35 @@ use the `include` S-expression:
 The above will find the playlists "bar" and "qux" and include them into the
 current playlist. If any of the included playlists do not exist, a warning
 will be displayed.
+
+It is also possible to *selectively* include only parts of another playlist by
+using the `w/playlist` form:
+
+    (playlist
+      (w/playlist "foo"
+        "qux"
+        "corge")
+
+      (w/playlist "bar"
+        "nou"
+        "yes"))
+
+The above will include the files "qux" and "corge" from the "foo" playlist, in
+addition to the "nou" and "yes" files from the "bar" playlist. Just like
+normal file matching, you can use sub-strings when adding files from a
+playlist.
+
+One caveat when including files from another playlist: the program will always
+correctly include files regardless of what order the templates are loaded in.
+But the program can't handle infinite loops:
+
+    (title "foo")
+    (include "bar")
+
+    (title "bar")
+    (include "foo")
+
+The above two playlists will cause the program to never terminate.
 
 
 Limiting the scope of a pattern
@@ -100,6 +132,7 @@ S-expression, you can use the `w/folder` S-expression:
         "foo"
         "bar"
         "qux")
+
       (w/folder "other/path/to"
         "foo"
         "bar"

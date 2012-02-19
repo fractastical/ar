@@ -4,17 +4,34 @@
 ;(import script strings sxml boyer-moore) ; parse-script-args
 (import strings sxml boyer-moore) ; parse-script-args
 
-(= verbose nil)
+;; TODO: parameter is Nu specific
+(parameter current-playlist)
+
+(= ;verbose    nil
+   files-by-title   (obj)
+   processed        (obj)
+
+   playlist-errors  (obj)
+   other-errors     nil)
 
 ;; TODO
 #|(parse-script-args
   ("-v" "--verbose" (= verbose t)))|#
 
 
-(def prn-verbose args
+#|(def prn-verbose args
   (when verbose
     (w/stdout (stderr)
-      (apply prn args))))
+      (apply prn args))))|#
+
+;; TODO: should be in strings.arc
+(def xml-encode (s)
+  (multisubst '(("&" "&amp;")
+                ("<" "&lt;")) s))
+
+;; TODO: should be elsewhere
+(mac zap2 (f x y . args)
+  `(= ,y (,f ,x ,y ,@args)))
 
 
 (def dirall-ext (exts)
@@ -32,48 +49,6 @@
 
 (= all-files (dirall-ext '(webm mp3 mp4 ogm ogg wma mid flv wav)))
 
-(= titles (obj))
-
-(def include (xs)
-  ;; TODO: should use ret
-  (let items nil
-            ;; TODO: ew
-    (each x (cdr:assoc 'include xs)
-      (iflet x titles.x ;; TODO: ew
-        (zap join items (cdr:assoc 'playlist x) (include x))
-                          ;; TODO: ew
-        (warn:string "\"" (cadr:assoc 'title xs)
-                     "\" tried to include \"" x
-                     "\" but could not find it")))
-    items))
-
-;; TODO: should be in strings.arc
-(def xml-encode (s)
-  (multisubst '(("&" "&amp;")
-                ("<" "&lt;")) s))
-
-(def ->sxml (xs)
-  (w/pretty:->xml
-    `(playlist version  "1"
-               xmlns    "http://xspf.org/ns/0/"
-               xml:base ,cwd
-                        ;; TODO: ew
-       ,(with (playlist (cdr:assoc 'playlist xs)
-                        ;; TODO: ew
-               title    (assoc 'title xs))
-
-          (awhen include.xs
-            (zap join playlist it))
-
-          (let body `(trackList
-                       ,@(map (fn (x)
-                                `(track
-                                   (location ,xml-encode.x)))
-                              playlist))
-            (when title
-              (push title body))
-            body)))))
-
 
 (redef boyer-multi-match1 (patterns inputs every)
   (trues (fn (pat)
@@ -87,11 +62,11 @@
 
 (def multi-string-filter (patterns
                           strings
-                          (o missing  [err:string "the pattern \"" _ "\" did not match anything"])
+                          (o missing  [err:string "  -> the pattern \"" _ "\" did not match anything\n"])
                           (o pattern  (fn (p (l r))
-                                        (err:string "the pattern \"" p "\" matched both:\n  \"" l "\"\n  \"" r "\"\n")))
+                                        (err:string "  -> the pattern \"" p "\" matched both:\n      \"" l "\"\n      \"" r "\"\n")))
                           (o file     (fn (p (l r))
-                                        (err:string "the file \"" p "\" was matched by both:\n  \"" l "\"\n  \"" r "\"\n"))))
+                                        (err:string "  -> the file \"" p "\" was matched by both:\n      \"" l "\"\n      \"" r "\"\n"))))
   (withs (track   (obj)
           files   (obj)
           errors  nil
@@ -110,34 +85,167 @@
               errors)))
 
     (when errors
-      (w/stdout (stderr)
-        (each x (rev errors) ;; nrev
-          (prn x))
-        (prn "\n" "aborting due to errors")
-        (quit 1)))
+      (zap2 string rev.errors
+                                     ;; TODO: current-playlist is Nu specific
+                   (playlist-errors:alref current-playlist 'title))
+      #|(push (string " Playlist \"" (alref current-playlist 'title) "\" has errors:\n"
+                    (intersperse "\n" rev.errors) "\n")
+            all-errors)|#
+      )
 
     matches))
 
 
-(mac playlist args
-  (let (l r) (partition acons args)
-    ;; TODO: unquote this?
-    `(playlist ,@(mappend (fn (x)
-                            (if (caris x 'w/folder)
-                                (let s (+ cadr.x "/")
-                                  ;; TODO: don't call (keep [posmatch ...] ...)
-                                  (multi-string-filter cddr.x (keep [posmatch s _] all-files)))
-                                (err "invalid expression" x)))
-                          l)
-               ,@(multi-string-filter r all-files))))
-
-
 ;(require profile)
+
+#|(def create-dependency-graph (x)
+  ((afn (x)
+
+     (self cdr.x)
+     )
+   x))|#
+#|
+(def include (xs title)
+  ;; TODO: should use ret
+  (let items nil
+    ;(prn titles)
+    (each x xs
+      ;(prn x " " (cdr:assoc 'playlist titles.x))
+      (iflet x titles.x ;; TODO: ew
+        (zap join items (cdr:assoc 'playlist x)) ;(include x)
+                          ;; TODO: ew
+        (warn:string "\"" title
+                     "\" tried to include \"" x
+                     "\" but could not find it")))
+    items))
+|#
+
+#|(def includer (val)
+  (awhen (cdr:assoc 'playlist val)
+    (each x it
+      (when (caris x 'w/playlist)
+        (let x (titles cadr.x)
+          (push x playlists)
+          (includer x)))))
+  (awhen (cdr:assoc 'include val)
+    (each x it
+      (let x titles.x
+        (push x playlists)
+        (includer x)))))|#
+
+(def playlist (x)
+  ((afn (x files acc)
+     (let c car.x
+       (if (no x)
+             (join files
+                   (multi-string-filter rev.acc all-files))
+           (acons c)
+             (if (caris c 'w/folder)
+                   (let n cadr.c
+                     (self cdr.x
+                           (join files
+                                 (multi-string-filter rev.acc all-files)
+                                                             ;; TODO: don't call (keep [posmatch ...] ...)
+                                 (multi-string-filter cddr.c (keep [posmatch n _] all-files)))
+                           nil))
+                 (caris c 'w/playlist)
+                   (self cdr.x
+                         (join files
+                               (multi-string-filter rev.acc all-files)
+                               (multi-string-filter cddr.c (include cadr.c)))
+                         nil)
+                 (err "invalid expression" c))
+           (self cdr.x
+                 files
+                 (cons c acc)))))
+   x nil nil))
+
+(def include1 (x)
+  (w/current-playlist x
+    ((afn (x files acc)
+       (let c car.x
+         (if (no x)
+               (join (multi-string-filter rev.acc all-files)
+                     files)
+             (caris c 'title)
+               (self cdr.x files acc)
+             (caris c 'include)
+               (join (mappend include cdr.c)
+                     (self cdr.x files acc))
+             (caris c 'playlist)
+               (self cdr.x
+                     (join (playlist cdr.c) files)
+                     acc)
+             (err "invalid expression" c))))
+     x nil nil)))
+
+#|  (with (included  nil
+         files     nil)
+    (each x x
+      (if (acons x)
+            (if (caris x 'w/folder)
+                  (let n (+ cadr.x "/")
+                    ;; TODO: zap2
+                    (= included (join (multi-string-filter cddr.x (keep [posmatch n _] all-files))
+                                      included)))
+                (caris x 'w/playlist)
+                  (let n cadr.x
+                    ;; TODO: zap2
+                    (= included (join (include n)
+                                      included)))
+                (err "invalid expression" x))
+          (push x files)))
+    (join (rev:multi-string-filter files all-files) rev.included))|#
+
+(def include (x)
+  #|(or= processed.x (do (debug "processing playlist \"" x "\"")
+                       (include1 files-by-title.x)))|#
+  ;; grr, setting a hash key to nil deletes it,
+  ;; so I have to use Racket's hash-ref! instead
+  ((% hash-ref!) processed x (fn () (debug "processing playlist \"" x "\"")
+                                    (iflet it files-by-title.x
+                                      (include1 it)
+                                      ;; TODO: dont/void
+                                      (do (zap2 string (string "  -> tried to include playlist \"" x "\" but it was not found\n")
+                                                                         ;; TODO: current-playlist is Nu specific
+                                                       (playlist-errors:alref current-playlist 'title))
+                                          nil)
+                                      #|                                    ;; TODO: current-playlist is Nu specific
+                                      (push (string " Playlist \"" (alref current-playlist 'title) "\" tried to include playlist \"" x "\" but it was not found\n")
+                                            all-errors)|#
+                                      ))))
+
+
+(def ->sxml (title files)
+  (w/pretty:->xml
+    `(playlist version  "1"
+               xmlns    "http://xspf.org/ns/0/"
+               xml:base ,cwd
+       (title ,title)
+       (trackList ,@(map (fn (x)
+                           `(track
+                              (location ,xml-encode.x)))
+                         files))
+                        ;; TODO: ew
+       #|,(with (playlist (cdr:assoc 'playlist xs)
+                        ;; TODO: ew
+               title    (assoc 'title xs))
+
+          #|(awhen (include (cdr:assoc 'include xs)
+                          (cadr:assoc 'title xs))
+                     ;include.xs
+            (zap join playlist it))|#
+          #|(when title
+            (push title body))
+          body|#
+          )|#
+       )))
 
                     ;; TODO: Nu specific
 (let (input output) script-args
   ;; TODO: Nu specific
   (zap todir input)
+  (zap todir output)
 
   ;(racket-profile-thunk (fn ()
   ;; TODO: Nu specific
@@ -145,18 +253,81 @@
     (each x (dir ".")
           ;; TODO: Nu specific
       (if (hidden-file? x)
-          (prn-verbose "ignoring hidden file \"" input x "\"")
+          ;; debug is Nu specific
+          (debug "ignoring hidden file \"" input x "\"")
           (let info (readfile x)
             (iflet x (alref info 'title)
-                  ;; TODO: Nu specific
-              (do (zap macex1 (car (assoc-ref info 'playlist)))
-                  ;(assoc info 'playlist)
-                  ;(scar (assoc-ref name index) val)
-                  (= (titles x) info))
-              (warn:string "file \""
-                            input x
-                           "\" has no (title) element; it will be skipped"))))))
+              #|(do (push info playlists)
+                  (includer info))|#
+              (= files-by-title.x info)
+              ;; TODO: w/current-playlist is Nu specific
+              #|(w/current-playlist info
+                (each x info
+                  (if (caris x 'include)
+                        (each x cdr.x
+                          (unless titles.x
+                            (push x )))
+                      (caris x 'playlist)
+                        nil
+                      ))
+                                 ;; TODO: Nu specific
+                ;(zap macex1 (car (assoc-ref info 'playlist)))
+                ;(assoc info 'playlist)
+                ;(scar (assoc-ref name index) val)
+                )|#
+              (push (string " File \"" input x "\" doesn't have a top-level (title) expression\n")
+                    other-errors)
+              )))))
   ;))
+
+  (each (key val) files-by-title
+    (include key))
+
+  (when (or other-errors
+            keys.playlist-errors)
+    (w/stdout (stderr)
+      (each (key val) playlist-errors
+        (prn " Playlist \"" key "\" has errors:")
+        (prn val))
+      (each x rev.other-errors
+        (prn x))
+      (prn " aborting due to errors")
+      (quit 1)))
+
+  #|(when all-errors
+    (w/stdout (stderr)
+      (each x rev.all-errors ;; nrev
+        (prn x))
+      (prn " aborting due to errors")
+      (quit 1)))|#
+
+  #|(each (key val) titles
+    (push val playlists)
+    (includer val))
+
+  (zap dedup playlists)|#
+
+#|(= playlists (map (fn (x)
+                    (map (fn (x)
+                           (if (caris x 'title)
+                                 x
+                               (caris x 'include)
+                                 x
+                               (caris x 'playlist)
+                                 (mappend (fn (x)
+                                            (if (caris x 'w/folder)
+                                                  (list x)
+                                                (caris x 'w/playlist)
+                                                  x
+                                                (list x)))
+                                          x)))
+                         x))
+                  playlists))|#
+
+  #|(each x (map (fn (x) (alref x 'title)) playlists)
+    prn.x
+    ;(prn)
+    )|#
 
 ;; Arc posmatch
 ;  Total cpu time observed: 38236ms (out of 38326ms)
@@ -174,11 +345,14 @@
 ;  Total cpu time observed: 6890ms (out of 6920ms)
 ;  Number of samples taken: 135 (once every 51ms)
 
-  (each (key val) titles
-    (zap ->sxml val)
-    ;; TODO: Nu specific
-    (w/cwd output
-      (prn-verbose "writing to \"" output key ".xspf\"")
-      (w/outfile out (+ key ".xspf")
-        (disp val out))
-    )))
+  (each (key val) processed
+    (let val (->sxml key val)
+      ;(prn val)
+      ;(prn)
+      ;; TODO: Nu specific
+      (w/cwd output
+        ;; debug is Nu specific
+        (debug "writing to \"" output key ".xspf\"")
+        (w/outfile out (+ key ".xspf")
+          (disp val out))
+      ))))

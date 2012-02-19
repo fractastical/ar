@@ -5,17 +5,20 @@
 (require racket/path)
 (require profile)
 
-(define repl (make-parameter #f))
-(define all  (make-parameter #f))
+(define all   (make-parameter #f))
+(define debug (make-parameter #f))
+(define repl  (make-parameter #f))
 
 (define arguments
   (command-line
     #:program "Nu Arc"
     #:once-each
-    [("-i" "--repl") "Always execute the repl"
-                     (repl #t)]
-    [("-a" "--all")  "Execute every file rather than only the first"
-                     (all #t)]
+    [("-a" "--all")   "Execute every file rather than only the first"
+                      (all #t)]
+    [("-d" "--debug") "Turns debug mode on, causing extra messages to appear"
+                      (debug #t)]
+    [("-i" "--repl")  "Always execute the repl"
+                      (repl #t)]
     #:args args
     args))
 
@@ -54,6 +57,11 @@
       (load (build-path exec-dir "05 paths.arc"))
       (load (build-path exec-dir "06 import.arc"))
 
+      (when (debug)
+              ;; TODO: hacky
+        (eval '(ac-eval '(= debug? t))))
+
+                        ;; TODO: hacky
       (let ((load (eval '(ac-eval 'import1))))
         (unless (null? arguments)
           (if (all)

@@ -16,7 +16,8 @@
 
 (mac parameterize (parms . body)
   `(%no:#%parameterize ,(pair %.ac-all.parms)
-          ,@%.ac-all.body))
+            ;; TODO: function for this pattern...?
+          ,@(%.ac-all %.nilify.body)))
 
 (mac make-w/ (x)
   `(mac ,(sym:string "w/" x) (v . body)

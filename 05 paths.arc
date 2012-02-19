@@ -81,8 +81,8 @@
 
 (def todir (x)
   (zap string x)
-          ;; TODO: last
-  (if (is (x:- len.x 1) #\/)
+      ;; TODO: last
+  (if (or empty.x (is (x:- len.x 1) #\/))
       x
       (string x "/")))
 

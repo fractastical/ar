@@ -4,11 +4,11 @@
 ;(load:string %.exec-dir "lib/04 namespaces.arc")
 
 
-(parameter debug? t)
+(parameter debug? nil)
 
 (redef debug args
   (when debug?
-    (apply prn (intersperse " " args))))
+    (apply prn args))) ;(intersperse " " )
 
 
 (parameter import-dirs     (list cwd
@@ -47,8 +47,8 @@
     (fn (path name)
       (let path abspath.path
         (if import-cache.path
-            (debug " skipping:" name)
-            (do (debug " loading: " name)
+            (debug " skipping: " name)
+            (do (debug " loading:  " name)
                 (= import-cache.path t)
                 (w/import-loading t load.path)))))))
 
