@@ -29,7 +29,7 @@ The S-expression Playlist Format
 
 All playlists are composed of one or more S-expressions. The only required
 S-expression is `title`. The playlist can then optionally include files via
-either the `include` or `playlist` expressions. Here's an example of a simple
+the `include` or `playlist` expressions. Here's an example of a simple
 playlist:
 
     (title "foo")
@@ -45,7 +45,7 @@ a filename of "foo.xspf". In addition, it's used when including other
 playlists, which will be discussed later.
 
 The `playlist` element is used to specify which files will be included into
-the playlist. The program uses sub-string matching, so the pattern "bar" can
+the playlist. The program uses sub-string matching, so the pattern `"bar"` can
 match "path/to/bar.mp3" as well as "path/to/foo - bar 3.wav"
 
 
@@ -76,8 +76,8 @@ use the `include` S-expression at the top level:
              "qux")
 
 The above will find the playlists "bar" and "qux" and include them into the
-current playlist. If any of the included playlists do not exist, a warning
-will be displayed.
+current playlist. If any of the included playlists do not exist, an error will
+be raised.
 
 It is also possible to *selectively* include only parts of another playlist by
 using the `w/playlist` form:
@@ -91,10 +91,10 @@ using the `w/playlist` form:
         "nou"
         "yes"))
 
-The above will include the files "qux" and "corge" from the "foo" playlist, in
-addition to the "nou" and "yes" files from the "bar" playlist. Just like
-normal file matching, you can use sub-strings when adding files from a
-playlist.
+The above will include the files `"qux"` and `"corge"` from the `"foo"`
+playlist, in addition to the `"nou"` and `"yes"` files from the `"bar"`
+playlist. Just like normal file matching, you can use sub-strings when adding
+files from a playlist.
 
 One caveat when including files from another playlist: the program will always
 correctly include files regardless of what order the templates are loaded in.
