@@ -139,6 +139,7 @@ Examples
 
 I have included a few of my own playlists in the "examples" subdirectory.
 These demonstrate how to write playlists, and also clearly show how much
-shorter and easier to read the S-expression format is, compared to raw .xspf.
+shorter/easier to read/write the S-expression format is, compared to raw
+.xspf.
 
 This makes managing playlists a much more pleasant experience.
