@@ -26,11 +26,6 @@
 (mac zap2 (f x y . args)
   `(= ,y (,f ,x ,y ,@args)))
 
-#|
-;; TODO: should be elsewhere
-(def errp args
-  (err:tostring:apply pr args))|#
-
 
 (def dirall-ext (exts)
   ;; TODO: dirall is Nu specific
@@ -55,7 +50,7 @@
 
 ;; playlist-err
 (def perr args
-  (zap2 string (tostring:apply prn args)
+  (zap2 string (tostring:apply prn "  -> " args)
                                       ;; TODO: current-playlist is Nu specific
                (playlist-errors:alref current-playlist 'title))
   nil)
@@ -73,72 +68,36 @@
 
 (def multi-string-filter (patterns
                           strings
-                          (o missing  [perr "  -> the pattern \"" _ "\" did not match anything"])
+                          (o missing  [perr "the pattern \"" _ "\" did not match anything"])
                           (o pattern  (fn (p l r)
-                                        (perr "  -> the pattern \"" p "\" matched both:\n      \"" l "\"\n      \"" r "\"")))
+                                        (perr "the pattern \"" p "\" matched both:\n      \"" l "\"\n      \"" r "\"")))
                           (o file     (fn (p l r)
-                                        (perr "  -> the file \"" p "\" was matched by both:\n      \"" l "\"\n      \"" r "\""))))
+                                        (perr "the file \"" p "\" was matched by both:\n      \"" l "\"\n      \"" r "\""))))
   (withs (track   (obj)
           files   (obj)
-          ;errors  nil
           matches (boyer-multi-match patterns strings
                     (fn (x y)
                       (if files.y
                             (file y files.y x)
-                            ;(push (catcherr:file y (list files.y x)) errors)
                           track.x
-                            (pattern x track.x y)
-                            ;(push (catcherr:pattern x (list track.x y)) errors)
-                            )
+                            (pattern x track.x y))
                       (= files.y x
                          track.x y))))
-
     (each x patterns
       (unless track.x
-        (missing x)
-        #|(push (catcherr:missing x)
-              errors)|#
-        ))
-
-    #|(when errors
-      (apply playlist-err rev.errors)
-      #|(zap2 string rev.errors
-                                          ;; TODO: current-playlist is Nu specific
-                   (playlist-errors:alref current-playlist 'title))|#
-      )|#
-
+        (missing x)))
     matches))
 
-#|(def playlist (x)
-  ((afn (x files acc)
-     (let c car.x
-       (if (no x)
-             (join files
-                   (multi-string-filter rev.acc all-files))
-           (acons c)
-             (if (caris c 'w/folder)
-                   (self cdr.x
-                         (match-folder c acc)
-                         nil)
-                 (caris c 'w/playlist)
-                   (self cdr.x
-                         (join files
-                               (multi-string-filter rev.acc all-files)
-                               (multi-string-filter cddr.c (include cadr.c)))
-                         nil)
-                 (caris c 'ignore)
-                   (self cdr.x
-                         (cons c files)
-                         acc)
-                 (err "invalid expression" c))
-           (self cdr.x
-                 files
-                 (cons c acc)))))
-   x nil nil))|#
 
 (def match-all-files (x)
-                       ;; TODO: error checking for invalid expressions
-  (multi-string-filter (rem [caris _ 'ignore] x)
+  (multi-string-filter (rem (fn (x)
+                              (when acons.x
+                                (if (caris x 'ignore)
+                                    ;; debug is Nu specific
+                                    (debug "ignoring pattern \"" cadr.x "\"")
+                                    (perr "invalid expression: " x))
+                                t))
+                            x)
                        all-files))
 
 (def include1 (x)
@@ -150,10 +109,6 @@
         (caris c 'include)
           (join (mappend include cdr.c)
                 (include1 cdr.x))
-        #|(caris c 'playlist)
-          (self cdr.x
-                (join (playlist cdr.c) files)
-                acc)|#
         (caris c 'w/playlist)
           (join (multi-string-filter cddr.c (include cadr.c))
                 (include1 cdr.x))
@@ -165,10 +120,8 @@
         (caris c 'w/all-files)
           (join (match-all-files cdr.c)
                 (include1 cdr.x))
-        (do (perr "  -> invalid expression: " c)
-            (include1 cdr.x))
-        ;(errp "invalid expression in playlist \"" (alref p 'title) "\": " c)
-        )))
+        (do (perr "invalid expression: " c)
+            (include1 cdr.x)))))
 
 (def include (x)
   ;; grr, setting a hash key to nil deletes it,
@@ -178,7 +131,7 @@
                                       ;; TODO: w/current-playlist is Nu specific
                                       (w/current-playlist it
                                         (include1 it))
-                                      (perr "  -> tried to include playlist \"" x "\" but could not find it")))))
+                                      (perr "tried to include playlist \"" x "\" but could not find it")))))
 
 
 (def ->sxml (title files)
