@@ -41,7 +41,6 @@ an example of a simple playlist:
     (w/all-files
       "bar"
       "qux"
-      ...
       "corge")
 
 The `title` element is used as the filename. So, the above playlist will have
@@ -55,27 +54,27 @@ match "path/to/bar.mp3" as well as "path/to/foo - bar 3.wav"
 
 There are three error conditions:
 
- 1. If a pattern matches two or more different files, an error will be raised:
-    you will then need to make the pattern more specific.
+ 1. If a pattern matches two or more different files, an error will be
+    printed: you will then need to make the pattern more specific.
 
  2. If a file is matched by two or more different patterns, an error will be
-    raised: you will need to change the patterns to refer to different files.
+    printed: you will need to change the patterns to refer to different files.
 
- 3. If a pattern does not match any file, an error will be raised.
+ 3. If a pattern does not match any file, an error will be printed.
 
 
 Including other playlists
 =========================
 
 If you wish to combine multiple different playlists into a single one, you can
-use the `include` S-expression at the top level:
+use the `include` S-expression:
 
     (include "bar"
              "qux")
 
-The above will find the playlists "bar" and "qux" and include them into the
-current playlist. If any of the included playlists do not exist, an error will
-be raised.
+The above will find the playlists that have titles of `"bar"` and `"qux"` and
+will then include them into the current playlist. If any of the included
+playlists do not exist, an error will be printed.
 
 It is also possible to *selectively* include only parts of another playlist by
 using the `w/playlist` form:
@@ -140,6 +139,6 @@ Examples
 
 I have included a few of my own playlists in the "examples" subdirectory.
 These demonstrate how to write playlists, and also clearly show how much
-shorter and easier to read the S-expression format is, compared to .xspf.
+shorter and easier to read the S-expression format is, compared to raw .xspf.
 
 This makes managing playlists a much more pleasant experience.
