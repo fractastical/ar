@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<playlist version="1" xmlns="http://xspf.org/ns/0/" xml:base="/mnt/pauan/Public/Playlists/">
+  <title>Chrono Symphonic</title>
+  <trackList>
+    <track>
+      <location>lists/Chrono Symphonic/Chrono Symphonic 01 Inciting Incident.mp3</location>
+    </track>
+    <track>
+      <location>lists/Chrono Symphonic/Chrono Symphonic 02 Morning Sunlight.mp3</location>
+    </track>
+    <track>
+      <location>lists/Chrono Symphonic/Chrono Symphonic 03 Blue Skies Over Guardia.mp3</location>
+    </track>
+    <track>
+      <location>lists/Chrono Symphonic/Chrono Symphonic 05 Darkness Dueling.mp3</location>
+    </track>
+    <track>
+      <location>lists/Chrono Symphonic/Chrono Symphonic 12 Darkest Omen.mp3</location>
+    </track>
+    <track>
+      <location>lists/Chrono Symphonic/Chrono Symphonic 13 Confronting the Mystic.mp3</location>
+    </track>
+    <track>
+      <location>lists/Chrono Symphonic/Chrono Symphonic 15 Manifest Destiny.mp3</location>
+    </track>
+    <track>
+      <location>lists/Chrono Symphonic/Chrono Symphonic 16 Schala and the Queen.mp3</location>
+    </track>
+    <track>
+      <location>lists/Chrono Symphonic/Chrono Symphonic 18 Beneath the Surface.mp3</location>
+    </track>
+    <track>
+      <location>lists/Chrono Symphonic/Chrono Symphonic 19 The Rising.mp3</location>
+    </track>
+    <track>
+      <location>lists/Chrono Symphonic/Chrono Symphonic 20 Crono's Dream.mp3</location>
+    </track>
+    <track>
+      <location>lists/Chrono Symphonic/Chrono Symphonic 22 A Parting of Ways.mp3</location>
+    </track>
+    <track>
+      <location>lists/Chrono Symphonic/Chrono Symphonic 23 The Last Stand.mp3</location>
+    </track>
+    <track>
+      <location>lists/Chrono Symphonic/Chrono Symphonic 24 The New Beginning.mp3</location>
+    </track>
+    <track>
+      <location>lists/Chrono Symphonic/Chrono Symphonic 25 To Far Away Times.mp3</location>
+    </track>
+  </trackList>
+</playlist>

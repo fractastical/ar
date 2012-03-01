@@ -1,17 +1,17 @@
 (title "Mario")
 
-(playlist
-  (w/folder "Super Mario Galaxy"
-    "Freeze Flame (Fire)"
-    "Gateway Galaxy"
-    "Ghostly Galaxy"
-    "Buoy Base"
-    "Toy Time"
-    "Space Junk"
-    "Melty Molten"
-    "SMG Gusty Garden"
-    "Good Egg Galaxy")
+(w/folder "Super Mario Galaxy"
+  "Freeze Flame (Fire)"
+  "Gateway Galaxy"
+  "Ghostly Galaxy"
+  "Buoy Base"
+  "Toy Time"
+  "Space Junk"
+  "Melty Molten"
+  "SMG Gusty Garden"
+  "Good Egg Galaxy")
 
+(w/all-files
   "Best VGM 973 - Super Mario Galaxy 2 - Melty Monster Galaxy"
   "Best VGM 13 - Yoshi's Island - Overworld Stage (Theme 4)"
   "Super_Mario_Galaxy_Fill_Me_Up_with_Snacky_Happiness_OC_ReMix"

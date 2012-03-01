@@ -1,6 +1,7 @@
 (title "Zelda")
 
-(playlist
+(w/all-files
+  "Tal_Tal_Mountain_Range"
   "Best VGM 635 - Zelda : Ocarina of Time - Water Temple"
   "Best VGM 682 - Zelda : Wind Waker - Outset Island"
   "Best VGM 387 - Zelda: Link's Awakening - Tal Tal Mountains"

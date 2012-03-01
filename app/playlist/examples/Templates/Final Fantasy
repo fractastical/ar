@@ -1,0 +1,44 @@
+(title "Final Fantasy")
+
+(w/folder "FFTA2 OST"
+  "Before and Behind"
+  "Crisis Draws Near"
+  "Abyss"
+  "Premonition of Beginning"
+  "Painful Battle"
+  "Grief"
+  "The Confronted Ones"
+  "Bookmark"
+  "Peaceful Everyday Life"
+  "Comparison of Wisdom"
+  ;"Beyond the Wasteland"
+  "Eternity"
+  "Impressive Spell"
+  "Into the Fantasy"
+  "Mysterious Shop"
+  "Cid"
+  "Gathering Allies"
+  "Knowledge of the Adventurer"
+  "At The Bar"
+  "Companions that Surpassed Their Tribes"
+  "Words Put Together")
+
+(w/folder "Final Fantasy Tactics Advance"
+  "The World Starting to Move"
+  ;"The World Starting to Move"
+  "Walking in Ivalice"
+  "At the Bar"
+  "Teach Me, Mont Blanc"
+  "Surpassing the Wall"
+  "Battle of Hope")
+
+(w/all-files
+  "Best VGM 750 - Final Fantasy VI - The Mines of Narshe"
+  "FFTA - Beyond the wasteland (orchestrated)"
+  "Final Fantasy Tactics A2 - Beyond The Wasteland"
+  ;"Best VGM 702 - Final Fantasy Tactics A2 - Companions That Surpassed Their Tribe"
+  "Silence before the Storm Final Fantasy X Piano Arrangement"
+  "Frontier Village Dali - Final Fantasy IX by Nobuo Uematsu (Fingerstyle Guitar)"
+  "Final Fantasy Tactics Trisection"
+  "Cosmo Canyon On Ocarina"
+  "VII Cosmo Canyon")

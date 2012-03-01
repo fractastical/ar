@@ -23,18 +23,22 @@ This will cause the program to scan through the "Templates" folder and use
 the S-expression playlists defined within to generate .xspf equivalents.
 It will then store those .xspf playlists in the "Playlists" folder.
 
+To quickly create a playlist, simply create a new file in the "Templates"
+folder, add a `title` expression, then add a `w/all-files` expression: that's
+it! Now just run the program as specified above.
+
 
 The S-expression Playlist Format
 ================================
 
 All playlists are composed of one or more S-expressions. The only required
 S-expression is `title`. The playlist can then optionally include files via
-the `include` or `playlist` expressions. Here's an example of a simple
-playlist:
+the `include`, `w/playlist`, `w/folder`, or `w/all-files` expressions. Here's
+an example of a simple playlist:
 
     (title "foo")
 
-    (playlist
+    (w/all-files
       "bar"
       "qux"
       ...
@@ -44,7 +48,7 @@ The `title` element is used as the filename. So, the above playlist will have
 a filename of "foo.xspf". In addition, it's used when including other
 playlists, which will be discussed later.
 
-The `playlist` element is used to specify which files will be included into
+The `w/all-files` element is used to specify which files will be included into
 the playlist. The program uses sub-string matching, so the pattern `"bar"` can
 match "path/to/bar.mp3" as well as "path/to/foo - bar 3.wav"
 
@@ -58,12 +62,6 @@ There are three error conditions:
     raised: you will need to change the patterns to refer to different files.
 
  3. If a pattern does not match any file, an error will be raised.
-
-
-To create a playlist, simply create a new file in the "Templates" folder,
-place a `title` expression inside the file, then add an `include` or
-`playlist` expression (or both): that's it! Now just run the program as
-specified in "How to run".
 
 
 Including other playlists
@@ -82,23 +80,22 @@ be raised.
 It is also possible to *selectively* include only parts of another playlist by
 using the `w/playlist` form:
 
-    (playlist
-      (w/playlist "foo"
-        "qux"
-        "corge")
+    (w/playlist "foo"
+      "qux"
+      "corge")
 
-      (w/playlist "bar"
-        "nou"
-        "yes"))
+    (w/playlist "bar"
+      "nou"
+      "yes")
 
 The above will include the files `"qux"` and `"corge"` from the `"foo"`
 playlist, in addition to the `"nou"` and `"yes"` files from the `"bar"`
-playlist. Just like normal file matching, you can use sub-strings when adding
-files from a playlist.
+playlist. Just like `w/all-files`, you can use sub-strings when adding files
+from a playlist.
 
 One caveat when including files from another playlist: the program will always
-correctly include files regardless of what order the templates are loaded in.
-But the program can't handle infinite loops:
+correctly include files regardless of what order the templates are loaded in,
+but the program cannot handle infinite loops:
 
     (title "foo")
     (include "bar")
@@ -116,7 +113,7 @@ Because patterns use sub-string matching, sometimes they are more lenient than
 you would like. A simple way to be more strict is to include the file's path
 in the pattern:
 
-    (playlist
+    (w/all-files
       "path/to/foo"
       "path/to/bar"
       "path/to/qux"
@@ -124,19 +121,18 @@ in the pattern:
       "other/path/to/bar"
       "other/path/to/qux")
 
-But that is verbose and tedious. As an alternative, inside the `playlist`
-S-expression, you can use the `w/folder` S-expression:
+But that is verbose and tedious. As an alternative, you can use the `w/folder`
+S-expression:
 
-    (playlist
-      (w/folder "path/to"
-        "foo"
-        "bar"
-        "qux")
+    (w/folder "path/to"
+      "foo"
+      "bar"
+      "qux")
 
-      (w/folder "other/path/to"
-        "foo"
-        "bar"
-        "qux"))
+    (w/folder "other/path/to"
+      "foo"
+      "bar"
+      "qux")
 
 
 Examples

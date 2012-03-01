@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<playlist version="1" xmlns="http://xspf.org/ns/0/" xml:base="/mnt/pauan/Public/Playlists/">
+  <title>Zelda</title>
+  <trackList>
+    <track>
+      <location>lists/Zelda/Z.R.E.O/Tal_Tal_Mountain_Range.mp3</location>
+    </track>
+    <track>
+      <location>lists/General/Best VGM 635 - Zelda : Ocarina of Time - Water Temple - &lt;SwVfsXvFbno>.mp4</location>
+    </track>
+    <track>
+      <location>lists/General/Best VGM 682 - Zelda : Wind Waker - Outset Island - &lt;dylldXUC20U>.mp4</location>
+    </track>
+    <track>
+      <location>lists/General/Best VGM 387 - Zelda: Link's Awakening - Tal Tal Mountains - &lt;_L6scVxzIiI>.mp4</location>
+    </track>
+    <track>
+      <location>lists/Zelda/Wind Waker/Wind Waker Ending Theme (Orchestrated) - &lt;CGRoAhZaxyo>.mp4</location>
+    </track>
+    <track>
+      <location>lists/Zelda/Minish Cap/The Legend of Zelda: The Minish Cap - Cloud Tops (MIDI) - &lt;-j5XhBBkFV0>.mp4</location>
+    </track>
+    <track>
+      <location>lists/Zelda/Minish Cap/The Legend of Zelda: The Minish Cap - Minish Village (MIDI) - &lt;cSJGsjOiMKM>.mp4</location>
+    </track>
+    <track>
+      <location>lists/General/Best VGM 56 Zelda A Link to the Past Dark World &lt;FgQaK7TGjX4>.mp4</location>
+    </track>
+    <track>
+      <location>lists/General/Best VGM 613 - Zelda : A Link to the Past - Lost Woods (Forest) &lt;sx6L5b-ACVk>.mp4</location>
+    </track>
+    <track>
+      <location>lists/Zelda/Remastered/Lost Woods (Remastered) — The Legened of Zelda: Ocarina of Time.webm</location>
+    </track>
+    <track>
+      <location>lists/General/The Legend of Zelda Theme on theremin.webm</location>
+    </track>
+    <track>
+      <location>lists/Zelda/Windmill Hut (Remastered) — The legend of Zelda: Ocarina of Time.webm</location>
+    </track>
+    <track>
+      <location>lists/Zelda/Symphony/07 - death mountain.mp3</location>
+    </track>
+    <track>
+      <location>lists/Zelda/Symphony/05 - lon lon ranch.mp3</location>
+    </track>
+    <track>
+      <location>lists/Zelda/Symphony/03 - hyrule field.mp3</location>
+    </track>
+    <track>
+      <location>lists/Zelda/Symphony/02 - kokiri forest.mp3</location>
+    </track>
+    <track>
+      <location>lists/Zelda/Remix/Zelda Wind Waker PiratesofDragonRoostIsle OC ReMix.mp3</location>
+    </track>
+    <track>
+      <location>lists/General/The Dark World.mp3</location>
+    </track>
+    <track>
+      <location>lists/Zelda/Z.R.E.O/Twilight/HyruleFieldOnFoot.mp3</location>
+    </track>
+    <track>
+      <location>lists/General/Best VGM 82 Zelda Wind Waker Dragon Roost Island.mp4</location>
+    </track>
+  </trackList>
+</playlist>

@@ -3,24 +3,6 @@
   <title>Final Fantasy</title>
   <trackList>
     <track>
-      <location>lists/FFTA OST/37 - The World Starting to Move.mp3</location>
-    </track>
-    <track>
-      <location>lists/FFTA OST/13 - Walking in Ivalice.mp3</location>
-    </track>
-    <track>
-      <location>lists/FFTA OST/09 - At the Bar.mp3</location>
-    </track>
-    <track>
-      <location>lists/FFTA OST/15 - Teach Me, Mont Blanc.mp3</location>
-    </track>
-    <track>
-      <location>lists/FFTA OST/24 - Surpassing the Wall.mp3</location>
-    </track>
-    <track>
-      <location>lists/FFTA OST/27 - Battle of Hope.mp3</location>
-    </track>
-    <track>
       <location>lists/FFTA2 OST/220-Before and Behind.mp3</location>
     </track>
     <track>
@@ -81,28 +63,46 @@
       <location>lists/FFTA2 OST/102-Words Put Together.mp3</location>
     </track>
     <track>
-      <location>lists/General/Best VGM 142 Final Fantasy VII Cosmo Canyon.mp4</location>
+      <location>lists/Final Fantasy Tactics Advance/37 - The World Starting to Move.mp3</location>
     </track>
     <track>
-      <location>lists/General/Cosmo Canyon On Ocarina.mp4</location>
+      <location>lists/Final Fantasy Tactics Advance/13 - Walking in Ivalice.mp3</location>
     </track>
     <track>
-      <location>lists/General/Best VGM 94 Final Fantasy Tactics Trisection.mp4</location>
+      <location>lists/Final Fantasy Tactics Advance/09 - At the Bar.mp3</location>
     </track>
     <track>
-      <location>lists/General/Frontier Village Dali - Final Fantasy IX by Nobuo Uematsu (Fingerstyle Guitar) &lt;n7UF9kaqsT8>.mp4</location>
+      <location>lists/Final Fantasy Tactics Advance/15 - Teach Me, Mont Blanc.mp3</location>
     </track>
     <track>
-      <location>lists/General/Silence before the Storm Final Fantasy X Piano Arrangement.mp4</location>
+      <location>lists/Final Fantasy Tactics Advance/24 - Surpassing the Wall.mp3</location>
     </track>
     <track>
-      <location>lists/Final Fantasy/Tactics A2/Final Fantasy Tactics A2 - Beyond The Wasteland &lt;59NYIuVm9DE>.flv</location>
+      <location>lists/Final Fantasy Tactics Advance/27 - Battle of Hope.mp3</location>
+    </track>
+    <track>
+      <location>lists/General/Best VGM 750 - Final Fantasy VI - The Mines of Narshe - &lt;oHjt7i5nt8w>.mp4</location>
     </track>
     <track>
       <location>lists/Final Fantasy/Tactics A/‪FFTA - Beyond the wasteland (orchestrated)‬‏ &lt;GweIkMdCYOs>.flv</location>
     </track>
     <track>
-      <location>lists/General/Best VGM 750 - Final Fantasy VI - The Mines of Narshe - &lt;oHjt7i5nt8w>.mp4</location>
+      <location>lists/Final Fantasy/Tactics A2/Final Fantasy Tactics A2 - Beyond The Wasteland &lt;59NYIuVm9DE>.flv</location>
+    </track>
+    <track>
+      <location>lists/General/Silence before the Storm Final Fantasy X Piano Arrangement.mp4</location>
+    </track>
+    <track>
+      <location>lists/General/Frontier Village Dali - Final Fantasy IX by Nobuo Uematsu (Fingerstyle Guitar) &lt;n7UF9kaqsT8>.mp4</location>
+    </track>
+    <track>
+      <location>lists/General/Best VGM 94 Final Fantasy Tactics Trisection.mp4</location>
+    </track>
+    <track>
+      <location>lists/General/Cosmo Canyon On Ocarina.mp4</location>
+    </track>
+    <track>
+      <location>lists/General/Best VGM 142 Final Fantasy VII Cosmo Canyon.mp4</location>
     </track>
   </trackList>
 </playlist>
