@@ -104,8 +104,8 @@ using the `w/playlist` form:
 
 The above will include the files `"qux"` and `"corge"` from the `"foo"`
 playlist, in addition to the `"nou"` and `"yes"` files from the `"bar"`
-playlist. Just like `w/all-files`, you can use sub-strings when adding files
-from a playlist.
+playlist. Just like `w/all-files`, it uses sub-string matching when adding
+files from a playlist.
 
 
 Limiting the scope of a pattern
