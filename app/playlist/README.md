@@ -124,7 +124,8 @@ in the pattern:
       "other/path/to/qux")
 
 But that is verbose and tedious. As an alternative, you can use the `w/folder`
-S-expression:
+S-expression which is *exactly* like `w/all-files` except it only matches
+files contained within the specified folder:
 
     (w/folder "path/to"
       "foo"
