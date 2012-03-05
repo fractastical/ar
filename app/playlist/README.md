@@ -125,7 +125,7 @@ in the pattern:
 
 But that is verbose and tedious. As an alternative, you can use the `w/folder`
 S-expression which is *exactly* like `w/all-files` except it only matches
-files contained within the specified folder:
+files contained (recursively) within the specified folder:
 
     (w/folder "path/to"
       "foo"
