@@ -5,6 +5,7 @@
 
 ;; TODO: parameter is Nu specific
 (parameter current-playlist)
+(parameter processed-trace) ;; infinite loop detection
 
 (= files-by-title   (obj)
    processed        (obj)
@@ -128,9 +129,21 @@
   ;; so I have to use Racket's hash-ref! instead
   ((% hash-ref!) processed x (fn () (debug "processing playlist \"" x "\"")
                                     (iflet it files-by-title.x
-                                      ;; TODO: w/current-playlist is Nu specific
-                                      (w/current-playlist it
-                                        (include1 it))
+                                          ;; infinite loop detection
+                                      (if (some [is _ x] processed-trace)
+                                          (let x rev.processed-trace
+                                                                ;; TODO: ugly
+                                            (w/current-playlist `((title ,car.x))
+                                              ;; TODO: redundant, but maybe necessary...?
+                                              (case len.x
+                                                1 (perr "infinite cycle detected while including playlist \"" car.x "\"")
+                                                2 (perr "infinite cycle detected while including playlist \"" cadr.x "\"")
+                                                  (perr "infinite cycle detected while including playlists \"" cadr.x "\" ... \"" last.x "\""))))
+                                          ;; w/processed-trace is Nu specific
+                                          (w/processed-trace (cons x processed-trace)
+                                            ;; w/current-playlist is Nu specific
+                                            (w/current-playlist it
+                                              (include1 it))))
                                       (perr "tried to include playlist \"" x "\" but could not find it")))))
 
 
@@ -161,7 +174,7 @@
       (if (hidden-file? x)
           ;; debug is Nu specific
           (debug "ignoring hidden file \"" input x "\"")
-          (let info (readfile x)
+          (let info readfile.x
             (iflet x (alref info 'title)
               (= files-by-title.x info)
               (oerr " File \"" input x "\" doesn't have a top-level (title) expression"))))))

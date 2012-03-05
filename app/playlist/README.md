@@ -76,6 +76,21 @@ The above will find the playlists that have titles of `"bar"` and `"qux"` and
 will then include them into the current playlist. If any of the included
 playlists do not exist, an error will be printed.
 
+The program will always correctly include files regardless of what order the
+templates are loaded in, and it is even capable of detecting infinite loops:
+
+    (title "foo")
+    (include "bar")
+
+    (title "bar")
+    (include "qux")
+
+    (title "qux")
+    (include "foo")
+
+The above three playlists will cause an error to be printed saying it detected
+an infinite loop.
+
 It is also possible to *selectively* include only parts of another playlist by
 using the `w/playlist` form:
 
@@ -91,18 +106,6 @@ The above will include the files `"qux"` and `"corge"` from the `"foo"`
 playlist, in addition to the `"nou"` and `"yes"` files from the `"bar"`
 playlist. Just like `w/all-files`, you can use sub-strings when adding files
 from a playlist.
-
-One caveat when including files from another playlist: the program will always
-correctly include files regardless of what order the templates are loaded in,
-but the program cannot handle infinite loops:
-
-    (title "foo")
-    (include "bar")
-
-    (title "bar")
-    (include "foo")
-
-The above two playlists will cause the program to never terminate.
 
 
 Limiting the scope of a pattern
