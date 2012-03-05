@@ -73,8 +73,8 @@ use the `include` S-expression:
              "qux")
 
 The above will find the playlists that have titles of `"bar"` and `"qux"` and
-will then include them into the current playlist. If any of the included
-playlists do not exist, an error will be printed.
+will then include them into the current playlist. If you try to include a
+playlist that does not exist, an error will be printed.
 
 The program will always correctly include files regardless of what order the
 templates are loaded in, and it is even capable of detecting infinite loops:
